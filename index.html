@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V20 Final</title>
+    <title>Loop ID - V21 Master</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+New&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-color: #000000;
             --logo-color: #ffffff;
             --accent-color: #ffb6c1; 
+            /* Variables del Mapa */
+            --white: #ffffff;
+            --pink-accent: #ffb6c1;
+            --line-width: 1.5px;
         }
 
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* --- ANIMACIONES LOGO --- */
+        /* --- ANIMACIONES LOGO LOOP --- */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
@@ -35,22 +40,27 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* NFC Animation */
-        .nfc-ripple { position: absolute; border-radius: 50%; border: 1px solid rgba(56, 189, 248, 0.5); animation: nfcWave 2s infinite ease-out; }
-        @keyframes nfcWave { 0% { width: 100%; height: 100%; opacity: 0.8; stroke-width: 2px; } 100% { width: 160%; height: 160%; opacity: 0; stroke-width: 0px; } }
+        /* --- ESTILOS DEL MAPA (INTEGRADOS TAL CUAL) --- */
+        .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
+        .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: var(--line-width); stroke-linecap: round; }
+        .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
+        .airport-node { fill: var(--pink-accent); }
+        .airport-pulse { fill: var(--pink-accent); transform-origin: center; animation: pulseRing 2.5s ease-out infinite; }
+        .iata-code { fill: var(--white); font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; letter-spacing: 2px; opacity: 0; animation: fadeIn 1s forwards 2.5s; }
+        @keyframes drawPath { to { stroke-dashoffset: 0; } }
+        @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
+        @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
+
+        /* --- NFC Minimalista --- */
+        .nfc-arc { stroke: #ffb6c1; fill: none; stroke-linecap: round; opacity: 0.2; }
+        .nfc-active { animation: nfcPulse 1.5s infinite; }
+        @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
 
         /* Componentes */
         .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
         .insta-grid { display: grid; gap: 1.5rem; }
         .profile-upload:hover .overlay { opacity: 1; }
         #cloudLoader { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
-        
-        /* Stats & Map */
-        .map-node { fill: #ffb6c1; animation: pulse-node 2s infinite; }
-        .map-line { stroke-dasharray: 10; animation: dash 30s linear infinite; stroke: #ffb6c1; }
-        .map-croquis { fill: rgba(255, 255, 255, 0.05); stroke: rgba(255, 255, 255, 0.1); stroke-width: 0.5; }
-        @keyframes pulse-node { 0% { r: 2; opacity: 1; } 50% { r: 4; opacity: 0.5; } 100% { r: 2; opacity: 1; } }
-        @keyframes dash { to { stroke-dashoffset: -1000; } }
     </style>
 
     <script>
@@ -72,11 +82,33 @@
             document.getElementById('modalVenue').innerText = venue;
             document.getElementById('modalDate').innerText = date || "20 FEB 2026";
             document.getElementById('modalPurchaseDate').innerText = "15 ENE 2026";
-            document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 8).toUpperCase();
+            document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
             
+            // Generar QR complejo visualmente
+            generateComplexQR();
+
             document.getElementById('ticketModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         };
+
+        function generateComplexQR() {
+            const svg = document.getElementById('complexQrSvg');
+            let content = '';
+            // Generar matriz aleatoria para que parezca un QR real y denso
+            for(let i=0; i<15; i++) {
+                for(let j=0; j<15; j++) {
+                    if(Math.random() > 0.5 && !((i<5 && j<5) || (i>10 && j<5) || (i<5 && j>10))) {
+                        content += `<rect x="${i*10 + 25}" y="${j*10 + 25}" width="8" height="8" fill="black" />`;
+                    }
+                }
+            }
+            // Marcadores de esquina (Position patterns)
+            content += `<rect x="25" y="25" width="40" height="40" stroke="black" stroke-width="8" fill="none"/><rect x="37" y="37" width="16" height="16" fill="black"/>`;
+            content += `<rect x="135" y="25" width="40" height="40" stroke="black" stroke-width="8" fill="none"/><rect x="147" y="37" width="16" height="16" fill="black"/>`;
+            content += `<rect x="25" y="135" width="40" height="40" stroke="black" stroke-width="8" fill="none"/><rect x="37" y="147" width="16" height="16" fill="black"/>`;
+            
+            svg.innerHTML = content;
+        }
 
         window.closeTicket = function() {
             document.getElementById('ticketModal').classList.add('hidden');
@@ -110,7 +142,9 @@
         };
     </script>
 </head>
-<body class="pb-32 pt-6"> <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
+<body class="pb-32 pt-6">
+
+    <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
         <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
             <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
             <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
@@ -222,27 +256,31 @@
                 </div>
             </div>
 
-            <div class="bg-black/50 p-6 rounded-3xl border border-white/5 relative overflow-hidden">
-                <h3 class="text-lg font-bold text-white mb-4">Tour Map 2026</h3>
-                <div class="w-full h-56 relative flex items-center justify-center bg-gray-900/20 rounded-xl border border-white/5">
-                    <svg width="100%" height="100%" viewBox="0 0 100 100" class="absolute inset-0">
-                        <path d="M10 10 Q 30 15 40 30 T 70 20 T 90 30 T 85 60 T 60 90 T 35 80 T 20 40 T 10 10" class="map-croquis" />
-                        
-                        <path d="M20 20 L 45 50 L 40 85" stroke="#333" stroke-width="1" fill="none" />
-                        <path d="M45 50 L 80 25" stroke="#333" stroke-width="1" fill="none" />
-                        <path d="M20 20 L 45 50 L 80 25" class="map-line" stroke-width="0.5" fill="none"/>
-                        
-                        <circle cx="20" cy="20" r="2" class="map-node" />
-                        <text x="10" y="15" fill="#666" font-size="3" font-weight="bold">MEXICO (MX)</text>
-                        
-                        <circle cx="80" cy="25" r="2" class="map-node" style="animation-delay: 0.5s"/>
-                        <text x="75" y="20" fill="#666" font-size="3" font-weight="bold">VENEZUELA (VE)</text>
-                        
-                        <circle cx="45" cy="50" r="4" fill="#ffb6c1" style="filter: drop-shadow(0 0 6px #ffb6c1);"/>
-                        <text x="50" y="55" fill="white" font-size="4" font-weight="bold">COLOMBIA (CO)</text>
-                        
-                        <circle cx="40" cy="85" r="2" class="map-node" style="animation-delay: 1s"/>
-                        <text x="30" y="92" fill="#666" font-size="3" font-weight="bold">PERU (PE)</text>
+            <div class="bg-black/50 p-4 rounded-3xl border border-white/5 relative overflow-hidden flex justify-center">
+                <div class="w-full max-w-sm h-64 relative">
+                    <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                        <path class="country-outline" d="M150 140 L240 170 L260 250 L180 230 L130 180 Z" /> 
+                        <path class="country-outline" d="M340 310 L430 290 L490 310 L460 390 L390 460 L310 410 Z" /> 
+                        <g>
+                            <path id="mex-col" class="route-path" d="M210 200 Q 280 250, 360 330" />
+                            <path class="travel-glow" d="M210 200 Q 280 250, 360 330" />
+                            <path id="col-ven" class="route-path" d="M360 330 Q 405 310, 450 305" />
+                            <path class="travel-glow" d="M360 330 Q 405 310, 450 305" style="animation-delay: -1s;" />
+                            <path id="col-per" class="route-path" d="M360 330 Q 355 385, 365 420" />
+                            <path class="travel-glow" d="M360 330 Q 355 385, 365 420" style="animation-delay: -2.5s;" />
+                        </g>
+                        <g transform="translate(210, 200)">
+                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="-45" y="5">MEX</text>
+                        </g>
+                        <g transform="translate(360, 330)">
+                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">COL</text>
+                        </g>
+                        <g transform="translate(450, 305)">
+                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">VEN</text>
+                        </g>
+                        <g transform="translate(365, 420)">
+                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">PER</text>
+                        </g>
                     </svg>
                 </div>
             </div>
@@ -253,7 +291,7 @@
         <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[85vh]">
              
             <div class="bg-white/5 p-4 border-b border-white/10 text-center flex-shrink-0">
-                <svg width="120" height="50" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-1" preserveAspectRatio="xMidYMid meet">
+                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet">
                     <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
                     <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
                     <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4" />
@@ -267,56 +305,31 @@
                 <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
                 <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
 
-                <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center">
-                    <div class="nfc-ripple" style="animation-delay: 0s;"></div>
-                    <div class="nfc-ripple" style="animation-delay: 1s;"></div>
+                <div class="flex items-center justify-center gap-4 mb-8">
+                    <div class="bg-white p-2 rounded-lg w-40 h-40 shadow-[0_0_30px_rgba(255,182,193,0.2)]">
+                        <svg id="complexQrSvg" width="100%" height="100%" viewBox="0 0 200 200"></svg>
+                    </div>
                     
-                    <svg class="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100" style="animation: spin 8s linear infinite;">
-                        <defs>
-                            <linearGradient id="gradTicket" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" style="stop-color:#ffb6c1;stop-opacity:1" />
-                                <stop offset="100%" style="stop-color:#000;stop-opacity:0" />
-                            </linearGradient>
-                        </defs>
-                        <path d="M50 10 A 40 40 0 0 1 50 90 A 40 40 0 0 1 50 10" stroke="url(#gradTicket)" stroke-width="2" fill="none" stroke-dasharray="20 10"/>
-                    </svg>
-                    
-                    <div class="bg-white p-3 rounded-xl w-44 h-44 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.3)] relative z-10">
-                        <i class="fas fa-qrcode text-9xl text-black"></i>
+                    <div class="flex flex-col items-center justify-center gap-1">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-arc nfc-active" style="animation-delay: 0s;"/>
+                            <path d="M1.42 9a16 16 0 0 1 21.16 0" class="nfc-arc nfc-active" style="animation-delay: 0.3s;"/>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="nfc-arc nfc-active" style="animation-delay: 0.6s;"/>
+                        </svg>
                     </div>
                 </div>
-                
-                <p class="text-center text-[10px] text-blue-400 font-bold mb-6 animate-pulse">ACERCAR PARA TRANSFERENCIA NFC</p>
 
                 <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left">
-                    <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha Evento</p>
-                        <p class="font-bold text-white text-sm" id="modalDate">Date</p>
-                    </div>
-                    <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora Acceso</p>
-                        <p class="font-bold text-white text-sm">22:00 PM</p>
-                    </div>
-                    <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Dress Code</p>
-                        <p class="font-bold text-pink-300 text-sm">Black Minimal</p>
-                    </div>
-                    <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p>
-                        <p class="font-bold text-white text-sm">VIP Backstage</p>
-                    </div>
-                    <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Comprado El</p>
-                        <p class="font-bold text-gray-300 text-xs" id="modalPurchaseDate">...</p>
-                    </div>
-                    <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p>
-                        <p class="font-bold text-white text-sm">G-01</p>
-                    </div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Dress Code</p><p class="font-bold text-pink-300 text-sm">Black Minimal</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Comprado</p><p class="font-bold text-gray-300 text-xs" id="modalPurchaseDate">...</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div>
                 </div>
 
                 <div class="mt-8 pt-4 border-t border-white/10 mb-4">
-                    <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH_GENERATING...</p>
+                    <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p>
                 </div>
             </div>
         </div>
