@@ -35,7 +35,6 @@
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* NAV CRISTAL V32 */
         .glass-nav { 
             background: rgba(0, 0, 0, 0.6); 
             backdrop-filter: blur(15px); 
@@ -58,7 +57,6 @@
             background: rgba(255,255,255,0.1); 
         }
 
-        /* Animaciones SVG (INTACTAS) */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
@@ -72,7 +70,6 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Estilos Mapa y Wallet */
         .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
         .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: 1.5; stroke-linecap: round; }
         .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
@@ -101,30 +98,20 @@
     </style>
 
     <script>
-        // --- 1. FIREBASE CONFIG ---
         const firebaseConfig = { apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc", authDomain: "tanalza-app.firebaseapp.com", projectId: "tanalza-app", storageBucket: "tanalza-app.firebasestorage.app", messagingSenderId: "458130807177", appId: "1:458130807177:web:cde4e0d147c937b4542958" };
         
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch(e) { console.error("Firebase Init Error", e); }
-
+        try { firebase.initializeApp(firebaseConfig); } catch(e) { console.error("Firebase Init Error", e); }
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // --- 2. GLOBALES ---
         let selectedShopEvent = null;
         let currentUserUID = null;
-        let myPurchasedEvents = []; // Para guardar los nombres de lo que ya compré
+        let myPurchasedEvents = [];
 
-        // --- 3. INICIO ---
         window.onload = function() {
-            // Carga inicial
             loadSavedPhoto();
-            
-            // Listener de Auth
             auth.onAuthStateChanged((user) => {
                 const splash = document.getElementById('splashScreen');
-                
                 if (user) {
                     currentUserUID = user.uid;
                     document.getElementById('viewLogin').classList.add('hidden');
@@ -135,213 +122,136 @@
                     document.getElementById('viewLogin').classList.remove('hidden');
                     document.getElementById('appContainer').classList.add('hidden');
                 }
-                
-                if(splash) {
-                    setTimeout(() => splash.style.display = 'none', 500);
-                }
+                if(splash) { setTimeout(() => splash.style.display = 'none', 500); }
             });
         };
 
-        // --- 4. AUTH ---
         function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
             if(!email || !pass) return;
-            
             showLoader(true);
-            auth.signInWithEmailAndPassword(email, pass)
-                .then(() => {
-                    showLoader(false);
-                })
-                .catch((error) => {
-                    showLoader(false);
-                    document.getElementById('loginError').classList.remove('hidden');
-                    document.getElementById('loginError').innerText = "Error: " + error.message;
-                });
+            auth.signInWithEmailAndPassword(email, pass).then(() => { showLoader(false); })
+            .catch((error) => { showLoader(false); document.getElementById('loginError').classList.remove('hidden'); });
         }
 
-        function handleLogout() {
-            auth.signOut();
-        }
+        function handleLogout() { auth.signOut(); }
 
-        // --- 5. DATA (USUARIO Y TICKETS) ---
         function initUserData(uid) {
-            // Escuchar Perfil y Saldo
             const userRef = db.collection("users").doc(uid);
             userRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
                     const data = docSnap.data();
-                    document.querySelectorAll('#displayDupas').forEach(el => el.innerText = (data.dupas || 0).toLocaleString());
+                    const balance = (data.dupas || 0).toLocaleString();
+                    document.querySelectorAll('#displayDupas, #walletDupaBalance').forEach(el => el.innerText = balance);
                     document.getElementById('displayUserName').innerText = data.name || "Usuario";
                     document.getElementById('profileUserName').innerText = data.name || "Usuario";
-                    
                     const inv = document.getElementById('statInvested');
                     if(inv && data.invested) inv.innerText = '$' + ((data.invested || 0) / 1000000).toFixed(1) + 'M';
-                    
-                    if(!data.email && auth.currentUser.email) userRef.update({ email: auth.currentUser.email });
-                } else {
-                    userRef.set({ dupas: 0, invested: 0, name: "Nuevo Usuario", email: auth.currentUser.email });
                 }
             });
 
-            // Escuchar Tickets Comprados
             db.collection("tickets").where("userId", "==", uid).onSnapshot((snapshot) => {
                 const tickets = [];
-                myPurchasedEvents = []; // Reiniciamos la lista de comprados
+                myPurchasedEvents = [];
+                const spendingList = document.getElementById('spendingReportList');
+                spendingList.innerHTML = '';
 
                 snapshot.forEach((doc) => {
                     const t = doc.data();
                     tickets.push({ id: doc.id, ...t });
-                    myPurchasedEvents.push(t.artist); // Guardamos el nombre para filtrar la tienda
+                    myPurchasedEvents.push(t.artist);
+                    
+                    // Agregar al informe de gastos
+                    spendingList.innerHTML += `
+                        <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
+                            <div>
+                                <p class="text-white font-bold text-sm">${t.artist}</p>
+                                <p class="text-[10px] text-gray-500">${t.venue}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-pink-300 font-mono text-xs">CANJEADO</p>
+                                <p class="text-[10px] text-gray-600">${t.date}</p>
+                            </div>
+                        </div>
+                    `;
                 });
                 
-                // Actualizar Stats
                 document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
-
-                // Inicializar la tienda (Ahora que sabemos qué compró, podemos ocultarlos)
                 initShopLive();
 
-                // Renderizar Grid de Tickets (HOME)
                 const container = document.getElementById('ticketsContainer');
                 if (tickets.length === 0) {
                     container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs py-10">Sin tickets activos.</p>';
+                    spendingList.innerHTML = '<p class="text-center text-gray-600 py-4 text-[10px]">No hay transacciones registradas.</p>';
                 } else {
                     container.innerHTML = tickets.map(ev => {
-                        // FIX: Mejor manejo de imagen en el grid de tickets
-                        const bgStyle = ev.image 
-                            ? `background: url('${ev.image}') center/cover no-repeat;` 
-                            : `background: linear-gradient(to bottom right, #1f2937, #000000);`;
-
+                        const bgStyle = ev.image ? `background: url('${ev.image}') center/cover no-repeat;` : `background: linear-gradient(to bottom right, #1f2937, #000000);`;
                         return `
-                        <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300" 
-                             style="${bgStyle}"
-                             onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}', '${ev.seat || 'G-00'}', '${ev.image || ''}')">
-                            
-                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors"></div>
-
-                            <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity z-10">
-                                <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
-                                <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
-                            </div>
-                            
+                        <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group" style="${bgStyle}" onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}', '${ev.seat || 'G-00'}', '${ev.image || ''}')">
+                            <div class="absolute inset-0 bg-black/40"></div>
                             <div class="absolute inset-0 p-6 flex flex-col justify-between z-20">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <span class="text-4xl font-black text-white leading-none tracking-tighter block drop-shadow-md">${ev.date.split(' ')[0]}</span>
-                                        <span class="text-xs font-bold text-white/80 tracking-widest uppercase drop-shadow-sm">${ev.date.split(' ')[1]}</span>
+                                        <span class="text-4xl font-black text-white leading-none tracking-tighter block">${ev.date.split(' ')[0]}</span>
+                                        <span class="text-xs font-bold text-white/80 tracking-widest uppercase">${ev.date.split(' ')[1]}</span>
                                     </div>
-                                    <div class="bg-black/50 backdrop-blur-md px-2 py-1 rounded border border-white/20">
-                                        <span class="text-[10px] font-bold text-white">ASIENTO: ${ev.seat || 'G-01'}</span>
-                                    </div>
+                                    <div class="bg-black/50 backdrop-blur-md px-2 py-1 rounded border border-white/20"><span class="text-[10px] font-bold text-white">ASIENTO: ${ev.seat || 'G-01'}</span></div>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1 drop-shadow-sm">${ev.city || 'Event'}</p>
-                                    <h2 class="text-2xl font-black text-white leading-tight drop-shadow-md">${ev.artist}</h2>
-                                </div>
+                                <div><p class="text-[10px] font-bold text-white/70 uppercase mb-1">${ev.city || 'Event'}</p><h2 class="text-2xl font-black text-white leading-tight">${ev.artist}</h2></div>
                             </div>
-                        </div>
-                    `}).join('');
+                        </div>`;
+                    }).join('');
                 }
             });
         }
 
-        // --- 6. SHOP CON FOTOS (Y FILTRO) ---
         function initShopLive() {
             const container = document.getElementById('shopContainer');
             if(!container) return;
-
             db.collection("events").orderBy("order").onSnapshot((snapshot) => {
                 let htmlContent = '';
-                let visibleCount = 0;
-                
                 snapshot.forEach((doc) => {
                     const ev = doc.data();
-                    
-                    // FILTRO: Si ya lo compré, NO lo muestro
                     if (myPurchasedEvents.includes(ev.artist)) return;
-
-                    visibleCount++;
                     const evString = encodeURIComponent(JSON.stringify(ev));
-                    
-                    // FIX: Estilo de fondo con imagen más robusto
-                    const bgImageStyle = ev.image 
-                        ? `background: url('${ev.image}') center/cover no-repeat;` 
-                        : `background-color: #111;`; 
-
+                    const bgImageStyle = ev.image ? `background: url('${ev.image}') center/cover no-repeat;` : `background-color: #111;`; 
                     htmlContent += `
-                    <div class="fade-in-up w-full h-48 rounded-2xl relative overflow-hidden mb-4 cursor-pointer group shadow-lg border border-white/10" 
-                         style="${bgImageStyle}"
-                         onclick="openBuyModal('${evString}')">
-                        
+                    <div class="fade-in-up w-full h-48 rounded-2xl relative overflow-hidden mb-4 cursor-pointer border border-white/10" style="${bgImageStyle}" onclick="openBuyModal('${evString}')">
                         <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-                        
                         <div class="absolute bottom-0 w-full p-4 flex justify-between items-end z-10">
-                            <div>
-                                <span class="text-[10px] font-bold bg-pink-500/80 text-white px-2 py-0.5 rounded mb-1 inline-block backdrop-blur-sm">${ev.date}</span>
-                                <h4 class="font-bold text-white text-2xl leading-none mb-1">${ev.artist}</h4>
-                                <p class="text-xs text-gray-300 flex items-center gap-1"><i class="fas fa-map-marker-alt text-[10px]"></i> ${ev.venue}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xl font-black text-emerald-400 drop-shadow-sm">${ev.price}</p>
-                                <p class="text-[8px] font-bold text-gray-400 uppercase">DUPAS</p>
-                            </div>
+                            <div><span class="text-[10px] font-bold bg-pink-500/80 text-white px-2 py-0.5 rounded mb-1 inline-block">${ev.date}</span><h4 class="font-bold text-white text-2xl mb-1">${ev.artist}</h4><p class="text-xs text-gray-300 flex items-center gap-1"><i class="fas fa-map-marker-alt text-[10px]"></i> ${ev.venue}</p></div>
+                            <div class="text-right"><p class="text-xl font-black text-emerald-400">${ev.price}</p><p class="text-[8px] text-gray-400 font-bold uppercase">DUPAS</p></div>
                         </div>
-                        
-                        <div class="absolute top-3 right-3 bg-white text-black w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg group-hover:scale-110 transition">
-                            <i class="fas fa-plus text-xs"></i>
-                        </div>
+                        <div class="absolute top-3 right-3 bg-white text-black w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg"><i class="fas fa-cart-plus text-xs"></i></div>
                     </div>`;
                 });
-                
-                if(visibleCount === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-500 py-10 text-xs">¡No hay eventos nuevos disponibles!</p>';
-                } else {
-                    container.innerHTML = htmlContent;
-                }
+                container.innerHTML = htmlContent || '<p class="text-center text-gray-500 py-10 text-xs">¡No hay eventos nuevos!</p>';
             });
         }
 
-        // --- 7. MODALES ---
         function openTicket(artist, venue, date, seat, image) {
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
             document.getElementById('modalDate').innerText = date;
             document.getElementById('modalPurchaseDate').innerText = "ASIENTO: " + seat;
-            document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
-            
-            // FIX: Imagen de fondo en el modal del ticket usando estilo directo
             const header = document.getElementById('ticketModalHeader');
-            if(image && image !== 'null' && image !== 'undefined' && image.trim() !== "") {
-                header.style.background = `url('${image}') center/cover no-repeat`;
-                header.style.minHeight = '200px';
-                // Ocultar logo si hay foto para que se vea bien
-                header.querySelector('svg').style.opacity = '0.7'; 
-            } else {
-                header.style.background = 'linear-gradient(to bottom, #1f2937, #000000)';
-                header.style.minHeight = 'auto';
-                header.querySelector('svg').style.opacity = '1';
-            }
-
+            if(image && image.trim() !== "") { header.style.background = `url('${image}') center/cover no-repeat`; header.style.minHeight = '200px'; }
+            else { header.style.background = 'linear-gradient(to bottom, #1f2937, #000000)'; header.style.minHeight = 'auto'; }
             generateComplexQR();
             document.getElementById('ticketModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         }
         function closeTicket() { document.getElementById('ticketModal').classList.add('hidden'); }
 
         function openWalletCard(type) {
-            // (Tu lógica de wallet original intacta)
             const modalContent = document.getElementById('walletModalContent');
             const cardName = document.getElementById('walletCardName');
             const cardDesc = document.getElementById('walletCardDesc');
             const cardIcon = document.getElementById('walletCardIcon');
-            modalContent.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10";
-            if(type === 'titanium') {
-                modalContent.classList.add('modal-titanium'); cardName.innerText = "CLUBMEM TITANIUM"; cardDesc.innerText = "ACCESO TOTAL · 2026"; cardIcon.className = "fas fa-crown text-6xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]";
-            } else if(type === 'evva') {
-                modalContent.classList.add('modal-evva'); cardName.innerText = "TEMPLO EVVA"; cardDesc.innerText = "MEMBRESÍA SEMESTRAL"; cardIcon.className = "fas fa-fire text-6xl text-red-200 drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]";
-            } else if(type === 'dupass') {
-                modalContent.classList.add('modal-dupass'); cardName.innerText = "DUPASS PAY"; cardDesc.innerText = "BILLETERA ECO-HABITANTE"; cardIcon.className = "fas fa-wifi text-6xl text-emerald-200 rotate-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]";
-            }
+            modalContent.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10";
+            if(type === 'titanium') { modalContent.classList.add('modal-titanium'); cardName.innerText = "CLUBMEM TITANIUM"; cardDesc.innerText = "EXPIRA: 31 DIC 2026"; cardIcon.className = "fas fa-crown text-6xl text-white"; }
+            else if(type === 'evva') { modalContent.classList.add('modal-evva'); cardName.innerText = "TEMPLO EVVA"; cardDesc.innerText = "EXPIRA: 15 JUN 2026"; cardIcon.className = "fas fa-fire text-6xl text-red-200"; }
+            else if(type === 'dupass') { modalContent.classList.add('modal-dupass'); cardName.innerText = "DUPASS PAY"; cardDesc.innerText = "BILLETERA ACTIVA"; cardIcon.className = "fas fa-wifi text-6xl text-emerald-200 rotate-90"; }
             document.getElementById('walletModal').classList.remove('hidden');
             setTimeout(() => modalContent.classList.remove('scale-90'), 10);
         }
@@ -350,262 +260,196 @@
         function openBuyModal(evStr) {
             const ev = JSON.parse(decodeURIComponent(evStr));
             selectedShopEvent = ev;
-            
-            // FIX: Imagen en el modal de compra más segura
             const header = document.getElementById('buyHeader');
-            if(ev.image && ev.image.trim() !== "") {
-                header.style.background = `url('${ev.image}') center/cover no-repeat`;
-                header.style.height = '200px'; // Un poco más alto para que luzca
-            } else {
-                header.style.background = '#1f2937';
-                header.style.height = '20px';
-            }
-
+            if(ev.image && ev.image.trim() !== "") { header.style.background = `url('${ev.image}') center/cover no-repeat`; header.style.height = '200px'; }
+            else { header.style.background = '#1f2937'; header.style.height = '20px'; }
             document.getElementById('buyArtist').innerText = ev.artist;
             document.getElementById('buyPrice').innerText = ev.price;
             document.getElementById('buyDate').innerText = ev.date;
             document.getElementById('buyDesc').innerText = ev.desc;
-            const modal = document.getElementById('buyModal');
+            document.getElementById('buyModal').classList.remove('hidden');
             document.getElementById('buySheetContent').classList.remove('translate-y-full');
-            modal.classList.remove('hidden');
         }
-        function closeBuyModal() {
-            document.getElementById('buySheetContent').classList.add('translate-y-full');
-            setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
-        }
+        function closeBuyModal() { document.getElementById('buySheetContent').classList.add('translate-y-full'); setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300); }
 
         function confirmPurchase() {
             if(!selectedShopEvent || !currentUserUID) return;
             showLoader(true);
             const userRef = db.collection("users").doc(currentUserUID);
-            
             userRef.get().then((docSnap) => {
                 const currentUser = docSnap.data();
-                if (currentUser.dupas < selectedShopEvent.price) { 
-                    alert("Fondos insuficientes."); 
-                    showLoader(false); 
-                    return; 
-                }
-                
-                // Generar Asiento Aleatorio
-                const zones = ['VIP', 'PALCO', 'GRAL'];
-                const zone = zones[Math.floor(Math.random() * zones.length)];
-                const num = Math.floor(Math.random() * 200) + 1;
-                const seatCode = `${zone}-${num}`;
-
-                userRef.update({ 
-                    dupas: currentUser.dupas - selectedShopEvent.price, 
-                    invested: (currentUser.invested || 0) + (selectedShopEvent.price * 1000) 
-                }).then(() => {
-                    // FIX: Asegurar que el campo 'image' se pasa correctamente como string
-                    const ticketData = { 
-                        userId: currentUserUID, 
-                        artist: selectedShopEvent.artist, 
-                        date: selectedShopEvent.date, 
-                        venue: selectedShopEvent.venue, 
-                        city: "Manizales", 
-                        image: selectedShopEvent.image || "", // Si es undefined, guarda string vacío
-                        seat: seatCode 
-                    };
-
-                    db.collection("tickets").add(ticketData).then(() => {
-                        showLoader(false); 
-                        closeBuyModal(); 
-                        switchTab('home'); 
-                        alert(`¡Compra exitosa! Asiento: ${seatCode}`);
+                if (currentUser.dupas < selectedShopEvent.price) { alert("Fondos insuficientes."); showLoader(false); return; }
+                const seatCode = `VIP-${Math.floor(Math.random() * 200) + 1}`;
+                userRef.update({ dupas: currentUser.dupas - selectedShopEvent.price, invested: (currentUser.invested || 0) + (selectedShopEvent.price * 1000) }).then(() => {
+                    db.collection("tickets").add({ userId: currentUserUID, artist: selectedShopEvent.artist, date: selectedShopEvent.date, venue: selectedShopEvent.venue, city: "Manizales", image: selectedShopEvent.image || "", seat: seatCode }).then(() => {
+                        showLoader(false); closeBuyModal(); switchTab('home'); alert(`¡Canjeado! Asiento: ${seatCode}`);
                     });
                 });
-            }).catch(error => { console.error(error); showLoader(false); alert("Error de conexión"); });
+            });
         }
 
-        // --- NAVIGATION & HELPERS (Tu código original) ---
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => {
-                const btn = document.getElementById(id); btn.classList.remove('text-white', 'text-pink-300'); btn.classList.add('text-gray-600');
-            });
-            let activeBtn = 'btnHome';
-            if(tab === 'wallet') activeBtn = 'btnWallet';
-            if(tab === 'shop') activeBtn = 'btnShop';
-            if(tab === 'profile') activeBtn = 'btnProfile';
+            ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => { document.getElementById(id).classList.remove('text-white', 'text-pink-300'); document.getElementById(id).classList.add('text-gray-600'); });
             document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
-            const btn = document.getElementById(activeBtn); btn.classList.remove('text-gray-600'); btn.classList.add(tab === 'shop' || tab === 'wallet' ? 'text-pink-300' : 'text-white');
+            const btn = document.getElementById('btn' + tab.charAt(0).toUpperCase() + tab.slice(1));
+            btn.classList.remove('text-gray-600'); btn.classList.add(tab === 'shop' || tab === 'wallet' ? 'text-pink-300' : 'text-white');
         }
 
-        function handlePhotoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { try { localStorage.setItem('loopProfilePicV26', e.target.result); updateAllAvatars(e.target.result); } catch(err) {} }; reader.readAsDataURL(input.files[0]); } }
+        function handlePhotoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { localStorage.setItem('loopProfilePicV26', e.target.result); updateAllAvatars(e.target.result); }; reader.readAsDataURL(input.files[0]); } }
         function loadSavedPhoto() { const savedImage = localStorage.getItem('loopProfilePicV26'); if (savedImage) updateAllAvatars(savedImage); }
         function updateAllAvatars(src) { document.querySelectorAll('.avatar-img').forEach(img => { img.src = src; img.classList.remove('hidden'); }); document.querySelectorAll('.avatar-placeholder').forEach(ph => ph.classList.add('hidden')); }
-        function generateComplexQR() { const svg = document.getElementById('complexQrSvg'); if(!svg) return; let content = ''; for(let i=0; i<19; i++) { for(let j=0; j<19; j++) { if (i > 6 && i < 12 && j > 6 && j < 12) continue; if(Math.random() > 0.4 && !((i<6 && j<6) || (i>12 && j<6) || (i<6 && j>12))) { content += `<rect x="${i*8 + 20}" y="${j*8 + 20}" width="6" height="6" fill="black" />`; } } } content += `<rect x="20" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="32" width="16" height="16" fill="black"/><rect x="132" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="144" y="32" width="16" height="16" fill="black"/><rect x="20" y="132" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="144" width="16" height="16" fill="black"/>`; svg.innerHTML = content; }
+        function generateComplexQR() { const svg = document.getElementById('complexQrSvg'); if(!svg) return; svg.innerHTML = `<rect x="20" y="20" width="160" height="160" fill="white"/><rect x="40" y="40" width="30" height="30" fill="black"/><rect x="130" y="40" width="30" height="30" fill="black"/><rect x="40" y="130" width="30" height="30" fill="black"/>`; }
         function showLoader(show) { document.getElementById('cloudLoader').classList.toggle('hidden', !show); }
     </script>
 </head>
 <body class="pb-32 pt-6">
 
-    <div id="splashScreen" class="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
-        <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando</p>
+    <div id="splashScreen" class="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center">
+        <svg width="300" height="120" viewBox="0 0 500 200"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
     </div>
 
-    <div id="cloudLoader" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center"><div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div></div>
+    <div id="cloudLoader" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center bg-black/50 backdrop-blur-md"><div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div></div>
 
     <div id="viewLogin" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-8 hidden">
-        <div class="w-full max-w-sm">
-            <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-12"><path d="M100 80 V135 H135" stroke="white" stroke-width="12"/><circle cx="160" cy="115" r="25" stroke="white" stroke-width="10"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="8"/><g><path d="M340 100 V150" stroke="white" stroke-width="12"/><circle cx="360" cy="115" r="25" stroke="white" stroke-width="10"/></g></svg>
-            <h2 class="text-2xl font-bold text-white mb-6 text-center">Bienvenido</h2>
-            <input type="email" id="loginEmail" placeholder="Correo electrónico" class="login-input mb-4">
-            <input type="password" id="loginPass" placeholder="Contraseña" class="login-input mb-8">
-            <button onclick="handleLogin()" class="w-full py-4 bg-white text-black font-bold rounded-xl hover:scale-[1.02] transition">Ingresar</button>
-            <p id="loginError" class="text-red-500 text-xs text-center mt-4 hidden">Error de credenciales</p>
-        </div>
+        <svg width="200" height="80" viewBox="0 0 500 200" class="mb-12"><path d="M100 80 V135 H135" stroke="white" stroke-width="12"/><circle cx="160" cy="115" r="25" stroke="white" stroke-width="10"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="8"/><path d="M340 100 V150" stroke="white" stroke-width="12"/><circle cx="360" cy="115" r="25" stroke="white" stroke-width="10"/></svg>
+        <input type="email" id="loginEmail" placeholder="Email" class="login-input mb-4">
+        <input type="password" id="loginPass" placeholder="Contraseña" class="login-input mb-8">
+        <button onclick="handleLogin()" class="w-full py-4 bg-white text-black font-bold rounded-xl">Ingresar</button>
+        <p id="loginError" class="text-red-500 text-xs mt-4 hidden">Error de credenciales</p>
     </div>
 
     <div id="appContainer" class="hidden">
-        
         <main class="px-4 max-w-md mx-auto min-h-screen relative">
             <div id="viewHome" class="space-y-8 fade-in-up">
-                <div class="flex items-center justify-between pt-2 pb-2">
-                    <div class="text-left">
-                         <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
-                        <p class="text-[9px] text-gray-400 font-medium tracking-widest uppercase ml-8 -mt-2">By TanAlza</p>
+                <div class="flex items-center justify-between pt-2">
+                    <div>
+                        <svg width="120" height="50" viewBox="0 0 500 200"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-widest ml-4">By TanAlza</p>
                     </div>
-                    <div class="flex flex-col items-end gap-2">
-                        <div class="relative w-14 h-14 rounded-full border-2 border-pink-300 p-0.5 cursor-pointer profile-upload group" onclick="document.getElementById('photoInputHome').click()">
-                            <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
-                                <img class="w-full h-full object-cover hidden avatar-img" src="">
-                                <div class="w-full h-full flex items-center justify-center bg-gray-900 text-white font-black text-sm avatar-placeholder">User</div>
-                                <div class="overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 backdrop-blur-sm group-hover:opacity-100"><i class="fas fa-camera text-white text-xs"></i></div>
-                            </div>
-                        </div>
-                        <input type="file" id="photoInputHome" hidden accept="image/*" onchange="handlePhotoUpload(this)">
-                        <div class="text-right">
-                            <h2 class="text-lg font-thin text-white leading-none mb-1" id="displayUserName">Usuario</h2>
-                            <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-0.5 flex items-center gap-2 backdrop-blur-md justify-end">
-                                <span class="w-1.5 h-1.5 rounded-full bg-pink-300"></span>
-                                <span class="text-xs font-bold text-white" id="displayDupas">...</span>
-                                <span class="text-[8px] font-bold text-pink-300 uppercase tracking-widest">Dupas</span>
-                            </div>
-                        </div>
+                    <div class="text-right">
+                        <h2 class="text-lg font-thin text-white" id="displayUserName">...</h2>
+                        <div class="flex items-center gap-2 justify-end text-xs"><span id="displayDupas" class="font-bold text-white">0</span> <span class="text-pink-300 uppercase">Dupas</span></div>
                     </div>
                 </div>
-                <div class="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-                <div class="flex items-end justify-between px-2">
-                    <h2 class="text-2xl font-black text-white">Mis Eventos</h2>
-                    <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> ACTIVOS</span>
-                </div>
-                <div id="ticketsContainer" class="insta-grid pb-10"><p class="text-gray-500 text-center py-10 text-xs">Sin tickets activos.</p></div>
+                <h2 class="text-2xl font-black text-white">Mis Eventos <span class="text-xs text-gray-500 ml-2" id="ticketCount">0</span></h2>
+                <div id="ticketsContainer" class="insta-grid pb-10"></div>
             </div>
 
             <div id="viewWallet" class="hidden space-y-6 fade-in-up pb-20">
-                <h2 class="text-2xl font-black text-white px-2 mt-4">Wallet & Pay</h2>
+                <h2 class="text-2xl font-black text-white mt-4 px-2">Wallet & Pay</h2>
                 <div class="insta-grid">
-                    <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('dupass')">
-                        <div class="absolute top-4 right-4 opacity-50"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
-                        <div class="flex flex-col justify-between h-full relative z-10">
-                            <div class="flex justify-between items-start mt-2"><div class="bg-black/20 p-3 rounded-full backdrop-blur-md"><i class="fas fa-wifi text-emerald-300 rotate-90 text-2xl"></i></div></div>
-                            <div><h3 class="text-2xl font-black text-white tracking-tighter">DUPASS PAY</h3><p class="text-xs text-emerald-200">Terminal Eco-Habitante</p></div>
+                    <div class="relative w-full aspect-square card-dupass rounded-3xl p-6" onclick="openWalletCard('dupass')">
+                        <div class="flex flex-col justify-between h-full">
+                            <i class="fas fa-wifi text-emerald-300 text-2xl rotate-90"></i>
+                            <div>
+                                <h3 class="text-2xl font-black text-white">DUPASS PAY</h3>
+                                <div class="flex items-end gap-1"><span id="walletDupaBalance" class="text-xl font-mono text-white">0</span><span class="text-[10px] text-emerald-200 uppercase mb-1">Dupas Disponibles</span></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('titanium')">
-                        <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
-                        <div class="flex flex-col justify-between h-full relative z-10">
-                            <div class="flex justify-between items-start mt-1"><i class="fas fa-crown text-gray-400 text-3xl"></i></div>
-                            <div><h3 class="text-xl font-bold text-white tracking-widest">TITANIUM</h3><p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest">ClubMem Annual Pass</p></div>
+                    <div class="relative w-full aspect-square card-titanium rounded-3xl p-6" onclick="openWalletCard('titanium')">
+                        <div class="flex flex-col justify-between h-full">
+                            <i class="fas fa-crown text-gray-400 text-3xl"></i>
+                            <div><h3 class="text-xl font-bold text-white">TITANIUM</h3><p class="text-[9px] text-gray-400 uppercase">EXP: 31/12/2026</p></div>
                         </div>
                     </div>
-                    <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('evva')">
-                        <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
-                        <div class="flex flex-col justify-between h-full relative z-10">
-                            <div class="flex justify-between items-start mt-1"><i class="fas fa-fire text-red-300 text-3xl"></i></div>
-                            <div><h3 class="text-xl font-black text-white tracking-tighter">EVVA RED</h3><p class="text-[9px] text-red-200 uppercase tracking-widest">Semestral Access</p></div>
+                    <div class="relative w-full aspect-square card-evva rounded-3xl p-6" onclick="openWalletCard('evva')">
+                        <div class="flex flex-col justify-between h-full">
+                            <i class="fas fa-fire text-red-300 text-3xl"></i>
+                            <div><h3 class="text-xl font-black text-white">EVVA RED</h3><p class="text-[9px] text-red-200 uppercase">EXP: 15/06/2026</p></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div id="viewShop" class="hidden space-y-4 pb-10 fade-in-up">
-                <div class="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-pink-300/20 mb-6 text-center mt-4">
-                    <i class="fas fa-gem text-3xl text-pink-300 mb-2"></i><h3 class="text-xl font-bold text-white">Loop Market</h3>
+                <div class="p-6 bg-black rounded-2xl border border-pink-300/20 mb-6 text-center mt-4">
+                    <svg width="150" height="60" viewBox="0 0 500 200" class="mx-auto mb-2"><path d="M100 80 V135 H135" stroke="white" stroke-width="8"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="6"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="5"/><path d="M340 100 V150" stroke="white" stroke-width="8"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="6"/></svg>
+                    <p class="text-[10px] text-pink-300 uppercase tracking-[0.4em] font-bold">Loop Market</p>
                 </div>
                 <div id="shopContainer" class="space-y-3"></div>
             </div>
 
             <div id="viewProfile" class="hidden space-y-6 pb-20 fade-in-up">
                 <div class="text-center mt-8">
-                    <div class="relative w-32 h-32 mx-auto rounded-full border-2 border-pink-300 p-1 mb-4 shadow-[0_0_30px_rgba(255,182,193,0.15)]">
-                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
+                    <div class="relative w-28 h-28 mx-auto rounded-full border-2 border-pink-300 p-1 mb-4" onclick="document.getElementById('photoInputHome').click()">
+                        <div class="w-full h-full rounded-full bg-gray-900 overflow-hidden relative">
                             <img class="w-full h-full object-cover hidden avatar-img" src="">
-                            <div class="w-full h-full flex items-center justify-center bg-gray-900 avatar-placeholder"><span class="text-4xl font-black text-white">MT</span></div>
+                            <div class="w-full h-full flex items-center justify-center avatar-placeholder"><span class="text-2xl font-black text-white">MT</span></div>
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition"><i class="fas fa-camera text-white text-xs"></i></div>
                         </div>
                     </div>
-                    <h2 class="text-3xl font-thin text-white mb-1" id="profileUserName">Usuario</h2>
-                    <button onclick="handleLogout()" class="text-xs text-red-400 border border-red-900 rounded px-2 py-1 mt-2">Cerrar Sesión</button>
+                    <input type="file" id="photoInputHome" hidden accept="image/*" onchange="handlePhotoUpload(this)">
+                    <h2 class="text-2xl font-thin text-white" id="profileUserName">...</h2>
+                    <button onclick="handleLogout()" class="text-[10px] text-red-400 mt-2 uppercase tracking-widest">Cerrar Sesión</button>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center"><p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p><p class="text-3xl font-black text-white" id="statTicketCount">0</p></div>
-                    <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center"><p class="text-gray-500 text-[10px] uppercase mb-1">Localidad</p><p class="text-lg font-bold text-pink-300">Backstage</p></div>
-                    <div class="bg-gray-900 p-6 rounded-2xl col-span-2 flex justify-between items-center border border-white/10"><div><p class="text-gray-400 text-[10px] uppercase mb-1 tracking-widest">Inversión Total</p><p class="text-3xl font-black text-white" id="statInvested">...</p></div><i class="fas fa-chart-line text-emerald-400 text-xl"></i></div>
+                    <div class="bg-gray-900 p-4 rounded-2xl text-center border border-white/5"><p class="text-gray-500 text-[9px] uppercase">Eventos Activos</p><p class="text-2xl font-black text-white" id="statTicketCount">0</p></div>
+                    <div class="bg-gray-900 p-4 rounded-2xl text-center border border-white/5"><p class="text-gray-500 text-[9px] uppercase">Estatus</p><p class="text-lg font-bold text-pink-300">Backstage</p></div>
                 </div>
-                <div class="bg-black/50 p-4 rounded-3xl border border-white/5 relative overflow-hidden flex justify-center">
-                    <div class="w-full max-w-sm h-64 relative">
-                        <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
-                            <path class="country-outline" d="M150 140 L240 170 L260 250 L180 230 L130 180 Z" /> <path class="country-outline" d="M340 310 L430 290 L490 310 L460 390 L390 460 L310 410 Z" /> 
-                            <g><path id="mex-col" class="route-path" d="M210 200 Q 280 250, 360 330" /> <path class="travel-glow" d="M210 200 Q 280 250, 360 330" /><path id="col-ven" class="route-path" d="M360 330 Q 405 310, 450 305" /> <path class="travel-glow" d="M360 330 Q 405 310, 450 305" style="animation-delay: -1s;" /><path id="col-per" class="route-path" d="M360 330 Q 355 385, 365 420" /> <path class="travel-glow" d="M360 330 Q 355 385, 365 420" style="animation-delay: -2.5s;" /></g>
-                            <g transform="translate(210, 200)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="-45" y="5">MEX</text></g>
-                            <g transform="translate(360, 330)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">COL</text></g>
-                            <g transform="translate(450, 305)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">VEN</text></g>
-                            <g transform="translate(365, 420)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">PER</text></g>
-                        </svg>
-                    </div>
+                
+                <div class="bg-gray-900 p-6 rounded-3xl border border-white/10">
+                    <div class="flex justify-between items-center mb-4"><h3 class="text-sm font-bold text-white uppercase tracking-wider">Reporte de Consumo</h3><i class="fas fa-file-invoice-dollar text-pink-300"></i></div>
+                    <div class="space-y-3 max-h-48 overflow-y-auto no-scrollbar" id="spendingReportList"></div>
+                    <div class="mt-4 pt-4 border-t border-white/5 flex justify-between items-center"><p class="text-[10px] text-gray-500">INVERSIÓN TOTAL ESTIMADA</p><p class="text-xl font-black text-white" id="statInvested">...</p></div>
+                </div>
+
+                <div class="bg-black/50 p-4 rounded-3xl border border-white/5 relative overflow-hidden flex justify-center h-64">
+                    <svg viewBox="0 0 800 500" class="w-full h-full">
+                        <path class="country-outline" d="M150 140 L240 170 L260 250 L180 230 L130 180 Z" /> <path class="country-outline" d="M340 310 L430 290 L490 310 L460 390 L390 460 L310 410 Z" /> 
+                        <g><path class="route-path" d="M210 200 Q 280 250, 360 330" /><path class="travel-glow" d="M210 200 Q 280 250, 360 330" /></g>
+                        <g transform="translate(210, 200)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="-45" y="5">MEX</text></g>
+                        <g transform="translate(360, 330)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">COL</text></g>
+                    </svg>
                 </div>
             </div>
         </main>
 
-        <nav class="fixed bottom-0 w-full glass-nav pb-6 pt-4 px-12 flex justify-between items-center z-50">
-            <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-3xl transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
-            <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
-            <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-heart"></i></button>
-            <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-user"></i></button>
+        <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-12 flex justify-between items-center z-50">
+            <button onclick="switchTab('home')" id="btnHome" class="text-white text-2xl transition"><i class="fas fa-ticket-alt"></i></button>
+            <button onclick="switchTab('wallet')" id="btnWallet" class="text-gray-600 text-2xl transition"><i class="fas fa-wallet"></i></button>
+            <button onclick="switchTab('shop')" id="btnShop" class="text-gray-600 text-2xl transition"><i class="fas fa-shopping-cart"></i></button>
+            <button onclick="switchTab('profile')" id="btnProfile" class="text-gray-600 text-2xl transition"><i class="fas fa-user"></i></button>
         </nav>
     </div>
 
-    <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
-        <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
-            <div class="absolute top-8 w-full text-center opacity-80"><svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M370 85 V160" stroke="white" stroke-width="6"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="5"/></g></svg></div>
-            <div class="mb-10 relative mt-10"><div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div><div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl"><i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i></div></div>
-            <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
-            <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
-            <div class="flex flex-col items-center gap-2"><p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p><i class="fas fa-arrow-up text-white animate-bounce"></i></div>
+    <div id="walletModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-6 bg-black/95 backdrop-blur-md">
+        <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl border border-white/10 h-[70vh]">
+            <i id="walletCardIcon" class="text-6xl mb-10"></i>
+            <h2 id="walletCardName" class="text-3xl font-black text-white text-center mb-2"></h2>
+            <p id="walletCardDesc" class="text-white/70 text-xs font-bold uppercase tracking-widest text-center mb-10"></p>
+            <button onclick="closeWalletModal()" class="w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center"><i class="fas fa-times"></i></button>
         </div>
-        <button onclick="closeWalletModal()" class="fixed bottom-24 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
     </div>
 
-    <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
-        <div id="ticketModalHeader" class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[85vh]">
-            <div class="bg-white/5 p-4 border-b border-white/10 text-center flex-shrink-0"><svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg><p class="text-[9px] text-gray-400 uppercase tracking-widest">By TanAlza</p></div>
-            <div class="p-6 overflow-y-auto flex-1 no-scrollbar">
-                <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
-                <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
-                <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center"><div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div><svg id="complexQrSvg" width="90%" height="90%" viewBox="0 0 200 200" class="absolute z-10"></svg><div class="absolute z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-sm border border-pink-100 flex flex-col items-center justify-center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-active"/><path d="M1.42 9a16 16 0 0 1 21.16 0" class="nfc-active"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="nfc-active"/></svg></div></div>
-                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left"><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Dress Code</p><p class="font-bold text-pink-300 text-sm">Black Minimal</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Ubicación</p><p class="font-bold text-emerald-400 text-xs" id="modalPurchaseDate">...</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div></div>
-                <div class="mt-8 pt-4 border-t border-white/10 mb-4"><p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p></div>
+    <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-6 bg-black/95">
+        <div id="ticketModalHeader" class="w-full max-w-sm bg-black border border-white/10 rounded-[2rem] overflow-hidden flex flex-col h-[80vh]">
+            <div class="p-6 overflow-y-auto no-scrollbar flex-1 text-center">
+                <h2 class="text-2xl font-black text-white mb-1" id="modalArtist"></h2>
+                <p class="text-pink-300 text-xs font-bold mb-6" id="modalVenue"></p>
+                <div class="relative w-48 h-48 mx-auto mb-8 bg-white rounded-xl flex items-center justify-center"><svg id="complexQrSvg" width="150" height="150"></svg></div>
+                <div class="grid grid-cols-2 gap-4 text-left text-xs">
+                    <div><p class="text-gray-500 uppercase text-[8px]">Fecha</p><p class="text-white font-bold" id="modalDate"></p></div>
+                    <div><p class="text-gray-500 uppercase text-[8px]">Ubicación</p><p class="text-white font-bold" id="modalPurchaseDate"></p></div>
+                </div>
+                <button onclick="closeTicket()" class="mt-8 w-10 h-10 rounded-full bg-white/10 text-white mx-auto flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
         </div>
-        <button onclick="closeTicket()" class="mt-4 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times"></i></button>
     </div>
 
     <div id="buyModal" class="fixed inset-0 z-[150] hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeBuyModal()"></div>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeBuyModal()"></div>
         <div class="absolute bottom-0 w-full buy-sheet transform transition-transform duration-300 translate-y-full" id="buySheetContent">
-            <div id="buyHeader" class="w-full h-2 rounded-t-2xl bg-gray-800"></div>
-            
-            <div class="p-8 relative">
-                <div class="w-16 h-1 bg-gray-700 rounded-full mx-auto mb-8 absolute top-3 left-0 right-0"></div>
-                <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-pink-300" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
-                <p class="text-emerald-400 font-bold text-sm mb-6 flex items-center gap-2"><i class="far fa-calendar"></i> <span id="buyDate">Date</span></p>
-                <div class="bg-white/5 p-4 rounded-xl mb-6"><p class="text-gray-300 text-sm leading-relaxed" id="buyDesc">Descripción...</p></div>
-                <button onclick="confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition">Canjear Ahora</button>
+            <div id="buyHeader" class="w-full rounded-t-2xl"></div>
+            <div class="p-8">
+                <div class="flex justify-between items-start mb-4"><h2 class="text-2xl font-black text-white" id="buyArtist"></h2><div class="text-right"><p class="text-xl font-black text-pink-300" id="buyPrice"></p><p class="text-[10px] text-gray-500">DUPAS</p></div></div>
+                <p class="text-emerald-400 font-bold text-xs mb-4" id="buyDate"></p>
+                <p class="text-gray-300 text-sm mb-6" id="buyDesc"></p>
+                <button onclick="confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold">Canjear Ahora</button>
             </div>
         </div>
     </div>
+
 </body>
 </html>
