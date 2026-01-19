@@ -90,6 +90,17 @@
         .card-titanium { background: radial-gradient(circle at 0% 0%, #4b5563 0%, #1f2937 50%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); }
         .card-evva { background: radial-gradient(circle at 100% 0%, #ef4444 0%, #7f1d1d 60%, #450a0a 100%); border: 1px solid rgba(239, 68, 68, 0.3); }
         .card-dupass { background: radial-gradient(circle at 50% 0%, #34d399 0%, #059669 50%, #064e3b 100%); border: 1px solid rgba(52, 211, 153, 0.3); }
+        
+        /* Colores metálicos para tickets */
+        .ticket-metal-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .ticket-metal-2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .ticket-metal-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .ticket-metal-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .ticket-metal-5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .ticket-metal-6 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+        .ticket-metal-7 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .ticket-metal-8 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+        
         .modal-titanium { background: radial-gradient(circle at 50% 0%, #4b5563 0%, #000000 80%); }
         .modal-evva { background: radial-gradient(circle at 50% 0%, #991b1b 0%, #000000 80%); }
         .modal-dupass { background: radial-gradient(circle at 50% 0%, #065f46 0%, #000000 80%); }
@@ -114,14 +125,14 @@
         // --- 2. GLOBALES ---
         let selectedShopEvent = null;
         let currentUserUID = null;
-        let myPurchasedEvents = []; // Para guardar los nombres de lo que ya compré
+        let myPurchasedEvents = [];
+        let totalSpent = 0;
+        let totalTickets = 0;
 
         // --- 3. INICIO ---
         window.onload = function() {
-            // Carga inicial
             loadSavedPhoto();
             
-            // Listener de Auth
             auth.onAuthStateChanged((user) => {
                 const splash = document.getElementById('splashScreen');
                 
@@ -166,7 +177,6 @@
 
         // --- 5. DATA (USUARIO Y TICKETS) ---
         function initUserData(uid) {
-            // Escuchar Perfil y Saldo
             const userRef = db.collection("users").doc(uid);
             userRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
@@ -184,40 +194,47 @@
                 }
             });
 
-            // Escuchar Tickets Comprados
             db.collection("tickets").where("userId", "==", uid).onSnapshot((snapshot) => {
                 const tickets = [];
-                myPurchasedEvents = []; // Reiniciamos la lista de comprados
+                myPurchasedEvents = [];
+                totalSpent = 0;
+                totalTickets = snapshot.size;
 
                 snapshot.forEach((doc) => {
                     const t = doc.data();
                     tickets.push({ id: doc.id, ...t });
-                    myPurchasedEvents.push(t.artist); // Guardamos el nombre para filtrar la tienda
+                    myPurchasedEvents.push(t.artist);
+                    if(t.price) totalSpent += t.price;
                 });
                 
-                // Actualizar Stats
                 document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
+                
+                const spentElement = document.getElementById('statTotalSpent');
+                if(spentElement) spentElement.innerText = totalSpent.toLocaleString();
+                
+                const avgElement = document.getElementById('statAvgSpent');
+                if(avgElement && totalTickets > 0) {
+                    avgElement.innerText = Math.round(totalSpent / totalTickets).toLocaleString();
+                }
 
-                // Inicializar la tienda (Ahora que sabemos qué compró, podemos ocultarlos)
                 initShopLive();
 
-                // Renderizar Grid de Tickets (HOME)
                 const container = document.getElementById('ticketsContainer');
                 if (tickets.length === 0) {
                     container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs py-10">Sin tickets activos.</p>';
                 } else {
-                    container.innerHTML = tickets.map(ev => {
-                        // Usar la imagen guardada en el ticket o degradado por defecto
+                    container.innerHTML = tickets.map((ev, index) => {
+                        const metalClass = `ticket-metal-${(index % 8) + 1}`;
                         const bgStyle = ev.image 
                             ? `background-image: url('${ev.image}'); background-size: cover; background-position: center;` 
-                            : `background-image: linear-gradient(to bottom right, #1f2937, #000000);`;
+                            : '';
 
                         return `
-                        <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300" 
+                        <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300 ${!ev.image ? metalClass : ''}" 
                              style="${bgStyle}"
-                             onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}', '${ev.seat || 'G-00'}', '${ev.image || ''}')">
+                             onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}', '${ev.seat || 'G-00'}', '${ev.image || ''}', '${ev.city || 'Manizales'}')">
                             
-                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors"></div>
+                            <div class="absolute inset-0 ${ev.image ? 'bg-black/40' : 'bg-black/20'} group-hover:bg-black/10 transition-colors"></div>
 
                             <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity z-10">
                                 <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
@@ -235,7 +252,7 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <p class="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1 drop-shadow-sm">${ev.city || 'Event'}</p>
+                                    <p class="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1 drop-shadow-sm">${ev.city || 'Manizales'}</p>
                                     <h2 class="text-2xl font-black text-white leading-tight drop-shadow-md">${ev.artist}</h2>
                                 </div>
                             </div>
@@ -257,16 +274,14 @@
                 snapshot.forEach((doc) => {
                     const ev = doc.data();
                     
-                    // FILTRO: Si ya lo compré, NO lo muestro
                     if (myPurchasedEvents.includes(ev.artist)) return;
 
                     visibleCount++;
                     const evString = encodeURIComponent(JSON.stringify(ev));
                     
-                    // Estilo de fondo con imagen
                     const bgImageStyle = ev.image 
                         ? `background-image: url('${ev.image}'); background-size: cover; background-position: center;` 
-                        : `background-color: #111;`; // Fallback si no hay foto
+                        : `background-color: #111;`;
 
                     htmlContent += `
                     <div class="fade-in-up w-full h-48 rounded-2xl relative overflow-hidden mb-4 cursor-pointer group shadow-lg border border-white/10" 
@@ -302,20 +317,19 @@
         }
 
         // --- 7. MODALES ---
-        function openTicket(artist, venue, date, seat, image) {
+        function openTicket(artist, venue, date, seat, image, city) {
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
             document.getElementById('modalDate').innerText = date;
+            document.getElementById('modalCity').innerText = city || 'Manizales';
             document.getElementById('modalPurchaseDate').innerText = "ASIENTO: " + seat;
             document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
             
-            // Imagen de fondo en el modal del ticket
             const header = document.getElementById('ticketModalHeader');
             if(image) {
                 header.style.backgroundImage = `url('${image}')`;
                 header.style.backgroundSize = 'cover';
                 header.style.height = '200px';
-                // Ocultar logo si hay foto para que se vea bien
                 header.querySelector('svg').style.opacity = '0.7'; 
             } else {
                 header.style.backgroundImage = 'none';
@@ -327,10 +341,12 @@
             document.getElementById('ticketModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         }
-        function closeTicket() { document.getElementById('ticketModal').classList.add('hidden'); }
+        
+        function closeTicket() { 
+            document.getElementById('ticketModal').classList.add('hidden'); 
+        }
 
         function openWalletCard(type) {
-            // (Tu lógica de wallet original intacta)
             const modalContent = document.getElementById('walletModalContent');
             const cardName = document.getElementById('walletCardName');
             const cardDesc = document.getElementById('walletCardDesc');
@@ -346,13 +362,15 @@
             document.getElementById('walletModal').classList.remove('hidden');
             setTimeout(() => modalContent.classList.remove('scale-90'), 10);
         }
-        function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
+        
+        function closeWalletModal() { 
+            document.getElementById('walletModal').classList.add('hidden'); 
+        }
 
         function openBuyModal(evStr) {
             const ev = JSON.parse(decodeURIComponent(evStr));
             selectedShopEvent = ev;
             
-            // Imagen en el modal de compra
             const header = document.getElementById('buyHeader');
             if(ev.image) {
                 header.style.backgroundImage = `url('${ev.image}')`;
@@ -372,6 +390,7 @@
             document.getElementById('buySheetContent').classList.remove('translate-y-full');
             modal.classList.remove('hidden');
         }
+        
         function closeBuyModal() {
             document.getElementById('buySheetContent').classList.add('translate-y-full');
             setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
@@ -390,7 +409,6 @@
                     return; 
                 }
                 
-                // Generar Asiento Aleatorio
                 const zones = ['VIP', 'PALCO', 'GRAL'];
                 const zone = zones[Math.floor(Math.random() * zones.length)];
                 const num = Math.floor(Math.random() * 200) + 1;
@@ -405,9 +423,10 @@
                         artist: selectedShopEvent.artist, 
                         date: selectedShopEvent.date, 
                         venue: selectedShopEvent.venue, 
-                        city: "Manizales", 
-                        image: selectedShopEvent.image || null, // Guardamos la foto en el ticket
-                        seat: seatCode // Guardamos el asiento
+                        city: selectedShopEvent.city || "Manizales", 
+                        image: selectedShopEvent.image || null,
+                        seat: seatCode,
+                        price: selectedShopEvent.price
                     }).then(() => {
                         showLoader(false); 
                         closeBuyModal(); 
@@ -418,7 +437,7 @@
             }).catch(error => { console.error(error); showLoader(false); alert("Error de conexión"); });
         }
 
-        // --- NAVIGATION & HELPERS (Tu código original) ---
+        // --- NAVIGATION & HELPERS ---
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => {
@@ -523,9 +542,13 @@
             </div>
 
             <div id="viewShop" class="hidden space-y-4 pb-10 fade-in-up">
-                <div class="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-pink-300/20 mb-6 text-center mt-4">
-                    <i class="fas fa-gem text-3xl text-pink-300 mb-2"></i><h3 class="text-xl font-bold text-white">Loop Market</h3>
+                <div class="flex items-center justify-between pt-2 pb-2">
+                    <div class="text-left">
+                         <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
+                        <p class="text-[9px] text-gray-400 font-medium tracking-widest uppercase ml-8 -mt-2">Loop Market</p>
+                    </div>
                 </div>
+                <div class="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-4"></div>
                 <div id="shopContainer" class="space-y-3"></div>
             </div>
 
@@ -540,6 +563,25 @@
                     <h2 class="text-3xl font-thin text-white mb-1" id="profileUserName">Usuario</h2>
                     <button onclick="handleLogout()" class="text-xs text-red-400 border border-red-900 rounded px-2 py-1 mt-2">Cerrar Sesión</button>
                 </div>
+                
+                <div class="bg-gradient-to-br from-pink-900/20 to-purple-900/20 p-6 rounded-3xl border border-pink-300/20 backdrop-blur-sm">
+                    <h3 class="text-sm font-bold text-pink-300 mb-4 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-chart-line"></i> Estadísticas de Gastos
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                            <p class="text-gray-400 text-[9px] uppercase mb-1 tracking-widest">Total Gastado</p>
+                            <p class="text-2xl font-black text-white"><span id="statTotalSpent">0</span></p>
+                            <p class="text-[8px] text-pink-300 uppercase">Dupas</p>
+                        </div>
+                        <div class="bg-black/30 p-4 rounded-xl border border-white/5">
+                            <p class="text-gray-400 text-[9px] uppercase mb-1 tracking-widest">Promedio</p>
+                            <p class="text-2xl font-black text-white"><span id="statAvgSpent">0</span></p>
+                            <p class="text-[8px] text-emerald-300 uppercase">Por Evento</p>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center"><p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p><p class="text-3xl font-black text-white" id="statTicketCount">0</p></div>
                     <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center"><p class="text-gray-500 text-[10px] uppercase mb-1">Localidad</p><p class="text-lg font-bold text-pink-300">Backstage</p></div>
@@ -563,7 +605,7 @@
         <nav class="fixed bottom-0 w-full glass-nav pb-6 pt-4 px-12 flex justify-between items-center z-50">
             <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-3xl transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
             <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
-            <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+            <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-shopping-cart"></i></button>
             <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-user"></i></button>
         </nav>
     </div>
@@ -586,7 +628,7 @@
                 <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
                 <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
                 <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center"><div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div><svg id="complexQrSvg" width="90%" height="90%" viewBox="0 0 200 200" class="absolute z-10"></svg><div class="absolute z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-sm border border-pink-100 flex flex-col items-center justify-center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-active"/><path d="M1.42 9a16 16 0 0 1 21.16 0" class="nfc-active"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="nfc-active"/></svg></div></div>
-                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left"><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Dress Code</p><p class="font-bold text-pink-300 text-sm">Black Minimal</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Ubicación</p><p class="font-bold text-emerald-400 text-xs" id="modalPurchaseDate">...</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div></div>
+                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left"><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Ciudad</p><p class="font-bold text-pink-300 text-sm" id="modalCity">Manizales</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div></div>
                 <div class="mt-8 pt-4 border-t border-white/10 mb-4"><p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p></div>
             </div>
         </div>
