@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - By TanAlza</title>
+    <title>Loop ID - By TanAlza (V19 Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -19,11 +19,11 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* --- TUS ANIMACIONES DEL LOGO EXACTAS --- */
+        /* --- ANIMACIONES DEL LOGO (SOLO ANIMACIÓN, NO GROSOR) --- */
         .stroke-anim {
             fill: none;
             stroke: var(--logo-color);
-            stroke-width: 4; /* Ajustado para pantallas pequeñas */
+            /* SE ELIMINÓ stroke-width DE AQUÍ PARA RESPETAR EL SVG ORIGINAL */
             stroke-dasharray: 1000;
             stroke-dashoffset: 1000;
             animation: drawIn 2s ease-out forwards;
@@ -31,14 +31,14 @@
         .loop-capsule {
             fill: none;
             stroke: var(--logo-color);
-            stroke-width: 6; /* Ajustado */
+             /* SE ELIMINÓ stroke-width DE AQUÍ */
             stroke-linecap: round;
             animation: drawIn 2.5s ease-out forwards;
         }
         .loop-glow {
             fill: none;
             stroke: var(--accent-color);
-            stroke-width: 3;
+             /* SE ELIMINÓ stroke-width DE AQUÍ */
             stroke-linecap: round;
             stroke-dasharray: 50, 150;
             opacity: 0;
@@ -49,7 +49,7 @@
             animation: fillWhite 1s ease-in forwards 1.5s;
         }
         .subtext {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', sans-serif; /* Usando Inter para consistencia */
             font-size: 14px;
             fill: #888;
             opacity: 0;
@@ -96,7 +96,6 @@
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
             document.getElementById('modalDate').innerText = date || "20 FEB 2026";
-            // Generar datos aleatorios para que se vea complejo
             document.getElementById('modalPurchaseDate').innerText = "15 ENE 2026";
             document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 8).toUpperCase();
             
@@ -139,14 +138,14 @@
 <body class="pb-32">
 
     <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
-            <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="12" stroke-linecap="round"/>
-            <circle class="stroke-anim" cx="160" cy="115" r="25" stroke-width="10"/>
-            <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="8" />
-            <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="6" />
+        <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+            <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
+            <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
+            <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/>
+            <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/>
             <g class="fill-final">
-                <path class="stroke-anim" d="M340 100 V150" stroke-width="12" stroke-linecap="round"/>
-                <circle class="stroke-anim" cx="360" cy="115" r="25" stroke-width="10"/>
+                <path class="stroke-anim" d="M340 100 V150" stroke-width="6"/>
+                <circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/>
             </g>
             <text x="325" y="155" class="subtext" text-anchor="end">By TanAlza</text>
         </svg>
@@ -171,14 +170,14 @@
             
             <div class="flex items-center justify-between pt-4 pb-2">
                 <div class="text-left fade-in" style="animation-delay: 0.3s;">
-                     <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
-                        <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="15" stroke-linecap="round"/>
-                        <circle class="stroke-anim" cx="160" cy="115" r="30" stroke-width="12"/>
-                        <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="10" />
-                        <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="8" />
+                     <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                        <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
+                        <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
+                        <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4" />
+                        <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2" />
                         <g class="fill-final">
-                            <path class="stroke-anim" d="M340 100 V150" stroke-width="15" stroke-linecap="round"/>
-                            <circle class="stroke-anim" cx="360" cy="115" r="30" stroke-width="12"/>
+                            <path class="stroke-anim" d="M340 100 V150" stroke-width="6"/>
+                            <circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/>
                         </g>
                     </svg>
                 </div>
@@ -273,15 +272,15 @@
     </main>
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
-        <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[80vh]">
+        <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[85vh]">
              
-            <div class="bg-white/5 p-6 border-b border-white/10 text-center">
-                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2">
-                    <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="15" stroke-linecap="round"/>
-                    <circle class="stroke-anim" cx="160" cy="115" r="30" stroke-width="12"/>
-                    <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="10" />
-                    <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="8" />
-                    <g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="15"/><circle cx="360" cy="115" r="30" stroke="white" stroke-width="12"/></g>
+            <div class="bg-white/5 p-4 border-b border-white/10 text-center flex-shrink-0">
+                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet">
+                    <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
+                    <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
+                    <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4" />
+                    <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2" />
+                    <g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g>
                 </svg>
                 <p class="text-[9px] text-gray-400 uppercase tracking-widest">Official Smart Ticket</p>
             </div>
@@ -298,7 +297,7 @@
                                 <stop offset="100%" style="stop-color:#000;stop-opacity:0" />
                             </linearGradient>
                         </defs>
-                        <path d="M50 10 A 40 40 0 0 1 50 90 A 40 40 0 0 1 50 10" stroke="url(#gradTicket)" stroke-width="1" fill="none" stroke-dasharray="20 10"/>
+                        <path d="M50 10 A 40 40 0 0 1 50 90 A 40 40 0 0 1 50 10" stroke="url(#gradTicket)" stroke-width="2" fill="none" stroke-dasharray="20 10"/>
                     </svg>
                     
                     <div class="bg-white p-3 rounded-xl w-44 h-44 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.3)]">
@@ -333,7 +332,7 @@
                     </div>
                 </div>
 
-                <div class="mt-8 pt-4 border-t border-white/10">
+                <div class="mt-8 pt-4 border-t border-white/10 mb-4">
                     <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH_GENERATING...</p>
                 </div>
             </div>
@@ -435,13 +434,13 @@
                      onclick="window.openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
                     
                     <div class="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
-                        <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M100 80 V135 H135" stroke="white" stroke-width="15" stroke-linecap="round"/>
-                            <circle cx="160" cy="115" r="25" stroke="white" stroke-width="12"/>
-                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="10" fill="none"/>
+                        <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                            <path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                            <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
+                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/>
                             <g>
-                                <path d="M340 100 V150" stroke="white" stroke-width="15" stroke-linecap="round"/>
-                                <circle cx="360" cy="115" r="25" stroke="white" stroke-width="12"/>
+                                <path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                                <circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/>
                             </g>
                         </svg>
                     </div>
