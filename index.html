@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V30 Fixed Nav</title>
+    <title>Loop ID - V31 Clean</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -14,12 +14,11 @@
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* CORRECCIÓN NAV: Fondo más sólido y borde superior visible */
+        /* NAV ORIGINAL RESTAURADA (Clean Glass) */
         .glass-nav { 
-            background: rgba(0, 0, 0, 0.9); 
+            background: rgba(10, 10, 10, 0.85); 
             backdrop-filter: blur(20px); 
-            border-top: 1px solid rgba(255,255,255,0.15); 
-            box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+            border-top: 1px solid rgba(255,255,255,0.1); 
         }
 
         /* Animaciones */
@@ -90,7 +89,6 @@
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
-            // Resetear colores botones
             ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => {
                 const btn = document.getElementById(id);
                 btn.classList.remove('text-white', 'text-pink-300');
@@ -303,7 +301,6 @@
         <div id="viewWallet" class="hidden space-y-6 fade-in-up pb-20">
             <h2 class="text-2xl font-black text-white px-2 mt-4">Wallet & Pay</h2>
             <div class="insta-grid">
-                
                 <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('dupass')">
                     <div class="absolute top-4 right-4 opacity-50"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
@@ -311,7 +308,6 @@
                         <div><h3 class="text-2xl font-black text-white tracking-tighter">DUPASS PAY</h3><p class="text-xs text-emerald-200">Terminal Eco-Habitante</p></div>
                     </div>
                 </div>
-
                 <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('titanium')">
                     <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
@@ -319,7 +315,6 @@
                         <div><h3 class="text-xl font-bold text-white tracking-widest">TITANIUM</h3><p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest">ClubMem Annual Pass</p></div>
                     </div>
                 </div>
-
                 <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('evva')">
                     <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
@@ -352,6 +347,7 @@
                     <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
                 </div>
             </div>
+            
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
                     <p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p>
@@ -441,19 +437,11 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-[100]">
-        <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90">
-            <i class="fas fa-ticket-alt"></i><span class="text-[10px] mt-1">Inicio</span>
-        </button>
-        <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90">
-            <i class="fas fa-wallet"></i><span class="text-[10px] mt-1">Wallet</span>
-        </button>
-        <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90">
-            <i class="fas fa-heart"></i><span class="text-[10px] mt-1">Tienda</span>
-        </button>
-        <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90">
-            <i class="fas fa-user"></i><span class="text-[10px] mt-1">Perfil</span>
-        </button>
+    <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
+        <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-3xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
+        <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-3xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
+        <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-3xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+        <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-3xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
     </nav>
 
     <script type="module">
@@ -518,7 +506,12 @@
                     </div>
                 `).join('');
             }
-            document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
+            
+            // ACTUALIZACIÓN DE ESTADISTICAS CON ID ESPECÍFICO
+            const statCount = document.getElementById('statTicketCount');
+            const homeCount = document.getElementById('ticketCount');
+            if(statCount) statCount.innerText = tickets.length;
+            if(homeCount) homeCount.innerText = tickets.length;
         });
     </script>
 </body>
