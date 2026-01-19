@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loop ID - Master APK</title>
+    <title>Loop ID - Master Full</title>
+    
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -15,29 +17,58 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
-        :root { --bg-color: #000000; --logo-color: #ffffff; --accent-color: #ffb6c1; --pink-accent: #ffb6c1; }
-        body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; user-select: none; }
+        :root { 
+            --bg-color: #000000; 
+            --logo-color: #ffffff; 
+            --accent-color: #ffb6c1; 
+            --pink-accent: #ffb6c1; 
+        }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: #ffffff; 
+            font-family: 'Inter', sans-serif; 
+            -webkit-font-smoothing: antialiased; 
+            overflow-x: hidden; 
+            user-select: none; 
+        }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* NAV CRISTAL (ESTÉTICA V32) */
+        /* NAV CRISTAL V32 */
         .glass-nav { 
             background: rgba(0, 0, 0, 0.6); 
             backdrop-filter: blur(15px); 
             border-top: 1px solid rgba(255,255,255,0.08); 
         }
 
-        .login-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 12px; padding: 15px; width: 100%; outline: none; transition: 0.3s; }
-        .login-input:focus { border-color: var(--accent-color); background: rgba(255,255,255,0.1); }
+        .login-input { 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: white; 
+            border-radius: 12px; 
+            padding: 15px; 
+            width: 100%; 
+            outline: none; 
+            transition: 0.3s; 
+        }
+        
+        .login-input:focus { 
+            border-color: var(--accent-color); 
+            background: rgba(255,255,255,0.1); 
+        }
 
-        /* Animaciones */
+        /* Animaciones SVG */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
         .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
+        
         @keyframes drawIn { to { stroke-dashoffset: 0; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes rotateGlow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
         @keyframes fillWhite { to { fill: rgba(255,255,255,1); } }
+        
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
@@ -48,6 +79,7 @@
         .airport-node { fill: var(--pink-accent); }
         .airport-pulse { fill: var(--pink-accent); transform-origin: center; animation: pulseRing 2.5s ease-out infinite; }
         .iata-code { fill: #fff; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; letter-spacing: 2px; opacity: 0; animation: fadeIn 1s forwards 2.5s; }
+        
         @keyframes drawPath { to { stroke-dashoffset: 0; } }
         @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
@@ -69,11 +101,9 @@
     </style>
 
     <script>
-        // --- 1. CONFIGURACIÓN FIREBASE (COMPAT) ---
-        // Esta configuración funciona en APKs donde los modulos fallan
+        // --- 1. FIREBASE CONFIG (COMPAT) ---
         const firebaseConfig = { apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc", authDomain: "tanalza-app.firebaseapp.com", projectId: "tanalza-app", storageBucket: "tanalza-app.firebasestorage.app", messagingSenderId: "458130807177", appId: "1:458130807177:web:cde4e0d147c937b4542958" };
         
-        // Inicializar Firebase
         try {
             firebase.initializeApp(firebaseConfig);
         } catch(e) { console.error("Firebase Init Error", e); }
@@ -81,7 +111,7 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // --- 2. VARIABLES GLOBALES ---
+        // --- 2. GLOBALES ---
         let selectedShopEvent = null;
         let currentUserUID = null;
 
@@ -94,23 +124,21 @@
             { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
         ];
 
-        // --- 3. INICIO DE LA APP ---
+        // --- 3. INICIO ---
         window.onload = function() {
             renderInitialShop();
             loadSavedPhoto();
             
-            // Escuchar cambios de Auth (Login/Logout)
+            // Listener de Auth
             auth.onAuthStateChanged((user) => {
                 const splash = document.getElementById('splashScreen');
                 
                 if (user) {
-                    // Usuario Logueado
                     currentUserUID = user.uid;
                     document.getElementById('viewLogin').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
-                    initUserData(user.uid); // Cargar datos reales
+                    initUserData(user.uid);
                 } else {
-                    // Usuario No Logueado
                     currentUserUID = null;
                     document.getElementById('viewLogin').classList.remove('hidden');
                     document.getElementById('appContainer').classList.add('hidden');
@@ -123,15 +151,17 @@
             });
         };
 
-        // --- 4. FUNCIONES DE LOGIN ---
+        // --- 4. AUTH ---
         function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            if(!email || !pass) { alert("Llena los campos"); return; }
+            if(!email || !pass) return;
             
             showLoader(true);
             auth.signInWithEmailAndPassword(email, pass)
-                .then(() => { showLoader(false); })
+                .then(() => {
+                    showLoader(false);
+                })
                 .catch((error) => {
                     showLoader(false);
                     document.getElementById('loginError').classList.remove('hidden');
@@ -143,14 +173,13 @@
             auth.signOut();
         }
 
-        // --- 5. CARGA DE DATOS REALES (FIRESTORE) ---
+        // --- 5. DATA ---
         function initUserData(uid) {
             // Escuchar Perfil y Saldo
             const userRef = db.collection("users").doc(uid);
             userRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
                     const data = docSnap.data();
-                    // Actualizar todos los contadores de Dupas
                     document.querySelectorAll('#displayDupas').forEach(el => el.innerText = (data.dupas || 0).toLocaleString());
                     document.getElementById('displayUserName').innerText = data.name || "Usuario";
                     document.getElementById('profileUserName').innerText = data.name || "Usuario";
@@ -158,7 +187,7 @@
                     const inv = document.getElementById('statInvested');
                     if(inv && data.invested) inv.innerText = '$' + ((data.invested || 0) / 1000000).toFixed(1) + 'M';
                 } else {
-                    // Crear doc si no existe
+                    // Crear usuario si no existe
                     userRef.set({ dupas: 0, invested: 0, name: "Nuevo Usuario" });
                 }
             });
@@ -196,7 +225,7 @@
             });
         }
 
-        // --- 6. NAVEGACIÓN Y UI ---
+        // --- 6. NAVIGATION ---
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
@@ -236,6 +265,7 @@
             const modalContent = document.getElementById('walletModalContent');
             const cardName = document.getElementById('walletCardName');
             const cardDesc = document.getElementById('walletCardDesc');
+            const cardIcon = document.getElementById('walletCardIcon');
             
             modalContent.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10";
             
@@ -243,14 +273,17 @@
                 modalContent.classList.add('modal-titanium');
                 cardName.innerText = "CLUBMEM TITANIUM";
                 cardDesc.innerText = "ACCESO TOTAL · 2026";
+                cardIcon.className = "fas fa-crown text-6xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]";
             } else if(type === 'evva') {
                 modalContent.classList.add('modal-evva');
                 cardName.innerText = "TEMPLO EVVA";
                 cardDesc.innerText = "MEMBRESÍA SEMESTRAL";
+                cardIcon.className = "fas fa-fire text-6xl text-red-200 drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]";
             } else if(type === 'dupass') {
                 modalContent.classList.add('modal-dupass');
                 cardName.innerText = "DUPASS PAY";
                 cardDesc.innerText = "BILLETERA ECO-HABITANTE";
+                cardIcon.className = "fas fa-wifi text-6xl text-emerald-200 rotate-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]";
             }
             document.getElementById('walletModal').classList.remove('hidden');
             setTimeout(() => modalContent.classList.remove('scale-90'), 10);
@@ -273,7 +306,6 @@
             setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
         }
 
-        // --- 8. COMPRA ---
         function confirmPurchase() {
             if(!selectedShopEvent || !currentUserUID) return;
             showLoader(true);
