@@ -3,45 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V26 Final</title>
+    <title>Loop ID - V27 Blindada</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Courier+New&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-color: #000000;
-            --logo-color: #ffffff;
-            --accent-color: #ffb6c1; 
-            --white: #ffffff;
-            --pink-accent: #ffb6c1;
-            --line-width: 1.5px;
-        }
-
+        :root { --bg-color: #000000; --logo-color: #ffffff; --accent-color: #ffb6c1; --white: #ffffff; --pink-accent: #ffb6c1; }
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* --- ANIMACIONES LOGO LOOP --- */
+        /* Animaciones */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
         .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
         .subtext { font-family: 'Inter', sans-serif; font-size: 14px; fill: #888; opacity: 0; animation: fadeIn 1s ease-out forwards 2.2s; }
-
+        
         @keyframes drawIn { to { stroke-dashoffset: 0; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes rotateGlow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
         @keyframes fillWhite { to { fill: rgba(255,255,255,1); } }
-
-        /* UI Animations */
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* --- ESTILOS DEL MAPA --- */
+        /* Map & Wallet Styles */
         .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
-        .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: var(--line-width); stroke-linecap: round; }
+        .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: 1.5; stroke-linecap: round; }
         .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
         .airport-node { fill: var(--pink-accent); }
         .airport-pulse { fill: var(--pink-accent); transform-origin: center; animation: pulseRing 2.5s ease-out infinite; }
@@ -50,25 +40,188 @@
         @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* --- NFC & Wallet --- */
-        .nfc-arc { stroke: currentColor; fill: none; stroke-linecap: round; opacity: 0.2; }
         .nfc-active { animation: nfcPulse 1.5s infinite; }
         @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
         
         .card-titanium { background: radial-gradient(circle at 0% 0%, #4b5563 0%, #1f2937 50%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); }
         .card-evva { background: radial-gradient(circle at 100% 0%, #ef4444 0%, #7f1d1d 60%, #450a0a 100%); border: 1px solid rgba(239, 68, 68, 0.3); }
         .card-dupass { background: radial-gradient(circle at 50% 0%, #34d399 0%, #059669 50%, #064e3b 100%); border: 1px solid rgba(52, 211, 153, 0.3); }
-
         .modal-titanium { background: radial-gradient(circle at 50% 0%, #4b5563 0%, #000000 80%); }
         .modal-evva { background: radial-gradient(circle at 50% 0%, #991b1b 0%, #000000 80%); }
         .modal-dupass { background: radial-gradient(circle at 50% 0%, #065f46 0%, #000000 80%); }
 
-        /* Componentes */
         .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
         .insta-grid { display: grid; gap: 1.5rem; }
         .profile-upload:hover .overlay { opacity: 1; }
         #cloudLoader { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
     </style>
+
+    <script>
+        // Datos locales para carga inmediata
+        const staticShopEvents = [
+            { date: "21 FEB", artist: "CORE Medellín", venue: "Parque Norte", price: 250, desc: "El escenario más impresionante de Tomorrowland llega a Medellín." },
+            { date: "07 MAR", artist: "Artbat", venue: "Templo Evva", price: 300, desc: "Melodic Techno ucraniano en su máxima expresión." },
+            { date: "14 MAR", artist: "Nastia", venue: "SuperClub Lima", price: 150, desc: "Noche de Techno crudo e industrial." },
+            { date: "27 MAR", artist: "Jamie Jones", venue: "Tulum", price: 400, desc: "Paradise Vibes en la selva mexicana." },
+            { date: "11 ABR", artist: "Boris Brejcha", venue: "CDMX", price: 500, desc: "High-Tech Minimal con máscara veneciana." },
+            { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
+        ];
+
+        let selectedShopEvent = null;
+
+        // --- FUNCIONES GLOBALES DE BOTONES ---
+        function switchTab(tab) {
+            ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-white', 'text-pink-300');
+                btn.classList.add('text-gray-600');
+            });
+            
+            let activeBtn = 'btnHome';
+            if(tab === 'wallet') activeBtn = 'btnWallet';
+            if(tab === 'shop') activeBtn = 'btnShop';
+            if(tab === 'profile') activeBtn = 'btnProfile';
+
+            document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+            document.getElementById(activeBtn).classList.remove('text-gray-600');
+            document.getElementById(activeBtn).classList.add(tab === 'shop' || tab === 'wallet' ? 'text-pink-300' : 'text-white');
+        }
+
+        function openTicket(artist, venue, date) {
+            document.getElementById('modalArtist').innerText = artist;
+            document.getElementById('modalVenue').innerText = venue;
+            document.getElementById('modalDate').innerText = date || "20 FEB 2026";
+            document.getElementById('modalPurchaseDate').innerText = "15 ENE 2026";
+            document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
+            generateComplexQR();
+            document.getElementById('ticketModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
+        }
+
+        function closeTicket() { document.getElementById('ticketModal').classList.add('hidden'); }
+
+        function openWalletCard(type) {
+            const modalContent = document.getElementById('walletModalContent');
+            const cardName = document.getElementById('walletCardName');
+            const cardDesc = document.getElementById('walletCardDesc');
+            const cardIcon = document.getElementById('walletCardIcon');
+            
+            modalContent.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10";
+            
+            if(type === 'titanium') {
+                modalContent.classList.add('modal-titanium');
+                cardName.innerText = "CLUBMEM TITANIUM";
+                cardDesc.innerText = "ACCESO TOTAL · 2026";
+                cardIcon.className = "fas fa-crown text-6xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]";
+            } else if(type === 'evva') {
+                modalContent.classList.add('modal-evva');
+                cardName.innerText = "TEMPLO EVVA";
+                cardDesc.innerText = "MEMBRESÍA SEMESTRAL";
+                cardIcon.className = "fas fa-fire text-6xl text-red-200 drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]";
+            } else if(type === 'dupass') {
+                modalContent.classList.add('modal-dupass');
+                cardName.innerText = "DUPASS PAY";
+                cardDesc.innerText = "BILLETERA ECO-HABITANTE";
+                cardIcon.className = "fas fa-wifi text-6xl text-emerald-200 rotate-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]";
+            }
+            document.getElementById('walletModal').classList.remove('hidden');
+            setTimeout(() => modalContent.classList.remove('scale-90'), 10);
+        }
+
+        function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
+
+        function openBuyModal(evStr) {
+            // Decodificar el objeto evento
+            const ev = typeof evStr === 'string' ? JSON.parse(decodeURIComponent(evStr)) : evStr;
+            selectedShopEvent = ev;
+            
+            document.getElementById('buyArtist').innerText = ev.artist;
+            document.getElementById('buyPrice').innerText = ev.price;
+            document.getElementById('buyDate').innerText = ev.date;
+            document.getElementById('buyDesc').innerText = ev.desc;
+            
+            const modal = document.getElementById('buyModal');
+            const sheet = document.getElementById('buySheetContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
+        }
+
+        function closeBuyModal() {
+            document.getElementById('buySheetContent').classList.add('translate-y-full');
+            setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
+        }
+
+        // Placeholder para la compra (será sobreescrita por el módulo de Firebase)
+        window.confirmPurchase = function() {
+            alert("Conectando con el servidor de Dupas...");
+        };
+
+        function handlePhotoUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        localStorage.setItem('loopProfilePic', e.target.result);
+                        updateAllAvatars(e.target.result);
+                    } catch(err) { alert("Imagen muy pesada"); }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function updateAllAvatars(src) {
+            document.querySelectorAll('.avatar-img').forEach(img => { img.src = src; img.classList.remove('hidden'); });
+            document.querySelectorAll('.avatar-placeholder').forEach(ph => ph.classList.add('hidden'));
+        }
+
+        function generateComplexQR() {
+            const svg = document.getElementById('complexQrSvg');
+            let content = '';
+            for(let i=0; i<19; i++) {
+                for(let j=0; j<19; j++) {
+                    if (i > 6 && i < 12 && j > 6 && j < 12) continue;
+                    if(Math.random() > 0.4 && !((i<6 && j<6) || (i>12 && j<6) || (i<6 && j>12))) {
+                        content += `<rect x="${i*8 + 20}" y="${j*8 + 20}" width="6" height="6" fill="black" />`;
+                    }
+                }
+            }
+            content += `<rect x="20" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="32" width="16" height="16" fill="black"/>`;
+            content += `<rect x="132" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="144" y="32" width="16" height="16" fill="black"/>`;
+            content += `<rect x="20" y="132" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="144" width="16" height="16" fill="black"/>`;
+            svg.innerHTML = content;
+        }
+
+        // Renderizado inicial de la tienda (Para que los botones existan ya)
+        function renderInitialShop() {
+            const container = document.getElementById('shopContainer');
+            if(container) {
+                container.innerHTML = staticShopEvents.map((ev, i) => `
+                    <div class="fade-in-up flex items-center justify-between p-4 bg-gray-900/40 border border-white/5 rounded-2xl hover:bg-gray-800 transition cursor-pointer group"
+                         style="animation-delay: ${i*0.03}s" onclick="openBuyModal('${encodeURIComponent(JSON.stringify(ev))}')">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-gray-800 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-pink-300/50 transition">
+                                <span class="text-sm font-bold text-white">${ev.date.split(' ')[0]}</span>
+                                <span class="text-[9px] uppercase text-gray-500 font-bold">${ev.date.split(' ')[1]}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-lg">${ev.artist}</h4>
+                                <span class="text-[10px] font-bold text-pink-300 bg-pink-300/10 px-2 py-0.5 rounded">${ev.price} Dupas</span>
+                            </div>
+                        </div>
+                        <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        window.onload = function() {
+            renderInitialShop(); // Renderizar tienda inmediatamente
+            const savedImage = localStorage.getItem('loopProfilePic');
+            if (savedImage) updateAllAvatars(savedImage);
+        };
+    </script>
 </head>
 <body class="pb-32 pt-6">
 
@@ -78,10 +231,7 @@
             <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
             <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/>
             <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/>
-            <g class="fill-final">
-                <path class="stroke-anim" d="M340 100 V150" stroke-width="6"/>
-                <circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/>
-            </g>
+            <g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g>
             <text x="325" y="155" class="subtext" text-anchor="end">By TanAlza</text>
         </svg>
         <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando</p>
@@ -113,7 +263,7 @@
                             <div class="overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 backdrop-blur-sm group-hover:opacity-100"><i class="fas fa-camera text-white text-xs"></i></div>
                         </div>
                     </div>
-                    <input type="file" id="photoInputHome" hidden accept="image/*" onchange="window.handlePhotoUpload(this)">
+                    <input type="file" id="photoInputHome" hidden accept="image/*" onchange="handlePhotoUpload(this)">
                     <div class="text-right">
                         <h2 class="text-lg font-thin text-white leading-none mb-1">Marlon T.</h2>
                         <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-0.5 flex items-center gap-2 backdrop-blur-md justify-end">
@@ -129,49 +279,38 @@
                 <h2 class="text-2xl font-black text-white">Mis Eventos</h2>
                 <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> ACTIVOS</span>
             </div>
-            <div id="ticketsContainer" class="insta-grid pb-10"></div>
+            <div id="ticketsContainer" class="insta-grid pb-10">
+                <p class="text-gray-500 text-center py-10 text-xs">Conectando tickets...</p>
+            </div>
         </div>
 
         <div id="viewWallet" class="hidden space-y-6 fade-in-up pb-20">
             <h2 class="text-2xl font-black text-white px-2 mt-4">Wallet & Pay</h2>
             <div class="insta-grid">
                 
-                <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('dupass')">
+                <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('dupass')">
                     <div class="absolute top-4 right-4 opacity-50"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
                         <div class="flex justify-between items-start mt-2">
                             <div class="bg-black/20 p-3 rounded-full backdrop-blur-md"><i class="fas fa-wifi text-emerald-300 rotate-90 text-2xl"></i></div>
                         </div>
-                        <div>
-                            <h3 class="text-2xl font-black text-white tracking-tighter">DUPASS PAY</h3>
-                            <p class="text-xs text-emerald-200">Terminal Eco-Habitante</p>
-                        </div>
+                        <div><h3 class="text-2xl font-black text-white tracking-tighter">DUPASS PAY</h3><p class="text-xs text-emerald-200">Terminal Eco-Habitante</p></div>
                     </div>
                 </div>
 
-                <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('titanium')">
+                <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('titanium')">
                     <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
-                        <div class="flex justify-between items-start mt-1">
-                            <i class="fas fa-crown text-gray-400 text-3xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white tracking-widest">TITANIUM</h3>
-                            <p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest">ClubMem Annual Pass</p>
-                        </div>
+                        <div class="flex justify-between items-start mt-1"><i class="fas fa-crown text-gray-400 text-3xl"></i></div>
+                        <div><h3 class="text-xl font-bold text-white tracking-widest">TITANIUM</h3><p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest">ClubMem Annual Pass</p></div>
                     </div>
                 </div>
 
-                <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('evva')">
+                <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('evva')">
                     <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
-                        <div class="flex justify-between items-start mt-1">
-                            <i class="fas fa-fire text-red-300 text-3xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-black text-white tracking-tighter">EVVA RED</h3>
-                            <p class="text-[9px] text-red-200 uppercase tracking-widest">Semestral Access</p>
-                        </div>
+                        <div class="flex justify-between items-start mt-1"><i class="fas fa-fire text-red-300 text-3xl"></i></div>
+                        <div><h3 class="text-xl font-black text-white tracking-tighter">EVVA RED</h3><p class="text-[9px] text-red-200 uppercase tracking-widest">Semestral Access</p></div>
                     </div>
                 </div>
             </div>
@@ -181,7 +320,6 @@
             <div class="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-pink-300/20 mb-6 text-center mt-4">
                 <i class="fas fa-gem text-3xl text-pink-300 mb-2"></i>
                 <h3 class="text-xl font-bold text-white">Loop Market</h3>
-                <p class="text-xs text-pink-200/70">Experiencias exclusivas.</p>
             </div>
             <div id="shopContainer" class="space-y-3"></div>
         </div>
@@ -200,7 +338,6 @@
                     <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
                 </div>
             </div>
-            
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
                     <p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p>
@@ -218,19 +355,14 @@
                     <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
                 </div>
             </div>
-            
             <div class="bg-black/50 p-4 rounded-3xl border border-white/5 relative overflow-hidden flex justify-center">
                 <div class="w-full max-w-sm h-64 relative">
                     <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
-                        <path class="country-outline" d="M150 140 L240 170 L260 250 L180 230 L130 180 Z" /> 
-                        <path class="country-outline" d="M340 310 L430 290 L490 310 L460 390 L390 460 L310 410 Z" /> 
+                        <path class="country-outline" d="M150 140 L240 170 L260 250 L180 230 L130 180 Z" /> <path class="country-outline" d="M340 310 L430 290 L490 310 L460 390 L390 460 L310 410 Z" /> 
                         <g>
-                            <path id="mex-col" class="route-path" d="M210 200 Q 280 250, 360 330" />
-                            <path class="travel-glow" d="M210 200 Q 280 250, 360 330" />
-                            <path id="col-ven" class="route-path" d="M360 330 Q 405 310, 450 305" />
-                            <path class="travel-glow" d="M360 330 Q 405 310, 450 305" style="animation-delay: -1s;" />
-                            <path id="col-per" class="route-path" d="M360 330 Q 355 385, 365 420" />
-                            <path class="travel-glow" d="M360 330 Q 355 385, 365 420" style="animation-delay: -2.5s;" />
+                            <path id="mex-col" class="route-path" d="M210 200 Q 280 250, 360 330" /> <path class="travel-glow" d="M210 200 Q 280 250, 360 330" />
+                            <path id="col-ven" class="route-path" d="M360 330 Q 405 310, 450 305" /> <path class="travel-glow" d="M360 330 Q 405 310, 450 305" style="animation-delay: -1s;" />
+                            <path id="col-per" class="route-path" d="M360 330 Q 355 385, 365 420" /> <path class="travel-glow" d="M360 330 Q 355 385, 365 420" style="animation-delay: -2.5s;" />
                         </g>
                         <g transform="translate(210, 200)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="-45" y="5">MEX</text></g>
                         <g transform="translate(360, 330)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">COL</text></g>
@@ -244,21 +376,13 @@
 
     <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
         <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
-            <div class="absolute top-8 w-full text-center opacity-80">
-                <svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M370 85 V160" stroke="white" stroke-width="6"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="5"/></g></svg>
-            </div>
-            <div class="mb-10 relative mt-10">
-                <div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
-                <div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl"><i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i></div>
-            </div>
+            <div class="absolute top-8 w-full text-center opacity-80"><svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M370 85 V160" stroke="white" stroke-width="6"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="5"/></g></svg></div>
+            <div class="mb-10 relative mt-10"><div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div><div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl"><i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i></div></div>
             <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
             <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
-            <div class="flex flex-col items-center gap-2">
-                <p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p>
-                <i class="fas fa-arrow-up text-white animate-bounce"></i>
-            </div>
+            <div class="flex flex-col items-center gap-2"><p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p><i class="fas fa-arrow-up text-white animate-bounce"></i></div>
         </div>
-        <button onclick="window.closeWalletModal()" class="fixed bottom-10 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
+        <button onclick="closeWalletModal()" class="fixed bottom-10 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
     </div>
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
@@ -286,16 +410,14 @@
                     <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Comprado</p><p class="font-bold text-gray-300 text-xs" id="modalPurchaseDate">...</p></div>
                     <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div>
                 </div>
-                <div class="mt-8 pt-4 border-t border-white/10 mb-4">
-                    <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p>
-                </div>
+                <div class="mt-8 pt-4 border-t border-white/10 mb-4"><p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p></div>
             </div>
         </div>
-        <button onclick="window.closeTicket()" class="mt-4 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times"></i></button>
+        <button onclick="closeTicket()" class="mt-4 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times"></i></button>
     </div>
 
     <div id="buyModal" class="fixed inset-0 z-[150] hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="window.closeBuyModal()"></div>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeBuyModal()"></div>
         <div class="absolute bottom-0 w-full buy-sheet p-8 transform transition-transform duration-300 translate-y-full" id="buySheetContent">
             <div class="w-16 h-1 bg-gray-700 rounded-full mx-auto mb-8"></div>
             <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-pink-300" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
@@ -306,10 +428,10 @@
     </div>
 
     <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
-        <button onclick="window.switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
-        <button onclick="window.switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
-        <button onclick="window.switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
-        <button onclick="window.switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
+        <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
+        <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
+        <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+        <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
     </nav>
 
     <script type="module">
@@ -317,174 +439,83 @@
         import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, setDoc, getDoc, onSnapshot } 
                from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc",
-            authDomain: "tanalza-app.firebaseapp.com",
-            projectId: "tanalza-app",
-            storageBucket: "tanalza-app.firebasestorage.app",
-            messagingSenderId: "458130807177",
-            appId: "1:458130807177:web:cde4e0d147c937b4542958"
-        };
-
+        const firebaseConfig = { apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc", authDomain: "tanalza-app.firebaseapp.com", projectId: "tanalza-app", storageBucket: "tanalza-app.firebasestorage.app", messagingSenderId: "458130807177", appId: "1:458130807177:web:cde4e0d147c937b4542958" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const USER_ID = "marlon-vip-user"; 
 
-        // Datos de Tienda que se perdieron
-        const shopEvents = [
-            { date: "21 FEB", artist: "CORE Medellín", venue: "Parque Norte", price: 250, desc: "El escenario más impresionante de Tomorrowland llega a Medellín." },
-            { date: "07 MAR", artist: "Artbat", venue: "Templo Evva", price: 300, desc: "Melodic Techno ucraniano en su máxima expresión." },
-            { date: "14 MAR", artist: "Nastia", venue: "SuperClub Lima", price: 150, desc: "Noche de Techno crudo e industrial." },
-            { date: "27 MAR", artist: "Jamie Jones", venue: "Tulum", price: 400, desc: "Paradise Vibes en la selva mexicana." },
-            { date: "11 ABR", artist: "Boris Brejcha", venue: "CDMX", price: 500, desc: "High-Tech Minimal con máscara veneciana." },
-            { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
-        ];
-
-        // Función Principal
-        window.initApp = async function() {
-            showLoader(true);
-            const userRef = doc(db, "users", USER_ID);
-            const userSnap = await getDoc(userRef);
-
-            if (!userSnap.exists()) {
-                await setDoc(userRef, { dupas: 4200, invested: 8450000, name: "Marlon Tangarife" });
-            }
-
-            onSnapshot(userRef, (doc) => {
-                if (doc.exists()) {
-                    const data = doc.data();
-                    // Actualizar Home y Perfil
-                    const els = document.querySelectorAll('#displayDupas');
-                    els.forEach(el => el.innerText = data.dupas.toLocaleString());
-                    
-                    const inv = document.getElementById('statInvested');
-                    if(inv) inv.innerText = '$' + (data.invested / 1000000).toFixed(1) + 'M';
-                }
-            });
-
-            const q = query(collection(db, "tickets"), where("userId", "==", USER_ID));
-            onSnapshot(q, (snapshot) => {
-                const tickets = [];
-                snapshot.forEach((doc) => tickets.push({ id: doc.id, ...doc.data() }));
-                renderTickets(tickets);
-                
-                // Actualizar contadores en Home y Perfil
-                const countEls = document.querySelectorAll('#ticketCount, #statTicketCount');
-                countEls.forEach(el => el.innerText = tickets.length);
-            });
-
-            renderShop(); // IMPORTANTE: Renderizar la tienda
-            
-            setTimeout(() => {
-                const splash = document.getElementById('splashScreen');
-                splash.style.opacity = '0';
-                setTimeout(() => splash.style.display = 'none', 700);
-                showLoader(false);
-            }, 1500);
-        }
-
-        // --- Renderizadores ---
-        function renderTickets(tickets) {
-            const container = document.getElementById('ticketsContainer');
-            if (tickets.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-500 col-span-1">No hay tickets aún.</p>';
-                return;
-            }
-            container.innerHTML = tickets.map(ev => `
-                <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
-                     onclick="window.openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
-                    <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
-                        <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
-                        <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
-                    </div>
-                    <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
-                    <div class="absolute inset-0 p-6 flex flex-col justify-between z-10">
-                        <div class="flex justify-between items-start">
-                            <div><span class="text-4xl font-black text-white leading-none tracking-tighter block">${ev.date.split(' ')[0]}</span><span class="text-xs font-bold text-white/60 tracking-widest uppercase">${ev.date.split(' ')[1]}</span></div>
-                             <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm"><i class="fas fa-arrow-right text-white text-xs -rotate-45 group-hover:rotate-0 transition-transform"></i></div>
-                        </div>
-                        <div><p class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">${ev.city || 'Event'}</p><h2 class="text-2xl font-black text-white leading-tight">${ev.artist}</h2></div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderShop() {
-            const container = document.getElementById('shopContainer');
-            if(!container) return;
-            container.innerHTML = shopEvents.map((ev, i) => `
-                <div class="fade-in-up flex items-center justify-between p-4 bg-gray-900/40 border border-white/5 rounded-2xl hover:bg-gray-800 transition cursor-pointer group"
-                     style="animation-delay: ${i*0.03}s" onclick='window.openBuyModal(${JSON.stringify(ev)})'>
-                    <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 bg-gray-800 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-pink-300/50 transition">
-                            <span class="text-sm font-bold text-white">${ev.date.split(' ')[0]}</span>
-                            <span class="text-[9px] uppercase text-gray-500 font-bold">${ev.date.split(' ')[1]}</span>
-                        </div>
-                        <div><h4 class="font-bold text-white text-lg">${ev.artist}</h4><span class="text-[10px] font-bold text-pink-300 bg-pink-300/10 px-2 py-0.5 rounded">${ev.price} Dupas</span></div>
-                    </div>
-                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition"><i class="fas fa-plus text-xs"></i></button>
-                </div>
-            `).join('');
-        }
-
-        // Lógica de Compra Conectada
+        // Conectar lógica real de Firebase a la función global
         window.confirmPurchase = async () => {
-            // ... (Lógica de compra igual a versiones anteriores, usando `doc` y `updateDoc` importados arriba)
-            // Nota: Al estar dentro del module, necesitamos acceder a las variables globales o pasar parametros.
-            // Para simplificar en este fix, asumimos que selectedShopEvent es global o manejado aqui.
-            // *Implementación simplificada para que funcione:*
-            const selectedEvent = JSON.parse(localStorage.getItem('tempSelectedEvent')); // Hack simple
-            
+            if(!selectedShopEvent) return;
+            // Usamos un valor de Dupas global simulado o leemos del DOM para validación rápida
+            // En producción, esto validaría contra el objeto de usuario real
             showLoader(true);
             try {
-                // Simulación exitosa para UI (Ya que firebase real requiere auth completa en modulo estricto)
-                // En producción real esto va con await updateDoc...
+                const userRef = doc(db, "users", USER_ID);
+                const userSnap = await getDoc(userRef);
+                const currentUser = userSnap.exists() ? userSnap.data() : { dupas: 0, invested: 0 };
+
+                if (currentUser.dupas < selectedShopEvent.price) { 
+                    alert("Fondos insuficientes."); 
+                    showLoader(false); 
+                    return; 
+                }
+
+                await updateDoc(userRef, { dupas: currentUser.dupas - selectedShopEvent.price, invested: currentUser.invested + (selectedShopEvent.price * 1000) });
+                await addDoc(collection(db, "tickets"), { userId: USER_ID, artist: selectedShopEvent.artist, date: selectedShopEvent.date, venue: selectedShopEvent.venue, city: "Manizales", color: "from-purple-900 to-black" });
                 
-                // Agregamos visualmente para feedback inmediato
-                const ticketsRef = collection(db, "tickets");
-                await addDoc(ticketsRef, { 
-                    userId: USER_ID, 
-                    artist: selectedEvent.artist, 
-                    date: selectedEvent.date, 
-                    venue: selectedEvent.venue, 
-                    city: "Manizales", 
-                    color: "from-purple-900 to-black" 
-                });
+                showLoader(false); 
+                closeBuyModal(); 
+                switchTab('home'); 
+                alert("¡Compra exitosa!");
+            } catch (error) { console.error(error); showLoader(false); alert("Error de conexión"); }
+        };
 
-                showLoader(false); 
-                window.closeBuyModal(); 
-                window.switchTab('home'); 
-                alert("¡Compra exitosa! Ticket añadido.");
-            } catch (error) { 
-                console.error(error); 
-                showLoader(false); 
-                alert("Error de conexión"); 
+        // Escuchar datos reales
+        const userRef = doc(db, "users", USER_ID);
+        onSnapshot(userRef, (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                document.querySelectorAll('#displayDupas').forEach(el => el.innerText = data.dupas.toLocaleString());
+                const inv = document.getElementById('statInvested');
+                if(inv) inv.innerText = '$' + (data.invested / 1000000).toFixed(1) + 'M';
             }
-        };
-        
-        // Helper para pasar evento al click
-        window.openBuyModal = (ev) => {
-            if(typeof ev === 'string') ev = JSON.parse(ev);
-            localStorage.setItem('tempSelectedEvent', JSON.stringify(ev)); // Guardar temp
-            
-            document.getElementById('buyArtist').innerText = ev.artist;
-            document.getElementById('buyPrice').innerText = ev.price;
-            document.getElementById('buyDate').innerText = ev.date;
-            document.getElementById('buyDesc').innerText = ev.desc;
-            
-            const modal = document.getElementById('buyModal');
-            const sheet = document.getElementById('buySheetContent');
-            modal.classList.remove('hidden');
-            setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
-        };
+        });
 
-        function showLoader(show) {
-            const l = document.getElementById('cloudLoader');
-            if(show) l.classList.remove('hidden'); else l.classList.add('hidden');
-        }
+        const q = query(collection(db, "tickets"), where("userId", "==", USER_ID));
+        onSnapshot(q, (snapshot) => {
+            const tickets = [];
+            snapshot.forEach((doc) => tickets.push({ id: doc.id, ...doc.data() }));
+            
+            // Re-renderizar tickets con datos reales
+            const container = document.getElementById('ticketsContainer');
+            if (tickets.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs">No hay tickets aún.</p>';
+            } else {
+                container.innerHTML = tickets.map(ev => `
+                    <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
+                         onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
+                            <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
+                            <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
+                        </div>
+                        <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
+                        <div class="absolute inset-0 p-6 flex flex-col justify-between z-10">
+                            <div class="flex justify-between items-start">
+                                <div><span class="text-4xl font-black text-white leading-none tracking-tighter block">${ev.date.split(' ')[0]}</span><span class="text-xs font-bold text-white/60 tracking-widest uppercase">${ev.date.split(' ')[1]}</span></div>
+                                 <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm"><i class="fas fa-arrow-right text-white text-xs -rotate-45 group-hover:rotate-0 transition-transform"></i></div>
+                            </div>
+                            <div><p class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">${ev.city || 'Event'}</p><h2 class="text-2xl font-black text-white leading-tight">${ev.artist}</h2></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
+        });
 
-        // Arrancar
-        initApp();
+        // Ocultar splash cuando Firebase esté listo (o dejar que el timer lo haga)
+        // setTimeout(() => document.getElementById('splashScreen').style.display = 'none', 2000); 
     </script>
 </body>
 </html>
