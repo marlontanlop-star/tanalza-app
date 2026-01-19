@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
     
     <style>
-        /* --- TUS VARIABLES Y ESTILOS DEL LOGO LOOP --- */
         :root {
             --bg-color: #000000;
             --logo-color: #ffffff;
@@ -20,26 +19,45 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* Animaciones Loop (Tu código integrado) */
+        /* --- TUS ANIMACIONES DEL LOGO EXACTAS --- */
         .stroke-anim {
-            fill: none; stroke: var(--logo-color); stroke-width: 4;
-            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            fill: none;
+            stroke: var(--logo-color);
+            stroke-width: 4; /* Ajustado para pantallas pequeñas */
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
             animation: drawIn 2s ease-out forwards;
         }
         .loop-capsule {
-            fill: none; stroke: var(--logo-color); stroke-width: 4;
-            stroke-linecap: round; animation: drawIn 2.5s ease-out forwards;
+            fill: none;
+            stroke: var(--logo-color);
+            stroke-width: 6; /* Ajustado */
+            stroke-linecap: round;
+            animation: drawIn 2.5s ease-out forwards;
         }
         .loop-glow {
-            fill: none; stroke: var(--accent-color); stroke-width: 3;
-            stroke-linecap: round; stroke-dasharray: 50, 150;
-            opacity: 0; animation: rotateGlow 3s linear infinite, fadeIn 2s forwards 1s;
+            fill: none;
+            stroke: var(--accent-color);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-dasharray: 50, 150;
+            opacity: 0;
+            animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s;
         }
-        .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
-        .subtext { font-family: 'Inter', sans-serif; font-size: 14px; fill: #888; opacity: 0; animation: fadeIn 1s ease-out forwards 2s; }
+        .fill-final {
+            fill: rgba(255,255,255,0);
+            animation: fillWhite 1s ease-in forwards 1.5s;
+        }
+        .subtext {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            fill: #888;
+            opacity: 0;
+            animation: fadeIn 1s ease-out forwards 2.2s;
+        }
 
         @keyframes drawIn { to { stroke-dashoffset: 0; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes rotateGlow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
         @keyframes fillWhite { to { fill: rgba(255,255,255,1); } }
 
@@ -53,7 +71,7 @@
         .profile-upload:hover .overlay { opacity: 1; }
         #cloudLoader { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
         
-        /* Map styles */
+        /* Stats & Map */
         .map-node { fill: #ffb6c1; animation: pulse-node 2s infinite; }
         .map-line { stroke-dasharray: 10; animation: dash 30s linear infinite; stroke: #ffb6c1; }
         @keyframes pulse-node { 0% { r: 2; opacity: 1; } 50% { r: 4; opacity: 0.5; } 100% { r: 2; opacity: 1; } }
@@ -61,27 +79,27 @@
     </style>
 
     <script>
-        // Lógica Global UI (Botones estables)
         window.switchTab = function(tab) {
             ['viewHome', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('text-white', 'text-pink-300');
                 btn.classList.add('text-gray-600');
             });
-            
             const activeView = tab === 'home' ? 'viewHome' : tab === 'shop' ? 'viewShop' : 'viewProfile';
             const activeBtn = tab === 'home' ? 'btnHome' : tab === 'shop' ? 'btnShop' : 'btnProfile';
-            
             document.getElementById(activeView).classList.remove('hidden');
-            const btn = document.getElementById(activeBtn);
-            btn.classList.remove('text-gray-600');
-            btn.classList.add(tab === 'shop' ? 'text-pink-300' : 'text-white');
+            document.getElementById(activeBtn).classList.remove('text-gray-600');
+            document.getElementById(activeBtn).classList.add(tab === 'shop' ? 'text-pink-300' : 'text-white');
         };
 
         window.openTicket = function(artist, venue, date) {
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
-            document.getElementById('modalDate').innerText = date || "Fecha Pendiente";
+            document.getElementById('modalDate').innerText = date || "20 FEB 2026";
+            // Generar datos aleatorios para que se vea complejo
+            document.getElementById('modalPurchaseDate').innerText = "15 ENE 2026";
+            document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 8).toUpperCase();
+            
             document.getElementById('ticketModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         };
@@ -121,16 +139,16 @@
 <body class="pb-32">
 
     <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <svg width="300" height="120" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+        <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
             <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="12" stroke-linecap="round"/>
-            <circle class="stroke-anim" cx="180" cy="115" r="25" stroke-width="10"/>
-            <rect class="loop-capsule" x="225" y="90" width="100" height="50" rx="25" stroke-width="8"/>
-            <rect class="loop-glow" x="225" y="90" width="100" height="50" rx="25" stroke-width="6"/>
+            <circle class="stroke-anim" cx="160" cy="115" r="25" stroke-width="10"/>
+            <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="8" />
+            <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="6" />
             <g class="fill-final">
-                <path class="stroke-anim" d="M350 90 V160" stroke-width="12" stroke-linecap="round"/>
-                <circle class="stroke-anim" cx="370" cy="115" r="25" stroke-width="10"/>
+                <path class="stroke-anim" d="M340 100 V150" stroke-width="12" stroke-linecap="round"/>
+                <circle class="stroke-anim" cx="360" cy="115" r="25" stroke-width="10"/>
             </g>
-            <text x="390" y="155" class="subtext" text-anchor="end">By TanAlza</text>
+            <text x="325" y="155" class="subtext" text-anchor="end">By TanAlza</text>
         </svg>
         <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando</p>
     </div>
@@ -139,11 +157,12 @@
         <div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <header class="fixed top-0 w-full z-40 bg-black/80 backdrop-blur-md px-6 py-4 flex justify-end items-center border-b border-white/5">
-        <div class="w-10 h-10 rounded-full bg-gray-800 border border-white/10 overflow-hidden cursor-pointer shadow-lg hover:scale-105 transition" onclick="window.switchTab('profile')">
-             <img class="w-full h-full object-cover hidden avatar-img" src="">
-             <div class="w-full h-full flex items-center justify-center bg-gray-900 text-gray-400 avatar-placeholder"><i class="fas fa-user"></i></div>
+    <header class="fixed top-0 w-full z-40 bg-black/80 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-white/5">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Online</span>
         </div>
+        <button class="text-gray-400 hover:text-white"><i class="fas fa-bell"></i></button>
     </header>
 
     <main class="mt-20 px-4 max-w-md mx-auto min-h-screen relative">
@@ -152,20 +171,19 @@
             
             <div class="flex items-center justify-between pt-4 pb-2">
                 <div class="text-left fade-in" style="animation-delay: 0.3s;">
-                     <svg width="140" height="55" viewBox="0 0 500 200" fill="none">
+                     <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
                         <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="15" stroke-linecap="round"/>
-                        <circle class="stroke-anim" cx="180" cy="115" r="30" stroke-width="12"/>
-                        <rect class="loop-capsule" x="230" y="85" width="110" height="60" rx="30" stroke-width="10"/>
-                        <rect class="loop-glow" x="230" y="85" width="110" height="60" rx="30" stroke-width="8"/>
+                        <circle class="stroke-anim" cx="160" cy="115" r="30" stroke-width="12"/>
+                        <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="10" />
+                        <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="8" />
                         <g class="fill-final">
-                            <path class="stroke-anim" d="M370 85 V160" stroke-width="15" stroke-linecap="round"/>
-                            <circle class="stroke-anim" cx="390" cy="115" r="30" stroke-width="12"/>
+                            <path class="stroke-anim" d="M340 100 V150" stroke-width="15" stroke-linecap="round"/>
+                            <circle class="stroke-anim" cx="360" cy="115" r="30" stroke-width="12"/>
                         </g>
                     </svg>
-                    <p class="text-[9px] text-gray-400 font-medium tracking-widest uppercase ml-8 -mt-2">By TanAlza</p>
                 </div>
                 
-                <div class="flex flex-col items-end gap-3">
+                <div class="flex flex-col items-end gap-2">
                     <div class="relative w-14 h-14 rounded-full border-2 border-pink-300 p-0.5 cursor-pointer profile-upload group" onclick="document.getElementById('photoInputHome').click()">
                         <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
                             <img class="w-full h-full object-cover hidden avatar-img" src="">
@@ -175,12 +193,10 @@
                     </div>
                     <input type="file" id="photoInputHome" hidden accept="image/*" onchange="window.handlePhotoUpload(this)">
 
-                    <div class="text-right">
-                        <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-1 flex items-center gap-2 backdrop-blur-md ml-auto w-fit">
-                            <span class="w-1.5 h-1.5 rounded-full bg-pink-300 animate-pulse"></span>
-                            <span class="text-sm font-bold text-white" id="displayDupas">...</span>
-                            <span class="text-[9px] font-bold text-pink-300 uppercase tracking-widest">Dupas</span>
-                        </div>
+                    <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-1 flex items-center gap-2 backdrop-blur-md">
+                        <span class="w-1.5 h-1.5 rounded-full bg-pink-300"></span>
+                        <span class="text-sm font-bold text-white" id="displayDupas">...</span>
+                        <span class="text-[9px] font-bold text-pink-300 uppercase tracking-widest">Dupas</span>
                     </div>
                 </div>
             </div>
@@ -189,7 +205,7 @@
 
             <div class="flex items-end justify-between px-2">
                 <h2 class="text-2xl font-black text-white">Mis Eventos</h2>
-                <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> TICKETS</span>
+                <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> ACTIVOS</span>
             </div>
             
             <div id="ticketsContainer" class="insta-grid pb-10">
@@ -257,49 +273,72 @@
     </main>
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
-        <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90">
+        <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[80vh]">
              
-            <div class="relative z-10 flex flex-col items-center text-center">
-                <div class="w-full border-b border-white/10 pb-4 mb-6">
-                    <h2 class="text-2xl font-black text-white leading-tight mb-1" id="modalArtist">Artist</h2>
-                    <p class="text-pink-300 text-sm font-bold" id="modalVenue">Venue</p>
-                    <p class="text-gray-500 text-xs mt-1" id="modalDate">Date</p>
-                </div>
-                
-                <div class="relative w-56 h-56 flex items-center justify-center mb-6">
-                    <svg class="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100" style="animation: spin 10s linear infinite;">
+            <div class="bg-white/5 p-6 border-b border-white/10 text-center">
+                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2">
+                    <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="15" stroke-linecap="round"/>
+                    <circle class="stroke-anim" cx="160" cy="115" r="30" stroke-width="12"/>
+                    <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="10" />
+                    <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="8" />
+                    <g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="15"/><circle cx="360" cy="115" r="30" stroke="white" stroke-width="12"/></g>
+                </svg>
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest">Official Smart Ticket</p>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1 no-scrollbar">
+                <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
+                <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
+
+                <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center">
+                    <svg class="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100" style="animation: spin 8s linear infinite;">
                         <defs>
-                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <linearGradient id="gradTicket" x1="0%" y1="0%" x2="100%" y2="0%">
                                 <stop offset="0%" style="stop-color:#ffb6c1;stop-opacity:1" />
                                 <stop offset="100%" style="stop-color:#000;stop-opacity:0" />
                             </linearGradient>
                         </defs>
-                        <circle cx="50" cy="50" r="48" stroke="url(#grad1)" stroke-width="1" fill="none" stroke-dasharray="100 150" />
-                        <circle cx="50" cy="50" r="44" stroke="#ffb6c1" stroke-width="0.5" fill="none" opacity="0.3" />
+                        <path d="M50 10 A 40 40 0 0 1 50 90 A 40 40 0 0 1 50 10" stroke="url(#gradTicket)" stroke-width="1" fill="none" stroke-dasharray="20 10"/>
                     </svg>
                     
-                    <div class="bg-white p-3 rounded-xl w-40 h-40 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.2)]">
-                        <i class="fas fa-qrcode text-8xl text-black"></i>
+                    <div class="bg-white p-3 rounded-xl w-44 h-44 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.3)]">
+                        <i class="fas fa-qrcode text-9xl text-black"></i>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-2 gap-4 w-full text-left bg-white/5 p-4 rounded-xl border border-white/5">
+
+                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left">
                     <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider">Zona</p>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha Evento</p>
+                        <p class="font-bold text-white text-sm" id="modalDate">Date</p>
+                    </div>
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora Acceso</p>
+                        <p class="font-bold text-white text-sm">22:00 PM</p>
+                    </div>
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Dress Code</p>
+                        <p class="font-bold text-pink-300 text-sm">Black Minimal</p>
+                    </div>
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p>
                         <p class="font-bold text-white text-sm">VIP Backstage</p>
                     </div>
                     <div>
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider">Puerta</p>
-                        <p class="font-bold text-white text-sm">G-04</p>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Comprado El</p>
+                        <p class="font-bold text-gray-300 text-xs" id="modalPurchaseDate">...</p>
                     </div>
-                    <div class="col-span-2 border-t border-white/5 pt-2 mt-1">
-                        <p class="text-[8px] text-gray-500 uppercase tracking-wider">ID Seguridad</p>
-                        <p class="font-mono text-pink-300 text-[10px]">#LP-8829-SECURE-HASH</p>
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p>
+                        <p class="font-bold text-white text-sm">G-01</p>
                     </div>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-white/10">
+                    <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH_GENERATING...</p>
                 </div>
             </div>
         </div>
-        <button onclick="window.closeTicket()" class="mt-8 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times text-xl"></i></button>
+        <button onclick="window.closeTicket()" class="mt-4 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times"></i></button>
     </div>
 
     <div id="buyModal" class="fixed inset-0 z-[150] hidden">
@@ -395,14 +434,14 @@
                 <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
                      onclick="window.openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
                     
-                    <div class="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity">
-                        <svg width="200" height="80" viewBox="0 0 500 200" fill="none">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
+                        <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
                             <path d="M100 80 V135 H135" stroke="white" stroke-width="15" stroke-linecap="round"/>
-                            <circle cx="180" cy="115" r="30" stroke="white" stroke-width="12"/>
-                            <rect x="230" y="85" width="110" height="60" rx="30" stroke="white" stroke-width="10"/>
+                            <circle cx="160" cy="115" r="25" stroke="white" stroke-width="12"/>
+                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="10" fill="none"/>
                             <g>
-                                <path d="M370 85 V160" stroke="white" stroke-width="15" stroke-linecap="round"/>
-                                <circle cx="390" cy="115" r="30" stroke="white" stroke-width="12"/>
+                                <path d="M340 100 V150" stroke="white" stroke-width="15" stroke-linecap="round"/>
+                                <circle cx="360" cy="115" r="25" stroke="white" stroke-width="12"/>
                             </g>
                         </svg>
                     </div>
