@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Loop ID - Master Final</title>
     
-    <meta http-equiv="Access-Control-Allow-Origin" content="*">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -51,9 +49,8 @@
             outline: none; 
             transition: 0.3s; 
         }
-        .login-input:focus { border-color: var(--accent-color); background: rgba(255,255,255,0.1); }
 
-        /* Animaciones SVG */
+        /* --- ANIMACIONES ORIGINALES --- */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
@@ -67,21 +64,12 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Estilos Mapa y Wallet */
+        /* --- MAPA Y RUTAS --- */
         .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
         .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: 1.5; stroke-linecap: round; }
         .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
-        .airport-node { fill: var(--pink-accent); }
-        .airport-pulse { fill: var(--pink-accent); transform-origin: center; animation: pulseRing 2.5s ease-out infinite; }
-        .iata-code { fill: #fff; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; letter-spacing: 2px; opacity: 0; animation: fadeIn 1s forwards 2.5s; }
         
-        @keyframes drawPath { to { stroke-dashoffset: 0; } }
-        @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
-        @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
-
-        .nfc-active { animation: nfcPulse 1.5s infinite; }
-        @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
-        
+        /* --- ESTILOS DE TARJETAS WALLET --- */
         .card-titanium { background: radial-gradient(circle at 0% 0%, #4b5563 0%, #1f2937 50%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); }
         .card-evva { background: radial-gradient(circle at 100% 0%, #ef4444 0%, #7f1d1d 60%, #450a0a 100%); border: 1px solid rgba(239, 68, 68, 0.3); }
         .card-dupass { background: radial-gradient(circle at 50% 0%, #34d399 0%, #059669 50%, #064e3b 100%); border: 1px solid rgba(52, 211, 153, 0.3); }
@@ -89,54 +77,59 @@
         .modal-evva { background: radial-gradient(circle at 50% 0%, #991b1b 0%, #000000 80%); }
         .modal-dupass { background: radial-gradient(circle at 50% 0%, #065f46 0%, #000000 80%); }
 
-        .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
-        
-        /* FEED INSTAGRAM TICKETS */
+        /* --- DISEÑO FEED INSTAGRAM PARA TICKETS --- */
         .insta-grid { 
             display: grid; 
             grid-template-columns: repeat(3, 1fr); 
-            gap: 2px; 
+            gap: 3px; 
             width: 100%;
         }
-        .insta-ticket-item {
+        .insta-item {
             aspect-ratio: 1/1;
             position: relative;
-            background-color: #111;
             overflow: hidden;
+            border-radius: 4px;
+            background: #111;
         }
-        .insta-watermark {
+        .insta-item img {
+            width: 100%;
+            height: 100%;
+            object-cover: cover;
+        }
+        .insta-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* MARCA DE AGUA EN TICKET COMPRADO */
+        .watermark-text {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 8px;
+            font-size: 1.5rem;
             font-weight: 900;
-            color: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.05);
             white-space: nowrap;
             pointer-events: none;
+            z-index: 10;
         }
-
-        #cloudLoader { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
     </style>
 
     <script>
-        // --- 1. FIREBASE CONFIG ---
+        // --- CONFIG FIREBASE ---
         const firebaseConfig = { apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc", authDomain: "tanalza-app.firebaseapp.com", projectId: "tanalza-app", storageBucket: "tanalza-app.firebasestorage.app", messagingSenderId: "458130807177", appId: "1:458130807177:web:cde4e0d147c937b4542958" };
-        
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch(e) { console.error("Firebase Init Error", e); }
-
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // --- 2. GLOBALES ---
-        let selectedShopEvent = null;
         let currentUserUID = null;
         let purchasedEventIds = [];
-        let currentUserName = "Usuario";
 
-        // --- 3. INICIO ---
         window.onload = function() {
             loadSavedPhoto();
             auth.onAuthStateChanged((user) => {
@@ -147,44 +140,26 @@
                     document.getElementById('appContainer').classList.remove('hidden');
                     initUserData(user.uid);
                 } else {
-                    currentUserUID = null;
                     document.getElementById('viewLogin').classList.remove('hidden');
                     document.getElementById('appContainer').classList.add('hidden');
                 }
-                if(splash) { setTimeout(() => splash.style.display = 'none', 1000); }
+                setTimeout(() => splash.style.display = 'none', 1500);
             });
         };
 
-        function handleLogin() {
-            const email = document.getElementById('loginEmail').value;
-            const pass = document.getElementById('loginPass').value;
-            if(!email || !pass) return;
-            showLoader(true);
-            auth.signInWithEmailAndPassword(email, pass)
-                .then(() => { showLoader(false); })
-                .catch((error) => {
-                    showLoader(false);
-                    document.getElementById('loginError').classList.remove('hidden');
-                    document.getElementById('loginError').innerText = "Error: " + error.message;
-                });
-        }
-
-        function handleLogout() { auth.signOut(); }
-
         function initUserData(uid) {
-            db.collection("users").doc(uid).onSnapshot((docSnap) => {
-                if (docSnap.exists) {
-                    const data = docSnap.data();
-                    currentUserName = data.name || "Usuario";
-                    document.querySelectorAll('#displayDupas').forEach(el => el.innerText = (data.dupas || 0).toLocaleString());
-                    document.getElementById('displayUserName').innerText = currentUserName;
-                    document.getElementById('profileUserName').innerText = currentUserName;
-                    const inv = document.getElementById('statInvested');
-                    if(inv) inv.innerText = '$' + ((data.invested || 0) / 1000000).toFixed(1) + 'M';
+            // Datos de Usuario
+            db.collection("users").doc(uid).onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    document.getElementById('displayUserName').innerText = data.name || "Usuario";
+                    document.getElementById('profileUserName').innerText = data.name || "Usuario";
+                    document.getElementById('displayDupas').innerText = (data.dupas || 0).toLocaleString();
+                    document.getElementById('statInvested').innerText = '$' + ((data.invested || 0) / 1000000).toFixed(1) + 'M';
                 }
             });
 
-            // Tickets logic
+            // Tickets (Carga dinámica de imágenes del Admin)
             db.collection("tickets").where("userId", "==", uid).onSnapshot((snapshot) => {
                 const container = document.getElementById('ticketsContainer');
                 container.innerHTML = '';
@@ -196,361 +171,274 @@
                     purchasedEventIds.push(t.artist);
                     count++;
 
-                    const item = document.createElement('div');
-                    item.className = "insta-ticket-item cursor-pointer";
-                    item.onclick = () => openTicket(t.artist, t.venue, t.date, t.seat, t.image, t.dressCode || "Black Minimal");
-                    
-                    item.innerHTML = `
-                        <img src="${t.image || ''}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/300/000000/FFFFFF?text=EVENT'">
-                        <div class="insta-watermark">LOOP BY TANALZA</div>
-                        <div class="absolute bottom-1 right-1 bg-black/50 px-1 rounded text-[7px] text-white font-bold">${t.seat}</div>
+                    // Creación del item estilo Instagram
+                    const div = document.createElement('div');
+                    div.className = "insta-item cursor-pointer active:scale-95 transition-transform";
+                    div.onclick = () => openTicket(t);
+                    div.innerHTML = `
+                        <img src="${t.image || 'https://via.placeholder.com/300'}" alt="event">
+                        <div class="insta-overlay"><i class="fas fa-ticket-alt text-white/30 text-xs"></i></div>
                     `;
-                    container.appendChild(item);
+                    container.appendChild(div);
                 });
-
-                document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = count);
+                document.getElementById('ticketCount').innerText = count;
+                document.getElementById('statTicketCount').innerText = count;
                 initShopLive();
             });
         }
 
+        // --- TIENDA ---
         function initShopLive() {
-            const container = document.getElementById('shopContainer');
+            const shop = document.getElementById('shopContainer');
             db.collection("events").orderBy("order").onSnapshot((snapshot) => {
-                container.innerHTML = '';
+                shop.innerHTML = '';
                 snapshot.forEach((doc) => {
                     const ev = doc.data();
                     if(purchasedEventIds.includes(ev.artist)) return;
 
-                    const card = document.createElement('div');
-                    card.className = "fade-in-up w-full h-40 rounded-2xl relative overflow-hidden mb-4 cursor-pointer border border-white/10";
-                    card.style.backgroundImage = `url('${ev.image}')`;
-                    card.style.backgroundSize = "cover";
-                    card.style.backgroundPosition = "center";
-                    card.onclick = () => openBuyModal(JSON.stringify(ev));
-
-                    card.innerHTML = `
-                        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
-                        <div class="absolute bottom-0 w-full p-4 flex justify-between items-end">
-                            <div>
-                                <span class="bg-pink-500/80 backdrop-blur-md text-white text-[9px] font-bold px-2 py-0.5 rounded mb-1 inline-block">${ev.date}</span>
-                                <h4 class="font-bold text-white text-xl leading-none">${ev.artist}</h4>
-                                <p class="text-[10px] text-gray-300 uppercase">${ev.venue}</p>
+                    const card = `
+                        <div class="fade-in-up w-full h-44 rounded-3xl relative overflow-hidden mb-4 border border-white/10" 
+                             style="background-image: url('${ev.image}'); background-size: cover; background-position: center;"
+                             onclick="openBuyModal('${encodeURIComponent(JSON.stringify(ev))}')">
+                            <div class="absolute inset-0 bg-black/40"></div>
+                            <div class="absolute bottom-4 left-6">
+                                <h4 class="text-xl font-black">${ev.artist}</h4>
+                                <p class="text-[10px] text-pink-300 font-bold uppercase tracking-widest">${ev.venue}</p>
                             </div>
-                            <div class="text-right">
-                                <span class="text-lg font-black text-emerald-400 block">${ev.price}</span>
-                                <span class="text-[8px] text-gray-400 font-bold uppercase">DUPAS</span>
+                            <div class="absolute bottom-4 right-6 text-right">
+                                <p class="text-lg font-black text-emerald-400">${ev.price}</p>
+                                <p class="text-[8px] text-gray-400 font-bold">DUPAS</p>
                             </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
+                        </div>`;
+                    shop.innerHTML += card;
                 });
             });
         }
 
-        function openTicket(artist, venue, date, seat, image, dressCode) {
-            document.getElementById('modalArtist').innerText = artist;
-            document.getElementById('modalVenue').innerText = venue;
-            document.getElementById('modalDate').innerText = date;
-            document.getElementById('modalSeat').innerText = seat;
-            document.getElementById('modalUser').innerText = currentUserName.toUpperCase();
-            document.getElementById('modalDressCode').innerText = dressCode;
-            document.getElementById('modalHash').innerText = "SECURE_0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
-            
-            const header = document.getElementById('ticketModalHeader');
-            header.style.backgroundImage = `url('${image}')`;
-            header.style.backgroundSize = 'cover';
-            header.style.backgroundPosition = 'center';
-
-            generateComplexQR(artist, seat);
-            document.getElementById('ticketModal').classList.remove('hidden');
-        }
-
-        function generateComplexQR(artist, seat) {
-            const svg = document.getElementById('complexQrSvg');
-            let content = '';
-            // Generar cuadrícula de "Seguridad Doble"
-            for(let i=0; i<20; i++) {
-                for(let j=0; j<20; j++) {
-                    if ((i < 7 && j < 7) || (i > 12 && j < 7) || (i < 7 && j > 12)) continue;
-                    if(Math.random() > 0.45) {
-                        content += `<rect x="${i*9 + 10}" y="${j*9 + 10}" width="7" height="7" fill="black" />`;
-                    }
-                }
-            }
-            // Marcadores de posición QR Estándar
-            const markers = [
-                {x: 10, y: 10}, {x: 127, y: 10}, {x: 10, y: 127}
-            ];
-            markers.forEach(m => {
-                content += `<rect x="${m.x}" y="${m.y}" width="63" height="63" fill="black" />`;
-                content += `<rect x="${m.x+9}" y="${m.y+9}" width="45" height="45" fill="white" />`;
-                content += `<rect x="${m.x+18}" y="${m.y+18}" width="27" height="27" fill="black" />`;
-            });
-            svg.innerHTML = content;
-        }
-
+        // --- COMPRA ---
         function confirmPurchase() {
-            if(!selectedShopEvent || !currentUserUID) return;
+            const ev = JSON.parse(decodeURIComponent(window.selectedEventRaw));
             showLoader(true);
             const userRef = db.collection("users").doc(currentUserUID);
-            
-            userRef.get().then((docSnap) => {
-                const userData = docSnap.data();
-                if (userData.dupas < selectedShopEvent.price) { 
-                    alert("Fondos insuficientes."); showLoader(false); return; 
-                }
-                
-                // GENERAR ASIENTO AA1 - ZX99
+
+            userRef.get().then(doc => {
+                const data = doc.data();
+                if(data.dupas < ev.price) { alert("Fondos insuficientes"); showLoader(false); return; }
+
+                // GENERADOR DE ASIENTO AA1 - ZX99
                 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-                const L1 = letters[Math.floor(Math.random() * 26)];
-                const L2 = letters[Math.floor(Math.random() * 26)];
-                const num = Math.floor(Math.random() * 99) + 1;
-                const seatCode = `${L1}${L2} ${num}`;
+                const row = letters[Math.floor(Math.random()*26)] + letters[Math.floor(Math.random()*26)];
+                const num = Math.floor(Math.random()*99) + 1;
+                const seat = `${row} ${num}`;
 
                 userRef.update({ 
-                    dupas: userData.dupas - selectedShopEvent.price, 
-                    invested: (userData.invested || 0) + (selectedShopEvent.price * 1000) 
+                    dupas: data.dupas - ev.price,
+                    invested: (data.invested || 0) + (ev.price * 1000)
                 }).then(() => {
-                    db.collection("tickets").add({ 
-                        userId: currentUserUID, 
-                        artist: selectedShopEvent.artist, 
-                        date: selectedShopEvent.date, 
-                        venue: selectedShopEvent.venue, 
-                        image: selectedShopEvent.image, 
-                        seat: seatCode,
-                        dressCode: selectedShopEvent.dressCode || "Black Minimal",
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    db.collection("tickets").add({
+                        userId: currentUserUID,
+                        artist: ev.artist,
+                        image: ev.image,
+                        date: ev.date,
+                        venue: ev.venue,
+                        seat: seat,
+                        dressCode: "BLACK MINIMAL",
+                        userName: data.name
                     }).then(() => {
-                        showLoader(false); closeBuyModal(); switchTab('home');
-                        alert("¡Ticket Adquirido! Asiento: " + seatCode);
+                        showLoader(false);
+                        closeBuyModal();
+                        switchTab('home');
                     });
                 });
             });
         }
 
-        function openBuyModal(evJson) {
-            const ev = JSON.parse(evJson);
-            selectedShopEvent = ev;
+        // --- MODAL TICKET (EL QUE SE VE BONITO) ---
+        function openTicket(t) {
+            document.getElementById('modalArtist').innerText = t.artist;
+            document.getElementById('modalVenue').innerText = t.venue;
+            document.getElementById('modalDate').innerText = t.date;
+            document.getElementById('modalSeat').innerText = t.seat;
+            document.getElementById('modalDress').innerText = t.dressCode || "BLACK MINIMAL";
+            document.getElementById('modalUserName').innerText = (t.userName || "USUARIO").toUpperCase();
+            
+            const header = document.getElementById('ticketHeader');
+            header.style.backgroundImage = `url('${t.image}')`;
+            header.style.backgroundSize = "cover";
+            header.style.backgroundPosition = "center";
+
+            generateComplexQR();
+            document.getElementById('ticketModal').classList.remove('hidden');
+        }
+
+        function generateComplexQR() {
+            const svg = document.getElementById('qrSvg');
+            let dots = '';
+            for(let i=0; i<18; i++) {
+                for(let j=0; j<18; j++) {
+                    if((i<6 && j<6) || (i>11 && j<6) || (i<6 && j>11)) continue;
+                    if(Math.random() > 0.4) dots += `<rect x="${i*10+10}" y="${j*10+10}" width="7" height="7" fill="black"/>`;
+                }
+            }
+            // Cuadros de seguridad
+            const s = `<rect x="10" y="10" width="50" height="50" fill="black"/><rect x="20" y="20" width="30" height="30" fill="white"/><rect x="25" y="25" width="20" height="20" fill="black"/>`;
+            svg.innerHTML = dots + s + s.replace(/10/g, "140") + s.replace(/10/g, "10").replace(/y="10"/, 'y="140"');
+        }
+
+        // --- NAVEGACIÓN Y HELPERS ---
+        function switchTab(t) {
+            ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById('view' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('hidden');
+        }
+        function openBuyModal(raw) {
+            window.selectedEventRaw = raw;
+            const ev = JSON.parse(decodeURIComponent(raw));
             document.getElementById('buyArtist').innerText = ev.artist;
             document.getElementById('buyPrice').innerText = ev.price;
-            document.getElementById('buyDate').innerText = ev.date;
-            document.getElementById('buyDesc').innerText = ev.desc || "Acceso exclusivo a evento seleccionado.";
-            document.getElementById('buyHeader').style.backgroundImage = `url('${ev.image}')`;
-            
             document.getElementById('buyModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('buySheetContent').classList.remove('translate-y-full'), 10);
+            setTimeout(() => document.getElementById('buySheet').classList.remove('translate-y-full'), 10);
         }
-
-        function switchTab(tab) {
-            ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => {
-                document.getElementById(id).classList.replace('text-white', 'text-gray-600');
-                document.getElementById(id).classList.replace('text-pink-300', 'text-gray-600');
-            });
-            document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
-            const activeBtn = document.getElementById('btn' + tab.charAt(0).toUpperCase() + tab.slice(1));
-            activeBtn.classList.replace('text-gray-600', (tab==='shop'?'text-pink-300':'text-white'));
-        }
-
-        function closeTicket() { document.getElementById('ticketModal').classList.add('hidden'); }
-        function closeBuyModal() { 
-            document.getElementById('buySheetContent').classList.add('translate-y-full');
+        function closeBuyModal() {
+            document.getElementById('buySheet').classList.add('translate-y-full');
             setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
         }
-        function openWalletCard(type) {
-            const content = document.getElementById('walletModalContent');
-            const icon = document.getElementById('walletCardIcon');
-            content.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-all h-[70vh] border border-white/10";
-            if(type === 'titanium') { content.classList.add('modal-titanium'); document.getElementById('walletCardName').innerText="TITANIUM"; icon.className="fas fa-crown text-6xl text-white";}
-            else if(type === 'evva') { content.classList.add('modal-evva'); document.getElementById('walletCardName').innerText="EVVA RED"; icon.className="fas fa-fire text-6xl text-red-400";}
-            else { content.classList.add('modal-dupass'); document.getElementById('walletCardName').innerText="DUPASS PAY"; icon.className="fas fa-wifi text-6xl text-emerald-400 rotate-90";}
-            document.getElementById('walletModal').classList.remove('hidden');
+        function showLoader(s) { document.getElementById('cloudLoader').classList.toggle('hidden', !s); }
+        function loadSavedPhoto() { const img = localStorage.getItem('loopPfp'); if(img) document.querySelectorAll('.avatar-img').forEach(i => i.src = img); }
+        function handleLogin() { 
+            showLoader(true);
+            auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value, document.getElementById('loginPass').value)
+            .then(() => showLoader(false)).catch(e => { showLoader(false); alert(e.message); });
         }
-        function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
-        function showLoader(show) { document.getElementById('cloudLoader').classList.toggle('hidden', !show); }
-        function handlePhotoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { localStorage.setItem('loopPfp', e.target.result); updateAllAvatars(e.target.result); }; reader.readAsDataURL(input.files[0]); } }
-        function loadSavedPhoto() { const img = localStorage.getItem('loopPfp'); if(img) updateAllAvatars(img); }
-        function updateAllAvatars(src) { document.querySelectorAll('.avatar-img').forEach(i => {i.src=src; i.classList.remove('hidden');}); document.querySelectorAll('.avatar-placeholder').forEach(p => p.classList.add('hidden'));}
     </script>
 </head>
-<body class="pb-32 pt-6">
 
-    <div id="splashScreen" class="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center">
+<body>
+
+    <div id="splashScreen" class="fixed inset-0 z-[300] bg-black flex flex-col items-center justify-center">
         <svg width="300" height="120" viewBox="0 0 500 200">
             <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
             <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
             <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/>
             <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/>
-            <g class="fill-final">
-                <path d="M340 100 V150" stroke="white" stroke-width="6"/>
-                <circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/>
-            </g>
         </svg>
-        <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">By TanAlza</p>
+        <p class="text-white/20 tracking-[1em] text-[10px] mt-10 uppercase">Iniciando Loop</p>
     </div>
 
-    <div id="cloudLoader" class="fixed inset-0 z-[500] hidden flex items-center justify-center"><div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div></div>
+    <div id="cloudLoader" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/80"><div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div></div>
 
-    <div id="viewLogin" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-8 hidden">
-        <div class="w-full max-w-sm">
-            <h2 class="text-4xl font-black text-white mb-8 text-center tracking-tighter">LOOP ID</h2>
-            <input type="email" id="loginEmail" placeholder="Email" class="login-input mb-4">
-            <input type="password" id="loginPass" placeholder="Password" class="login-input mb-8">
-            <button onclick="handleLogin()" class="w-full py-4 bg-white text-black font-bold rounded-xl active:scale-95 transition">Ingresar</button>
-            <p id="loginError" class="text-red-500 text-xs text-center mt-4 hidden"></p>
-        </div>
+    <div id="viewLogin" class="fixed inset-0 z-50 bg-black flex flex-col justify-center p-10 hidden">
+        <h2 class="text-4xl font-black mb-10 tracking-tighter">LOOP ID</h2>
+        <input type="email" id="loginEmail" placeholder="Email" class="login-input mb-4">
+        <input type="password" id="loginPass" placeholder="Password" class="login-input mb-8">
+        <button onclick="handleLogin()" class="bg-white text-black font-bold py-4 rounded-xl">INGRESAR</button>
     </div>
 
-    <div id="appContainer" class="hidden">
-        <main class="px-4 max-w-md mx-auto min-h-screen">
-            <div id="viewHome" class="space-y-6 fade-in-up">
-                <div class="flex items-center justify-between pt-4">
-                    <h2 class="text-2xl font-black tracking-tighter">MIS EVENTOS</h2>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <p class="text-[10px] text-gray-500 uppercase font-bold" id="displayUserName">User</p>
-                            <p class="text-xs font-black text-pink-300" id="displayDupas">0</p>
-                        </div>
-                        <div class="w-10 h-10 rounded-full border border-pink-300 p-0.5" onclick="document.getElementById('photoInput').click()">
-                            <img src="" class="avatar-img hidden w-full h-full rounded-full object-cover">
-                            <div class="avatar-placeholder w-full h-full rounded-full bg-gray-800 flex items-center justify-center text-[10px]">?</div>
-                        </div>
-                        <input type="file" id="photoInput" hidden onchange="handlePhotoUpload(this)">
+    <div id="appContainer" class="hidden pb-32">
+        <main class="max-w-md mx-auto px-4 pt-6">
+            
+            <div id="viewHome" class="fade-in-up">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 id="displayUserName" class="text-2xl font-black">Usuario</h2>
+                        <p class="text-pink-300 text-[10px] font-bold tracking-widest uppercase">ID Master Final</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="displayDupas" class="text-xl font-black">0</p>
+                        <p class="text-[8px] text-gray-500 font-bold">DUPAS</p>
                     </div>
                 </div>
 
-                <div id="ticketsContainer" class="insta-grid rounded-xl overflow-hidden border border-white/5">
-                    </div>
+                <div class="mb-4 flex gap-8 border-b border-white/10 pb-4">
+                    <div class="text-center"><p id="ticketCount" class="font-black text-lg">0</p><p class="text-[9px] text-gray-500 uppercase">Eventos</p></div>
+                    <div class="text-center"><p class="font-black text-lg">2026</p><p class="text-[9px] text-gray-500 uppercase">Season</p></div>
+                </div>
+
+                <div id="ticketsContainer" class="insta-grid"></div>
             </div>
 
             <div id="viewWallet" class="hidden space-y-6 fade-in-up">
-                <h2 class="text-2xl font-black mt-4 px-2">WALLET</h2>
-                <div class="grid grid-cols-1 gap-4">
-                    <div class="card-dupass h-44 rounded-3xl p-6 relative cursor-pointer" onclick="openWalletCard('dupass')">
-                        <i class="fas fa-wifi absolute top-6 right-6 text-emerald-300 rotate-90 opacity-50"></i>
-                        <h3 class="text-2xl font-black mt-12">DUPASS PAY</h3>
-                        <p class="text-xs text-emerald-200">Terminal Contactless</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="card-titanium h-40 rounded-3xl p-5 cursor-pointer" onclick="openWalletCard('titanium')">
-                            <i class="fas fa-crown text-gray-400 mb-2"></i>
-                            <h3 class="font-black text-white">TITANIUM</h3>
-                        </div>
-                        <div class="card-evva h-40 rounded-3xl p-5 cursor-pointer" onclick="openWalletCard('evva')">
-                            <i class="fas fa-fire text-red-300 mb-2"></i>
-                            <h3 class="font-black text-white">EVVA RED</h3>
-                        </div>
-                    </div>
+                <h2 class="text-2xl font-black mb-4">MI WALLET</h2>
+                <div class="card-dupass h-48 rounded-[2.5rem] p-8 relative flex flex-col justify-between overflow-hidden">
+                    <div class="watermark-text">LOOP PAY</div>
+                    <i class="fas fa-wifi text-4xl opacity-20 rotate-90 self-end"></i>
+                    <div><h3 class="text-2xl font-black">DUPASS PAY</h3><p class="text-xs opacity-60">Terminal Eco-Habitante</p></div>
                 </div>
-            </div>
-
-            <div id="viewShop" class="hidden space-y-4 fade-in-up pb-20">
-                <div class="pt-6 text-center">
-                    <p class="text-pink-300 text-[10px] uppercase font-bold tracking-[0.5em]">Marketplace</p>
-                </div>
-                <div id="shopContainer" class="px-2"></div>
-            </div>
-
-            <div id="viewProfile" class="hidden space-y-6 fade-in-up">
-                <div class="text-center mt-10">
-                    <div class="w-24 h-24 mx-auto rounded-full border-2 border-pink-300 p-1 mb-4">
-                        <img src="" class="avatar-img hidden w-full h-full rounded-full object-cover">
-                        <div class="avatar-placeholder w-full h-full rounded-full bg-gray-800"></div>
-                    </div>
-                    <h2 class="text-2xl font-black" id="profileUserName">Usuario</h2>
-                    <button onclick="handleLogout()" class="text-[10px] text-red-400 border border-red-900 px-3 py-1 rounded-full mt-2 uppercase font-bold">Cerrar Sesión</button>
-                </div>
-                
                 <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-                        <p class="text-[8px] text-gray-500 uppercase mb-1">Inversión</p>
-                        <p class="text-xl font-black" id="statInvested">$0M</p>
+                    <div class="card-titanium h-40 rounded-3xl p-6 flex flex-col justify-between">
+                        <i class="fas fa-crown text-gray-400"></i>
+                        <h4 class="font-black">TITANIUM</h4>
                     </div>
-                    <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-center">
-                        <p class="text-[8px] text-gray-500 uppercase mb-1">Tickets</p>
-                        <p class="text-xl font-black" id="statTicketCount">0</p>
+                    <div class="card-evva h-40 rounded-3xl p-6 flex flex-col justify-between">
+                        <i class="fas fa-fire text-red-400"></i>
+                        <h4 class="font-black">EVVA RED</h4>
                     </div>
-                </div>
-
-                <div class="bg-black border border-white/10 rounded-3xl overflow-hidden p-2">
-                    <svg viewBox="0 0 800 500" class="w-full">
-                        <path class="country-outline" d="M150 140 L240 170 L260 250 L180 230 L130 180 Z" /> 
-                        <path class="country-outline" d="M340 310 L430 290 L490 310 L460 390 L390 460 L310 410 Z" /> 
-                        <g>
-                            <path class="route-path" d="M210 200 Q 280 250, 360 330" /> 
-                            <path class="travel-glow" d="M210 200 Q 280 250, 360 330" />
-                        </g>
-                        <circle cx="210" cy="200" r="3" fill="#ffb6c1" />
-                        <circle cx="360" cy="330" r="3" fill="#ffb6c1" />
-                        <text x="210" y="190" fill="white" font-size="12" font-family="Courier New">MEX</text>
-                        <text x="360" y="350" fill="white" font-size="12" font-family="Courier New">COL</text>
-                    </svg>
                 </div>
             </div>
+
+            <div id="viewShop" class="hidden fade-in-up">
+                <h2 class="text-2xl font-black mb-6">MARKETPLACE</h2>
+                <div id="shopContainer"></div>
+            </div>
+
+            <div id="viewProfile" class="hidden space-y-8 fade-in-up text-center">
+                <div class="w-24 h-24 mx-auto rounded-full p-1 border-2 border-pink-300 mb-4">
+                    <div class="w-full h-full rounded-full bg-gray-900 overflow-hidden">
+                        <img src="" class="avatar-img w-full h-full object-cover">
+                    </div>
+                </div>
+                <h2 id="profileUserName" class="text-3xl font-black">Usuario</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/5 p-4 rounded-2xl"><p class="text-[8px] text-gray-500 uppercase">Inversión</p><p id="statInvested" class="text-xl font-black">$0M</p></div>
+                    <div class="bg-white/5 p-4 rounded-2xl"><p class="text-[8px] text-gray-500 uppercase">Tickets</p><p id="statTicketCount" class="text-xl font-black">0</p></div>
+                </div>
+                <button onclick="auth.signOut()" class="text-red-500 text-xs font-bold border border-red-500/20 px-6 py-2 rounded-full">CERRAR SESIÓN</button>
+            </div>
+
         </main>
 
-        <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-12 flex justify-between items-center z-50">
-            <button onclick="switchTab('home')" id="btnHome" class="text-white text-2xl transition"><i class="fas fa-th"></i></button>
-            <button onclick="switchTab('wallet')" id="btnWallet" class="text-gray-600 text-2xl transition"><i class="fas fa-wallet"></i></button>
-            <button onclick="switchTab('shop')" id="btnShop" class="text-gray-600 text-2xl transition"><i class="fas fa-shopping-bag"></i></button>
-            <button onclick="switchTab('profile')" id="btnProfile" class="text-gray-600 text-2xl transition"><i class="fas fa-user-circle"></i></button>
+        <nav class="fixed bottom-0 left-0 right-0 glass-nav h-20 px-10 flex justify-between items-center z-50 max-w-md mx-auto">
+            <button onclick="switchTab('home')" class="text-2xl"><i class="fas fa-th-large"></i></button>
+            <button onclick="switchTab('wallet')" class="text-2xl text-gray-600"><i class="fas fa-wallet"></i></button>
+            <button onclick="switchTab('shop')" class="text-2xl text-gray-600"><i class="fas fa-shopping-bag"></i></button>
+            <button onclick="switchTab('profile')" class="text-2xl text-gray-600"><i class="fas fa-user-circle"></i></button>
         </nav>
     </div>
 
-    <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md">
-        <div class="w-full max-w-sm bg-white rounded-[2.5rem] overflow-hidden text-black flex flex-col h-[80vh] shadow-2xl">
-            <div id="ticketModalHeader" class="h-40 w-full relative">
+    <div id="ticketModal" class="fixed inset-0 z-[300] hidden bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6">
+        <div class="w-full max-w-sm bg-white rounded-[3rem] overflow-hidden text-black flex flex-col h-[85vh] shadow-2xl relative">
+            <div id="ticketHeader" class="h-44 w-full relative">
                 <div class="absolute inset-0 bg-black/20"></div>
-                <div class="absolute top-4 left-6 bg-white/90 px-3 py-1 rounded-full text-[9px] font-black uppercase">Official Loop ID</div>
+                <div class="absolute top-6 left-8 bg-white/90 px-3 py-1 rounded-full text-[9px] font-black tracking-widest uppercase">LOOP OFFICIAL ID</div>
             </div>
             
-            <div class="p-8 flex-1 overflow-y-auto no-scrollbar text-center">
-                <h2 id="modalArtist" class="text-3xl font-black tracking-tighter uppercase leading-none">ARTIST</h2>
-                <p id="modalUser" class="text-[9px] font-bold text-gray-400 tracking-[0.3em] mb-4 mt-1">USER NAME</p>
+            <div class="p-8 flex-1 flex flex-col items-center">
+                <div class="watermark-text !text-gray-100 !text-4xl">LOOP ID</div>
+                <h2 id="modalArtist" class="text-4xl font-black tracking-tighter uppercase leading-none text-center">ARTISTA</h2>
+                <p id="modalUserName" class="text-[10px] font-bold text-gray-400 tracking-[0.4em] mb-6 mt-2">CLIENT NAME</p>
                 
-                <div class="relative w-48 h-48 mx-auto mb-6 flex items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                    <svg id="complexQrSvg" viewBox="0 0 200 200" class="w-full h-full p-4"></svg>
-                    <div class="absolute z-20 bg-white p-2 rounded-lg shadow-xl">
-                        <i class="fas fa-shield-alt text-pink-400 text-xl"></i>
-                    </div>
+                <div class="relative w-48 h-48 bg-gray-50 rounded-3xl flex items-center justify-center border-2 border-dashed border-gray-200 mb-6">
+                    <svg id="qrSvg" viewBox="0 0 200 200" class="w-full h-full p-4"></svg>
+                    <div class="absolute bg-white p-2 rounded-xl shadow-lg border border-gray-100"><i class="fas fa-shield-alt text-pink-400 text-xl"></i></div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-y-4 text-left border-t border-gray-100 pt-4">
-                    <div><p class="text-[8px] text-gray-400 uppercase font-black">Asiento</p><p id="modalSeat" class="font-black text-lg">---</p></div>
-                    <div><p class="text-[8px] text-gray-400 uppercase font-black">Dress Code</p><p id="modalDressCode" class="font-bold text-pink-500 text-xs">---</p></div>
+                <div class="w-full grid grid-cols-2 gap-y-6 text-left border-t border-gray-100 pt-6">
+                    <div><p class="text-[8px] text-gray-400 uppercase font-black">Asiento</p><p id="modalSeat" class="font-black text-xl text-pink-500">---</p></div>
+                    <div><p class="text-[8px] text-gray-400 uppercase font-black">Dress Code</p><p id="modalDress" class="font-bold text-xs uppercase">---</p></div>
                     <div><p class="text-[8px] text-gray-400 uppercase font-black">Fecha</p><p id="modalDate" class="font-bold text-xs">---</p></div>
                     <div><p class="text-[8px] text-gray-400 uppercase font-black">Venue</p><p id="modalVenue" class="font-bold text-xs">---</p></div>
                 </div>
-                <p id="modalHash" class="text-[7px] font-mono text-gray-300 mt-6 break-all"></p>
             </div>
         </div>
-        <button onclick="closeTicket()" class="mt-6 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20"><i class="fas fa-times"></i></button>
+        <button onclick="document.getElementById('ticketModal').classList.add('hidden')" class="mt-8 text-white/50 text-2xl"><i class="fas fa-times"></i></button>
     </div>
 
-    <div id="buyModal" class="fixed inset-0 z-[150] hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeBuyModal()"></div>
-        <div id="buySheetContent" class="absolute bottom-0 w-full buy-sheet transform transition-transform duration-300 translate-y-full p-8 max-w-md left-0 right-0 mx-auto">
-            <div id="buyHeader" class="w-full h-32 rounded-2xl bg-cover bg-center mb-6"></div>
-            <div class="flex justify-between items-start mb-4">
-                <h2 id="buyArtist" class="text-3xl font-black text-white leading-none">ARTIST</h2>
-                <div class="text-right"><p id="buyPrice" class="text-2xl font-black text-pink-300">0</p><p class="text-[8px] text-gray-500">DUPAS</p></div>
-            </div>
-            <p id="buyDate" class="text-emerald-400 font-bold text-sm mb-4"></p>
-            <p id="buyDesc" class="text-gray-400 text-xs leading-relaxed mb-8"></p>
-            <button onclick="confirmPurchase()" class="w-full py-4 bg-white text-black font-black rounded-2xl active:scale-95 transition">ADQUIRIR TICKET</button>
+    <div id="buyModal" class="fixed inset-0 z-[200] hidden bg-black/80 flex items-end">
+        <div id="buySheet" class="w-full bg-zinc-900 rounded-t-[3rem] p-10 transform transition-transform duration-300 translate-y-full max-w-md mx-auto">
+            <h2 id="buyArtist" class="text-3xl font-black mb-2">Artista</h2>
+            <p class="text-pink-300 font-bold mb-8"><span id="buyPrice">0</span> DUPAS</p>
+            <button onclick="confirmPurchase()" class="w-full bg-white text-black font-black py-5 rounded-2xl">CONFIRMAR COMPRA</button>
+            <button onclick="closeBuyModal()" class="w-full mt-4 text-gray-500 text-xs font-bold uppercase">Cancelar</button>
         </div>
-    </div>
-
-    <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95">
-        <div id="walletModalContent" class="">
-            <div class="mb-10 relative">
-                <div class="absolute inset-0 bg-white/10 rounded-full animate-ping"></div>
-                <div class="relative bg-white/5 p-8 rounded-full border border-white/10"><i id="walletCardIcon" class=""></i></div>
-            </div>
-            <h2 id="walletCardName" class="text-4xl font-black text-white text-center tracking-tighter">NAME</h2>
-            <p class="text-white/40 text-[10px] mt-4 uppercase tracking-[0.5em] animate-pulse">Aproxime al Terminal</p>
-        </div>
-        <button onclick="closeWalletModal()" class="mt-10 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/10"><i class="fas fa-times"></i></button>
     </div>
 
 </body>
