@@ -2,8 +2,9 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V34 APK Universal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Loop ID - Master APK</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -14,12 +15,17 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <style>
-        :root { --bg-color: #000000; --logo-color: #ffffff; --accent-color: #ffb6c1; --pink-accent: #ffb6c1; --line-width: 1.5px; }
-        body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        :root { --bg-color: #000000; --logo-color: #ffffff; --accent-color: #ffb6c1; --pink-accent: #ffb6c1; }
+        body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; user-select: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* NAV CRISTAL */
-        .glass-nav { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.08); }
+        /* NAV CRISTAL (ESTÉTICA V32) */
+        .glass-nav { 
+            background: rgba(0, 0, 0, 0.6); 
+            backdrop-filter: blur(15px); 
+            border-top: 1px solid rgba(255,255,255,0.08); 
+        }
+
         .login-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 12px; padding: 15px; width: 100%; outline: none; transition: 0.3s; }
         .login-input:focus { border-color: var(--accent-color); background: rgba(255,255,255,0.1); }
 
@@ -35,7 +41,7 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* Map & Wallet */
+        /* Estilos Mapa y Wallet */
         .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
         .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: 1.5; stroke-linecap: round; }
         .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
@@ -63,13 +69,19 @@
     </style>
 
     <script>
-        // CONFIGURACION FIREBASE (COMPAT)
+        // --- 1. CONFIGURACIÓN FIREBASE (COMPAT) ---
+        // Esta configuración funciona en APKs donde los modulos fallan
         const firebaseConfig = { apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc", authDomain: "tanalza-app.firebaseapp.com", projectId: "tanalza-app", storageBucket: "tanalza-app.firebasestorage.app", messagingSenderId: "458130807177", appId: "1:458130807177:web:cde4e0d147c937b4542958" };
-        firebase.initializeApp(firebaseConfig);
+        
+        // Inicializar Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch(e) { console.error("Firebase Init Error", e); }
+
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // GLOBALS
+        // --- 2. VARIABLES GLOBALES ---
         let selectedShopEvent = null;
         let currentUserUID = null;
 
@@ -82,66 +94,87 @@
             { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
         ];
 
+        // --- 3. INICIO DE LA APP ---
         window.onload = function() {
             renderInitialShop();
             loadSavedPhoto();
             
-            // Listener de Auth
+            // Escuchar cambios de Auth (Login/Logout)
             auth.onAuthStateChanged((user) => {
                 const splash = document.getElementById('splashScreen');
+                
                 if (user) {
+                    // Usuario Logueado
                     currentUserUID = user.uid;
                     document.getElementById('viewLogin').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
-                    initUserData(user.uid);
+                    initUserData(user.uid); // Cargar datos reales
                 } else {
+                    // Usuario No Logueado
                     currentUserUID = null;
                     document.getElementById('viewLogin').classList.remove('hidden');
                     document.getElementById('appContainer').classList.add('hidden');
                 }
-                if(splash) splash.style.display = 'none'; 
+                
+                // Ocultar Splash después de verificar
+                if(splash) {
+                    setTimeout(() => splash.style.display = 'none', 500);
+                }
             });
         };
 
-        // --- AUTH ---
+        // --- 4. FUNCIONES DE LOGIN ---
         function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const pass = document.getElementById('loginPass').value;
-            if(!email || !pass) return;
-            auth.signInWithEmailAndPassword(email, pass).catch((error) => {
-                document.getElementById('loginError').classList.remove('hidden');
-            });
+            if(!email || !pass) { alert("Llena los campos"); return; }
+            
+            showLoader(true);
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => { showLoader(false); })
+                .catch((error) => {
+                    showLoader(false);
+                    document.getElementById('loginError').classList.remove('hidden');
+                    document.getElementById('loginError').innerText = "Error: " + error.message;
+                });
         }
 
         function handleLogout() {
             auth.signOut();
         }
 
-        // --- DATA ---
+        // --- 5. CARGA DE DATOS REALES (FIRESTORE) ---
         function initUserData(uid) {
+            // Escuchar Perfil y Saldo
             const userRef = db.collection("users").doc(uid);
             userRef.onSnapshot((docSnap) => {
                 if (docSnap.exists) {
                     const data = docSnap.data();
-                    document.querySelectorAll('#displayDupas').forEach(el => el.innerText = data.dupas.toLocaleString());
+                    // Actualizar todos los contadores de Dupas
+                    document.querySelectorAll('#displayDupas').forEach(el => el.innerText = (data.dupas || 0).toLocaleString());
                     document.getElementById('displayUserName').innerText = data.name || "Usuario";
                     document.getElementById('profileUserName').innerText = data.name || "Usuario";
+                    
                     const inv = document.getElementById('statInvested');
-                    if(inv && data.invested) inv.innerText = '$' + (data.invested / 1000000).toFixed(1) + 'M';
+                    if(inv && data.invested) inv.innerText = '$' + ((data.invested || 0) / 1000000).toFixed(1) + 'M';
                 } else {
+                    // Crear doc si no existe
                     userRef.set({ dupas: 0, invested: 0, name: "Nuevo Usuario" });
                 }
             });
 
+            // Escuchar Tickets
             db.collection("tickets").where("userId", "==", uid).onSnapshot((snapshot) => {
                 const tickets = [];
                 snapshot.forEach((doc) => tickets.push({ id: doc.id, ...doc.data() }));
                 
+                // Actualizar Stats
                 document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
 
+                // Renderizar Grid
                 const container = document.getElementById('ticketsContainer');
                 if (tickets.length === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs">Sin tickets activos.</p>';
+                    container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs py-10">Sin tickets activos.</p>';
                 } else {
                     container.innerHTML = tickets.map(ev => `
                         <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300" onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
@@ -163,25 +196,30 @@
             });
         }
 
-        // --- UI NAVIGATION ---
+        // --- 6. NAVEGACIÓN Y UI ---
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            
+            // Resetear iconos
             ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => {
                 const btn = document.getElementById(id);
                 btn.classList.remove('text-white', 'text-pink-300');
                 btn.classList.add('text-gray-600');
             });
+            
             let activeBtn = 'btnHome';
             if(tab === 'wallet') activeBtn = 'btnWallet';
             if(tab === 'shop') activeBtn = 'btnShop';
             if(tab === 'profile') activeBtn = 'btnProfile';
+
             document.getElementById('view' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+            
             const btn = document.getElementById(activeBtn);
             btn.classList.remove('text-gray-600');
             btn.classList.add(tab === 'shop' || tab === 'wallet' ? 'text-pink-300' : 'text-white');
         }
 
-        // --- MODALES ---
+        // --- 7. MODALES ---
         function openTicket(artist, venue, date) {
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
@@ -235,7 +273,7 @@
             setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
         }
 
-        // --- COMPRA REAL ---
+        // --- 8. COMPRA ---
         function confirmPurchase() {
             if(!selectedShopEvent || !currentUserUID) return;
             showLoader(true);
@@ -449,6 +487,42 @@
             <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-heart"></i></button>
             <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-3xl transition transform active:scale-90"><i class="fas fa-user"></i></button>
         </nav>
+    </div>
+
+    <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
+        <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
+            <div class="absolute top-8 w-full text-center opacity-80"><svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M370 85 V160" stroke="white" stroke-width="6"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="5"/></g></svg></div>
+            <div class="mb-10 relative mt-10"><div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div><div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl"><i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i></div></div>
+            <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
+            <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
+            <div class="flex flex-col items-center gap-2"><p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p><i class="fas fa-arrow-up text-white animate-bounce"></i></div>
+        </div>
+        <button onclick="closeWalletModal()" class="fixed bottom-24 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
+    </div>
+
+    <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
+        <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[85vh]">
+            <div class="bg-white/5 p-4 border-b border-white/10 text-center flex-shrink-0"><svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg><p class="text-[9px] text-gray-400 uppercase tracking-widest">By TanAlza</p></div>
+            <div class="p-6 overflow-y-auto flex-1 no-scrollbar">
+                <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
+                <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
+                <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center"><div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div><svg id="complexQrSvg" width="90%" height="90%" viewBox="0 0 200 200" class="absolute z-10"></svg><div class="absolute z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-sm border border-pink-100 flex flex-col items-center justify-center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-active"/><path d="M1.42 9a16 16 0 0 1 21.16 0" class="nfc-active"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="nfc-active"/></svg></div></div>
+                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left"><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Dress Code</p><p class="font-bold text-pink-300 text-sm">Black Minimal</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Comprado</p><p class="font-bold text-gray-300 text-xs" id="modalPurchaseDate">...</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div></div>
+                <div class="mt-8 pt-4 border-t border-white/10 mb-4"><p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p></div>
+            </div>
+        </div>
+        <button onclick="closeTicket()" class="mt-4 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div id="buyModal" class="fixed inset-0 z-[150] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeBuyModal()"></div>
+        <div class="absolute bottom-0 w-full buy-sheet p-8 transform transition-transform duration-300 translate-y-full" id="buySheetContent">
+            <div class="w-16 h-1 bg-gray-700 rounded-full mx-auto mb-8"></div>
+            <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-pink-300" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
+            <p class="text-emerald-400 font-bold text-sm mb-6 flex items-center gap-2"><i class="far fa-calendar"></i> <span id="buyDate">Date</span></p>
+            <div class="bg-white/5 p-4 rounded-xl mb-6"><p class="text-gray-300 text-sm leading-relaxed" id="buyDesc">Descripción...</p></div>
+            <button onclick="confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition">Canjear Ahora</button>
+        </div>
     </div>
 </body>
 </html>
