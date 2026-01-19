@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lamar ID - Ultimate V12</title>
+    <title>Lamar ID - V13 Corregido</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -22,22 +22,16 @@
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* --- ANIMACIONES LOGO & QR --- */
-        .svg-arch { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawArch 2s ease-out forwards, glow 3s infinite alternate; }
-        .logo-text, .tagline-text { opacity: 0; animation: fadeIn 1s forwards 1.5s; }
-        
-        @keyframes drawArch { to { stroke-dashoffset: 0; } }
-        @keyframes glow { from { filter: drop-shadow(0 0 2px #fff); } to { filter: drop-shadow(0 0 8px #a855f7); } }
+        /* --- ANIMACIONES --- */
+        .fade-in { opacity: 0; animation: fadeIn 1.5s ease-out forwards; }
         @keyframes fadeIn { to { opacity: 1; } }
-
-        /* Animación Arcos QR */
-        .qr-arch {
-            stroke-dasharray: 200; stroke-dashoffset: 200;
-            animation: drawQR 3s ease-out infinite alternate; opacity: 0.3;
-        }
-        @keyframes drawQR { to { stroke-dashoffset: 0; } }
         
-        /* UI Animations */
+        .pulse-logo { animation: pulse 3s infinite ease-in-out; }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0px rgba(255,255,255,0)); }
+            50% { transform: scale(1.05); opacity: 0.8; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
+        }
+
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
@@ -51,6 +45,8 @@
             border-top: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 -10px 50px rgba(168, 85, 247, 0.2);
         }
+        .hologram-container { animation: float-hologram 6s ease-in-out infinite; opacity: 0.15; mix-blend-mode: screen; }
+        @keyframes float-hologram { 0%, 100% { transform: scale(1.5) rotate(-10deg); filter: hue-rotate(0deg); } 50% { transform: scale(1.6) rotate(10deg); filter: hue-rotate(30deg); } }
         
         /* Map Animations */
         .map-node { fill: #10b981; animation: pulse-node 2s infinite; }
@@ -68,13 +64,10 @@
 <body class="pb-32">
 
     <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <svg width="200" height="100" viewBox="0 0 250 120" fill="none">
-            <text x="20" y="75" fill="white" font-family="Inter" font-weight="900" font-size="60" class="logo-text">la</text>
-            <path d="M95 75 V 25 C 95 15 105 5 115 5 C 125 5 135 15 135 25 V 75" stroke="white" stroke-width="4" stroke-linecap="round" class="svg-arch"/>
-            <path d="M103 75 V 30 C 103 22 108 15 115 15 C 122 15 127 22 127 30 V 75" stroke="white" stroke-width="2" stroke-linecap="round" class="svg-arch"/>
-            <text x="145" y="75" fill="white" font-family="Inter" font-weight="900" font-size="60" class="logo-text">ar.</text>
-            <text x="155" y="100" fill="#888" font-family="Inter" font-weight="500" font-size="14" class="tagline-text">By TanAlza</text>
-        </svg>
+        <div class="text-center fade-in">
+            <h1 class="text-6xl font-black text-white tracking-tighter mb-2">la mar.</h1>
+            <p class="text-sm text-gray-400 font-medium tracking-widest uppercase">By TanAlza</p>
+        </div>
         <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando Ecosistema</p>
     </div>
 
@@ -84,7 +77,7 @@
     </div>
 
     <header class="fixed top-0 w-full z-40 bg-black/80 backdrop-blur-md px-6 py-4 flex justify-end items-center border-b border-white/5">
-        <div class="w-10 h-10 rounded-full bg-gray-800 border border-white/10 overflow-hidden cursor-pointer shadow-lg hover:scale-105 transition" onclick="window.app.switchTab('profile')">
+        <div class="w-10 h-10 rounded-full bg-gray-800 border border-white/10 overflow-hidden cursor-pointer shadow-lg hover:scale-105 transition" onclick="window.switchTab('profile')">
              <img id="headerAvatar" src="" class="w-full h-full object-cover hidden">
              <div id="headerPlaceholder" class="w-full h-full flex items-center justify-center text-gray-400"><i class="fas fa-user"></i></div>
         </div>
@@ -95,20 +88,28 @@
         <div id="viewHome" class="space-y-8 fade-in-up">
             
             <div class="flex items-center justify-between pt-4 pb-2">
-                <svg width="140" height="70" viewBox="0 0 250 120" fill="none">
-                    <text x="20" y="75" fill="white" font-family="Inter" font-weight="900" font-size="60" class="logo-text">la</text>
-                    <path d="M95 75 V 25 C 95 15 105 5 115 5 C 125 5 135 15 135 25 V 75" stroke="white" stroke-width="4" stroke-linecap="round" class="svg-arch"/>
-                    <path d="M103 75 V 30 C 103 22 108 15 115 15 C 122 15 127 22 127 30 V 75" stroke="white" stroke-width="2" stroke-linecap="round" class="svg-arch"/>
-                    <text x="145" y="75" fill="white" font-family="Inter" font-weight="900" font-size="60" class="logo-text">ar.</text>
-                    <text x="155" y="100" fill="#888" font-family="Inter" font-weight="500" font-size="14" class="tagline-text">By TanAlza</text>
-                </svg>
+                <div class="text-left fade-in" style="animation-delay: 0.3s;">
+                    <h1 class="text-5xl font-black text-white tracking-tighter leading-none">la mar.</h1>
+                    <p class="text-xs text-gray-400 font-medium tracking-widest uppercase">By TanAlza</p>
+                </div>
                 
-                <div class="text-right">
-                    <h1 class="text-xl font-black text-white tracking-tight mb-1">Marlon T.</h1>
-                    <div class="bg-white/10 border border-white/10 rounded-full px-4 py-1.5 flex items-center gap-2 backdrop-blur-md ml-auto w-fit">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span class="text-lg font-bold text-white" id="displayDupas">...</span>
-                        <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dupas</span>
+                <div class="flex flex-col items-end gap-3">
+                    <div class="relative w-16 h-16 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 p-[2px] shadow-lg cursor-pointer profile-upload group" onclick="document.getElementById('photoInputHome').click()">
+                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative border-2 border-black">
+                            <img id="homeProfileImage" src="" class="w-full h-full object-cover hidden">
+                            <div id="homeProfilePlaceholder" class="w-full h-full flex items-center justify-center bg-gray-900 text-white font-black text-xl">MT</div>
+                            <div class="overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 backdrop-blur-sm group-hover:opacity-100"><i class="fas fa-camera text-white text-sm"></i></div>
+                        </div>
+                    </div>
+                    <input type="file" id="photoInputHome" hidden accept="image/*" onchange="window.handlePhotoUpload(this)">
+
+                    <div class="text-right">
+                        <h2 class="text-lg font-black text-white tracking-tight mb-1">Marlon T.</h2>
+                        <div class="bg-white/10 border border-white/10 rounded-full px-3 py-1 flex items-center gap-2 backdrop-blur-md ml-auto w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="text-sm font-bold text-white" id="displayDupas">...</span>
+                            <span class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dupas</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -136,14 +137,14 @@
 
         <div id="viewProfile" class="hidden space-y-6 pb-20 fade-in-up">
             <div class="text-center mt-8">
-                <div class="relative w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-6 shadow-2xl cursor-pointer profile-upload" onclick="document.getElementById('photoInput').click()">
+                <div class="relative w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-6 shadow-2xl cursor-pointer profile-upload" onclick="document.getElementById('photoInputProfile').click()">
                     <div class="w-full h-full rounded-full bg-black overflow-hidden relative border-4 border-black">
                         <img id="profileImage" src="" class="w-full h-full object-cover hidden">
                         <div id="profilePlaceholder" class="w-full h-full flex items-center justify-center bg-gray-900"><span class="text-4xl font-black text-white">MT</span></div>
                         <div class="overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 backdrop-blur-sm"><i class="fas fa-camera text-white text-xl mb-1"></i></div>
                     </div>
                 </div>
-                <input type="file" id="photoInput" hidden accept="image/*" onchange="window.app.handlePhotoUpload(this)">
+                <input type="file" id="photoInputProfile" hidden accept="image/*" onchange="window.handlePhotoUpload(this)">
                 
                 <h2 class="text-3xl font-black text-white mb-1">Marlon Tangarife</h2>
                 <div class="flex items-center justify-center gap-2">
@@ -193,42 +194,43 @@
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
         <div id="ticketCard" class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden transform scale-90 transition-transform duration-300">
-             
+             <div class="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none"><div class="hologram-container"><svg width="300" height="300" viewBox="0 0 100 100" fill="none"><path d="M20 80 V 40 C 20 20 40 10 50 10 C 60 10 80 20 80 40 V 80" stroke="rgba(255,255,255,0.05)" stroke-width="2"/><path d="M30 80 V 45 C 30 35 40 25 50 25 C 60 25 70 35 70 45 V 80" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></svg></div></div>
+            
             <div class="relative z-10 text-center">
-                <p class="text-[10px] font-bold text-emerald-400 tracking-[0.3em] uppercase mb-4 animate-pulse">Ticket Verificado</p>
-                <h2 class="text-3xl font-black text-white leading-none mb-2" id="modalArtist">Artist</h2>
-                <p class="text-gray-400 text-sm font-medium mb-8" id="modalVenue">Venue</p>
+                <div class="mb-8 pulse-logo">
+                    <h1 class="text-5xl font-black text-white tracking-tighter leading-none">la mar.</h1>
+                    <p class="text-xs text-gray-400 font-medium tracking-widest uppercase">By TanAlza</p>
+                </div>
                 
-                <div class="bg-white p-4 rounded-2xl w-64 h-64 mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] relative mb-6 overflow-hidden">
-                    <svg width="100%" height="100%" viewBox="0 0 100 100" class="absolute inset-0 pointer-events-none">
-                        <path d="M50 50 m -40, 0 a 40,40 0 1,0 80,0 a 40,40 0 1,0 -80,0" fill="none" stroke="rgba(168,85,247,0.2)" stroke-width="1" class="qr-arch"/>
-                        <path d="M50 50 m -30, 0 a 30,30 0 1,0 60,0 a 30,30 0 1,0 -60,0" fill="none" stroke="rgba(168,85,247,0.3)" stroke-width="1" class="qr-arch" style="animation-delay: 0.5s"/>
-                        <path d="M50 50 m -20, 0 a 20,20 0 1,0 40,0 a 20,20 0 1,0 -40,0" fill="none" stroke="rgba(168,85,247,0.4)" stroke-width="1" class="qr-arch" style="animation-delay: 1s"/>
-                    </svg>
-                    <i class="fas fa-qrcode text-9xl text-black relative z-10"></i>
+                <p class="text-[10px] font-bold text-emerald-400 tracking-[0.3em] uppercase mb-2 animate-pulse">Ticket Verificado</p>
+                <h2 class="text-2xl font-black text-white leading-tight mb-1" id="modalArtist">Artist</h2>
+                <p class="text-gray-400 text-sm font-medium mb-6" id="modalVenue">Venue</p>
+                
+                <div class="bg-white p-3 rounded-2xl w-48 h-48 mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] relative mb-6 overflow-hidden">
+                    <i class="fas fa-qrcode text-8xl text-black relative z-10"></i>
                 </div>
                 
                 <div class="flex justify-center gap-8 border-t border-white/10 pt-6"><div><p class="text-[10px] text-gray-500 uppercase">Zona</p><p class="font-bold text-white">Backstage</p></div><div><p class="text-[10px] text-gray-500 uppercase">Puerta</p><p class="font-bold text-white">V-01</p></div></div>
             </div>
         </div>
-        <button onclick="window.app.closeTicket()" class="mt-8 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white transition border border-white/10 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+        <button onclick="window.closeTicket()" class="mt-8 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white transition border border-white/10 hover:text-black"><i class="fas fa-times text-xl"></i></button>
     </div>
 
     <div id="buyModal" class="fixed inset-0 z-[150] hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="window.app.closeBuyModal()"></div>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="window.closeBuyModal()"></div>
         <div class="absolute bottom-0 w-full buy-sheet p-8 transform transition-transform duration-300 translate-y-full" id="buySheetContent">
             <div class="w-16 h-1 bg-gray-700 rounded-full mx-auto mb-8"></div>
             <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-purple-400" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
             <p class="text-emerald-400 font-bold text-sm mb-6 flex items-center gap-2"><i class="far fa-calendar"></i> <span id="buyDate">Date</span></p>
             <div class="bg-white/5 p-4 rounded-xl mb-6"><p class="text-gray-300 text-sm leading-relaxed" id="buyDesc">Descripción...</p></div>
-            <button onclick="window.app.confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition shadow-[0_0_20px_rgba(255,255,255,0.2)]">Canjear Ahora</button>
+            <button onclick="window.confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition shadow-[0_0_20px_rgba(255,255,255,0.2)]">Canjear Ahora</button>
         </div>
     </div>
 
     <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
-        <button onclick="window.app.switchTab('home')" id="btnHome" class="text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
-        <button onclick="window.app.switchTab('shop')" id="btnShop" class="text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-purple-500 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
-        <button onclick="window.app.switchTab('profile')" id="btnProfile" class="text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
+        <button onclick="window.switchTab('home')" id="btnHome" class="text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
+        <button onclick="window.switchTab('shop')" id="btnShop" class="text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-purple-500 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+        <button onclick="window.switchTab('profile')" id="btnProfile" class="text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
     </nav>
 
     <script type="module">
@@ -322,18 +324,11 @@
         function renderHome() {
             document.getElementById('ticketsContainer').innerHTML = myTickets.map(ev => `
                 <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
-                     onclick="window.app.openTicket('${ev.artist}', '${ev.venue}')">
-                    
-                    <div class="absolute top-4 right-4 z-20 opacity-50 group-hover:opacity-100 transition-opacity">
-                         <svg width="80" height="40" viewBox="0 0 250 120" fill="none">
-                            <text x="20" y="75" fill="white" font-family="Inter" font-weight="900" font-size="60">la</text>
-                            <path d="M95 75 V 25 C 95 15 105 5 115 5 C 125 5 135 15 135 25 V 75" stroke="white" stroke-width="4" stroke-linecap="round"/>
-                            <path d="M103 75 V 30 C 103 22 108 15 115 15 C 122 15 127 22 127 30 V 75" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                            <text x="145" y="75" fill="white" font-family="Inter" font-weight="900" font-size="60">ar.</text>
-                            <text x="155" y="100" fill="white" font-family="Inter" font-weight="500" font-size="14">By TanAlza</text>
-                        </svg>
+                     onclick="window.openTicket('${ev.artist}', '${ev.venue}')">
+                    <div class="absolute top-4 right-4 z-20 opacity-50 group-hover:opacity-100 transition-opacity text-right">
+                         <h3 class="text-xl font-black text-white tracking-tighter leading-none">la mar.</h3>
+                         <p class="text-[8px] text-gray-400 font-medium tracking-widest uppercase">By TanAlza</p>
                     </div>
-
                     <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
                     <div class="absolute inset-0 p-6 flex flex-col justify-between z-10">
                         <div class="flex justify-between items-start">
@@ -357,7 +352,7 @@
         function renderShop() {
             document.getElementById('shopContainer').innerHTML = shopEvents.map((ev, i) => `
                 <div class="fade-in-up flex items-center justify-between p-4 bg-gray-900/40 border border-white/5 rounded-2xl hover:bg-gray-800 transition cursor-pointer group"
-                     style="animation-delay: ${i*0.03}s" onclick='window.app.openBuyModal(${JSON.stringify(ev)})'>
+                     style="animation-delay: ${i*0.03}s" onclick='window.openBuyModal(${JSON.stringify(ev)})'>
                     <div class="flex items-center gap-4">
                         <div class="w-14 h-14 bg-gray-800 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-purple-500/50 transition">
                             <span class="text-sm font-bold text-white">${ev.date.split(' ')[0]}</span>
@@ -380,7 +375,8 @@
             document.getElementById('statInvested').innerText = '$' + (currentUser.invested / 1000000).toFixed(1) + 'M';
         }
 
-        window.app.confirmPurchase = async () => {
+        // --- EXPOSICIÓN DE FUNCIONES AL ÁMBITO GLOBAL (SOLUCIÓN A LOS BOTONES) ---
+        window.confirmPurchase = async () => {
             if(!selectedShopEvent) return;
             if (currentUser.dupas < selectedShopEvent.price) { alert("Fondos insuficientes."); return; }
             showLoader(true);
@@ -388,17 +384,11 @@
                 const userRef = doc(db, "users", USER_ID);
                 await updateDoc(userRef, { dupas: currentUser.dupas - selectedShopEvent.price, invested: currentUser.invested + (selectedShopEvent.price * 1000) });
                 await addDoc(collection(db, "tickets"), { userId: USER_ID, artist: selectedShopEvent.artist, date: selectedShopEvent.date, venue: selectedShopEvent.venue, city: "Manizales", color: "from-purple-900 to-black" });
-                showLoader(false); window.app.closeBuyModal(); window.app.switchTab('home'); alert("¡Compra exitosa!");
+                showLoader(false); window.closeBuyModal(); window.switchTab('home'); alert("¡Compra exitosa!");
             } catch (error) { console.error(error); showLoader(false); alert("Error de conexión"); }
         };
 
-        function showLoader(show) {
-            const l = document.getElementById('cloudLoader');
-            if(show) l.classList.remove('hidden'); else l.classList.add('hidden');
-        }
-        
-        window.app = window.app || {};
-        window.app.openBuyModal = (ev) => {
+        window.openBuyModal = (ev) => {
             if(typeof ev === 'string') ev = JSON.parse(ev);
             selectedShopEvent = ev;
             document.getElementById('buyArtist').innerText = ev.artist;
@@ -410,37 +400,31 @@
             modal.classList.remove('hidden');
             setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
         };
-        
-        initApp();
-    </script>
 
-    <script>
-        // UI Helpers
-        window.app = window.app || {};
-        window.app.closeBuyModal = () => {
+        window.closeBuyModal = () => {
             const modal = document.getElementById('buyModal');
             const sheet = document.getElementById('buySheetContent');
             sheet.classList.add('translate-y-full');
             setTimeout(() => modal.classList.add('hidden'), 300);
         };
-        window.app.openTicket = (artist, venue) => {
+        window.openTicket = (artist, venue) => {
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
             const modal = document.getElementById('ticketModal');
             modal.classList.remove('hidden');
         };
-        window.app.closeTicket = () => {
+        window.closeTicket = () => {
             const modal = document.getElementById('ticketModal');
             modal.classList.add('hidden');
         };
-        window.app.switchTab = (tab) => {
+        window.switchTab = (tab) => {
             ['viewHome', 'viewShop', 'viewProfile'].forEach(v => document.getElementById(v).classList.add('hidden'));
             ['btnHome', 'btnShop', 'btnProfile'].forEach(b => { document.getElementById(b).classList.remove('text-white', 'text-purple-500'); document.getElementById(b).classList.add('text-gray-600'); });
             if(tab === 'home') { document.getElementById('viewHome').classList.remove('hidden'); document.getElementById('btnHome').classList.add('text-white'); document.getElementById('btnHome').classList.remove('text-gray-600'); }
             else if(tab === 'shop') { document.getElementById('viewShop').classList.remove('hidden'); document.getElementById('btnShop').classList.add('text-purple-500'); document.getElementById('btnShop').classList.remove('text-gray-600'); }
             else { document.getElementById('viewProfile').classList.remove('hidden'); document.getElementById('btnProfile').classList.add('text-white'); document.getElementById('btnProfile').classList.remove('text-gray-600'); }
         };
-        window.app.handlePhotoUpload = (input) => {
+        window.handlePhotoUpload = (input) => {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -451,6 +435,11 @@
                 reader.readAsDataURL(input.files[0]);
             }
         };
+        
+        function showLoader(show) {
+            const l = document.getElementById('cloudLoader');
+            if(show) l.classList.remove('hidden'); else l.classList.add('hidden');
+        }
         function loadProfileImage() {
             const savedImage = localStorage.getItem('marlonProfilePicV8');
             if (savedImage) updateAvatarUI(savedImage);
@@ -462,7 +451,12 @@
             document.getElementById('headerAvatar').src = src;
             document.getElementById('headerAvatar').classList.remove('hidden');
             document.getElementById('headerPlaceholder').classList.add('hidden');
+            document.getElementById('homeProfileImage').src = src;
+            document.getElementById('homeProfileImage').classList.remove('hidden');
+            document.getElementById('homeProfilePlaceholder').classList.add('hidden');
         }
+
+        initApp();
     </script>
 </body>
 </html>
