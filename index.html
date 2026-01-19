@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marlon's Portal V9 - Google Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #000000; 
+            color: #ffffff; 
+            font-family: 'Inter', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .svg-arch { stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 2s ease-out forwards, glow 3s infinite alternate; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        @keyframes glow { from { filter: drop-shadow(0 0 2px #fff); } to { filter: drop-shadow(0 0 5px #a855f7); } }
+        
+        .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+        .hologram-container { animation: float-hologram 6s ease-in-out infinite; opacity: 0.15; mix-blend-mode: screen; }
+        @keyframes float-hologram { 0%, 100% { transform: scale(1.5) rotate(-10deg); filter: hue-rotate(0deg); } 50% { transform: scale(1.6) rotate(10deg); filter: hue-rotate(30deg); } }
+
+        .buy-sheet {
+            background: linear-gradient(to top, #0f0f0f, #1a1a1a);
+            border-radius: 2rem 2rem 0 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 -10px 50px rgba(168, 85, 247, 0.2);
+        }
+        .insta-grid { display: grid; gap: 1.5rem; }
+        
+        /* Loading Overlay */
+        #cloudLoader { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
+    </style>
+</head>
+<body class="pb-32">
+
+    <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
+        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" class="mb-4">
+            <path d="M20 80 V 40 C 20 20 40 10 50 10 C 60 10 80 20 80 40 V 80" stroke="white" stroke-width="4" stroke-linecap="round" class="svg-arch"/>
+            <path d="M30 80 V 45 C 30 35 40 25 50 25 C 60 25 70 35 70 45 V 80" stroke="white" stroke-width="2" stroke-linecap="round" class="svg-arch" style="animation-delay: 0.3s"/>
+        </svg>
+        <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase">Conectando a Google Cloud...</p>
+    </div>
+
+    <div id="cloudLoader" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center">
+        <div class="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+        <p class="mt-4 text-xs font-bold text-white uppercase tracking-widest">Sincronizando</p>
+    </div>
+
+    <header class="fixed top-0 w-full z-40 bg-black/90 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-white/5">
+        <div>
+            <div class="flex items-center gap-2 mb-0.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] animate-pulse"></span>
+                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Marlon T.</span>
+            </div>
+            <h1 class="text-lg font-bold text-white"><span id="displayDupas">...</span> <span class="text-purple-400 font-black text-sm">DUPAS</span></h1>
+        </div>
+        <div class="w-10 h-10 rounded-full bg-gray-800 border border-white/10 overflow-hidden cursor-pointer shadow-lg" onclick="window.app.switchTab('profile')">
+             <img id="headerAvatar" src="" class="w-full h-full object-cover hidden">
+             <div id="headerPlaceholder" class="w-full h-full flex items-center justify-center text-gray-400"><i class="fas fa-user"></i></div>
+        </div>
+    </header>
+
+    <main class="mt-24 px-4 max-w-md mx-auto min-h-screen relative">
+        
+        <div id="viewHome" class="space-y-8 fade-in-up">
+            <div class="flex items-end justify-between px-2">
+                <h2 class="text-3xl font-black text-white">Mis Eventos</h2>
+                <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> TICKETS</span>
+            </div>
+            <div id="ticketsContainer" class="insta-grid">
+                </div>
+        </div>
+
+        <div id="viewShop" class="hidden space-y-4 pb-10 fade-in-up">
+            <div class="p-6 bg-gradient-to-br from-purple-900/30 to-black rounded-2xl border border-purple-500/30 mb-6 text-center">
+                <i class="fas fa-gem text-3xl text-purple-400 mb-2"></i>
+                <h3 class="text-xl font-bold text-white">Mercado Dupas</h3>
+                <p class="text-xs text-purple-200">Usa tus Dupas para adquirir nuevas entradas.</p>
+            </div>
+            <div id="shopContainer" class="space-y-3">
+                </div>
+        </div>
+
+        <div id="viewProfile" class="hidden space-y-6 pb-20 fade-in-up">
+            <div class="text-center mt-8">
+                <div class="relative w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-6 shadow-2xl cursor-pointer profile-upload" onclick="document.getElementById('photoInput').click()">
+                    <div class="w-full h-full rounded-full bg-black overflow-hidden relative border-4 border-black">
+                        <img id="profileImage" src="" class="w-full h-full object-cover hidden">
+                        <div id="profilePlaceholder" class="w-full h-full flex items-center justify-center bg-gray-900"><span class="text-4xl font-black text-white">MT</span></div>
+                        <div class="overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 backdrop-blur-sm"><i class="fas fa-camera text-white text-xl mb-1"></i></div>
+                    </div>
+                </div>
+                <input type="file" id="photoInput" hidden accept="image/*" onchange="window.app.handlePhotoUpload(this)">
+                
+                <h2 class="text-3xl font-black text-white mb-1">Marlon Tangarife</h2>
+                <div class="flex items-center justify-center gap-2">
+                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Global Nomad</span>
+                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-purple-400 border border-purple-500/20">Whale</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
+                    <p class="text-gray-500 text-[10px] uppercase mb-1">Eventos Confirmados</p>
+                    <p class="text-3xl font-black text-white" id="statTicketCount">0</p>
+                </div>
+                <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
+                    <p class="text-gray-500 text-[10px] uppercase mb-1">Localidad</p>
+                    <p class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Backstage</p>
+                </div>
+                <div class="bg-gradient-to-r from-gray-900 via-gray-800 to-black p-6 rounded-2xl col-span-2 flex justify-between items-center border border-white/10 shadow-lg group">
+                    <div>
+                        <p class="text-gray-400 text-[10px] uppercase mb-1 tracking-widest">Inversión Total</p>
+                        <p class="text-3xl font-black text-white" id="statInvested">$8.4M</p>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20"><i class="fas fa-chart-line text-emerald-400 text-xl"></i></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300">
+        <div id="ticketCard" class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden transform scale-90 transition-transform duration-300">
+            <div class="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none"><div class="hologram-container"><svg width="300" height="300" viewBox="0 0 100 100" fill="none"><path d="M20 80 V 40 C 20 20 40 10 50 10 C 60 10 80 20 80 40 V 80" stroke="rgba(255,255,255,0.05)" stroke-width="2"/><path d="M30 80 V 45 C 30 35 40 25 50 25 C 60 25 70 35 70 45 V 80" stroke="rgba(255,255,255,0.05)" stroke-width="1"/></svg></div></div>
+            <div class="relative z-10 text-center">
+                <p class="text-[10px] font-bold text-emerald-400 tracking-[0.3em] uppercase mb-4 animate-pulse">Ticket Verificado</p>
+                <h2 class="text-3xl font-black text-white leading-none mb-2" id="modalArtist">Artist</h2>
+                <p class="text-gray-400 text-sm font-medium mb-8" id="modalVenue">Venue</p>
+                <div class="bg-white p-4 rounded-2xl w-56 h-56 mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] relative mb-6"><i class="fas fa-qrcode text-8xl text-black"></i></div>
+                <div class="flex justify-center gap-8 border-t border-white/10 pt-6"><div><p class="text-[10px] text-gray-500 uppercase">Zona</p><p class="font-bold text-white">Backstage</p></div><div><p class="text-[10px] text-gray-500 uppercase">Puerta</p><p class="font-bold text-white">V-01</p></div></div>
+            </div>
+        </div>
+        <button onclick="window.app.closeTicket()" class="mt-8 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white transition border border-white/10 hover:text-black"><i class="fas fa-times text-xl"></i></button>
+    </div>
+
+    <div id="buyModal" class="fixed inset-0 z-[150] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="window.app.closeBuyModal()"></div>
+        <div class="absolute bottom-0 w-full buy-sheet p-8 transform transition-transform duration-300 translate-y-full" id="buySheetContent">
+            <div class="w-16 h-1 bg-gray-700 rounded-full mx-auto mb-8"></div>
+            <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-purple-400" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
+            <p class="text-emerald-400 font-bold text-sm mb-6 flex items-center gap-2"><i class="far fa-calendar"></i> <span id="buyDate">Date</span></p>
+            <div class="bg-white/5 p-4 rounded-xl mb-6"><p class="text-gray-300 text-sm leading-relaxed" id="buyDesc">Descripción...</p></div>
+            <button onclick="window.app.confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition shadow-[0_0_20px_rgba(255,255,255,0.2)]">Canjear Ahora</button>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
+        <button onclick="window.app.switchTab('home')" id="btnHome" class="text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
+        <button onclick="window.app.switchTab('shop')" id="btnShop" class="text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-purple-500 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+        <button onclick="window.app.switchTab('profile')" id="btnProfile" class="text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
+    </nav>
+
+    <script type="module">
+        // Importar funciones de Firebase (Versión Moderna V9)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc, setDoc, getDoc, onSnapshot } 
+               from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // TUS CREDENCIALES
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMWlp3Cgagz2MFDd8OIu4XRg9vdxFkEPc",
+            authDomain: "tanalza-app.firebaseapp.com",
+            projectId: "tanalza-app",
+            storageBucket: "tanalza-app.firebasestorage.app",
+            messagingSenderId: "458130807177",
+            appId: "1:458130807177:web:cde4e0d147c937b4542958"
+        };
+
+        // Iniciar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // ID de usuario fijo para esta app personal
+        const USER_ID = "marlon-vip-user"; 
+
+        // ESTADO LOCAL
+        let currentUser = { dupas: 0, invested: 0 };
+        let myTickets = [];
+        let selectedShopEvent = null;
+
+        // DATOS INICIALES (Para sembrar la DB si está vacía)
+        const initialEvents = [
+            { date: "21 FEB", artist: "Hernán Cattáneo", venue: "Templo Evva", city: "Manizales", color: "from-blue-900 to-black" },
+            { date: "07 MAR", artist: "Franky Rizardo", venue: "Club EcoCaracas", city: "Venezuela", color: "from-emerald-900 to-black" },
+            { date: "20 MAR", artist: "Adam Port", venue: "Tulum", city: "México", color: "from-orange-900 to-black" },
+            { date: "04 ABR", artist: "Nick Warren", venue: "TanAlza", city: "Manizales", color: "from-indigo-900 to-black" },
+            { date: "18 ABR", artist: "&ME", venue: "SuperClub", city: "Lima", color: "from-red-900 to-black" },
+            { date: "02 MAY", artist: "Hot Since 82", venue: "CityPark", city: "Manizales", color: "from-cyan-900 to-black" },
+            { date: "15 MAY", artist: "Rampa", venue: "CDMX", city: "México", color: "from-yellow-900 to-black" },
+            { date: "30 MAY", artist: "Guy J", venue: "Templo Evva", city: "Manizales", color: "from-blue-800 to-black" },
+            { date: "13 JUN", artist: "Dennis Cruz", venue: "EcoCaracas", city: "Venezuela", color: "from-green-900 to-black" },
+            { date: "27 JUN", artist: "Black Coffee", venue: "CityPark", city: "Manizales", color: "from-amber-900 to-black" },
+            { date: "11 JUL", artist: "Sasha", venue: "SuperClub", city: "Lima", color: "from-purple-900 to-black" },
+            { date: "25 JUL", artist: "Cloonee", venue: "TanAlza", city: "Manizales", color: "from-pink-900 to-black" },
+            { date: "01 AGO", artist: "Keinemusik Crew", venue: "Tulum", city: "México", color: "from-orange-800 to-black" },
+            { date: "02 AGO", artist: "Eelke Kleijn", venue: "CityPark", city: "Manizales", color: "from-teal-900 to-black" }
+        ];
+
+        const shopEvents = [
+            { date: "21 FEB", artist: "CORE Medellín", venue: "Parque Norte", price: 250, desc: "El escenario más impresionante de Tomorrowland llega a Medellín." },
+            { date: "07 MAR", artist: "Artbat", venue: "Templo Evva", price: 300, desc: "Melodic Techno ucraniano en su máxima expresión." },
+            { date: "14 MAR", artist: "Nastia & Hemka", venue: "SuperClub Lima", price: 150, desc: "Noche de Techno crudo e industrial." },
+            { date: "27 MAR", artist: "Jamie Jones", venue: "Tulum", price: 400, desc: "Paradise Vibes en la selva mexicana." },
+            { date: "04 ABR", artist: "Doom Festival", venue: "TanAlza", price: 200, desc: "El festival local más oscuro y potente." },
+            { date: "11 ABR", artist: "Boris Brejcha", venue: "CDMX", price: 500, desc: "High-Tech Minimal con máscara veneciana." },
+            { date: "24 ABR", artist: "Amelie Lens", venue: "CityPark", price: 280, desc: "La reina del Acid Techno belga." },
+            { date: "02 MAY", artist: "Ultra Perú", venue: "Lima", price: 800, desc: "Festival masivo multigonero." },
+            { date: "16 MAY", artist: "Maceo Plex", venue: "EcoCaracas", price: 350, desc: "Sonidos futuristas y Dark Disco." },
+            { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
+        ];
+
+        // --- LÓGICA PRINCIPAL ---
+
+        async function initApp() {
+            showLoader(true);
+            
+            // 1. Revisar si existe el usuario en Google Cloud
+            const userRef = doc(db, "users", USER_ID);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                console.log("Usuario nuevo. Sembrando datos en la nube...");
+                // Crear usuario inicial
+                await setDoc(userRef, {
+                    dupas: 4200,
+                    invested: 8450000,
+                    name: "Marlon Tangarife"
+                });
+
+                // Crear tickets iniciales
+                const ticketsRef = collection(db, "tickets");
+                for (const ev of initialEvents) {
+                    await addDoc(ticketsRef, { ...ev, userId: USER_ID });
+                }
+            }
+
+            // 2. Suscribirse a cambios en tiempo real del Usuario
+            onSnapshot(userRef, (doc) => {
+                const data = doc.data();
+                currentUser = data;
+                updateHeaderUI();
+            });
+
+            // 3. Suscribirse a cambios en Tickets
+            const q = query(collection(db, "tickets"), where("userId", "==", USER_ID));
+            onSnapshot(q, (snapshot) => {
+                myTickets = [];
+                snapshot.forEach((doc) => {
+                    myTickets.push({ id: doc.id, ...doc.data() });
+                });
+                renderHome();
+                document.getElementById('ticketCount').innerText = myTickets.length;
+                document.getElementById('statTicketCount').innerText = myTickets.length;
+            });
+
+            // Renderizar tienda (estática por ahora)
+            renderShop();
+            loadProfileImage();
+
+            // Ocultar Splash y Loader
+            setTimeout(() => {
+                document.getElementById('splashScreen').style.opacity = '0';
+                setTimeout(() => document.getElementById('splashScreen').style.display = 'none', 700);
+                showLoader(false);
+            }, 1500);
+        }
+
+        // --- RENDERIZADO ---
+        function renderHome() {
+            document.getElementById('ticketsContainer').innerHTML = myTickets.map(ev => `
+                <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
+                     onclick="window.app.openTicket('${ev.artist}', '${ev.venue}')">
+                    <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
+                    <div class="absolute inset-0 p-6 flex flex-col justify-between z-10">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-4xl font-black text-white leading-none tracking-tighter block">${ev.date.split(' ')[0]}</span>
+                                <span class="text-xs font-bold text-white/60 tracking-widest uppercase">${ev.date.split(' ')[1]}</span>
+                            </div>
+                             <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                                <i class="fas fa-arrow-right text-white text-xs -rotate-45 group-hover:rotate-0 transition-transform"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">${ev.city || 'Event'}</p>
+                            <h2 class="text-2xl font-black text-white leading-tight">${ev.artist}</h2>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderShop() {
+            document.getElementById('shopContainer').innerHTML = shopEvents.map((ev, i) => `
+                <div class="fade-in-up flex items-center justify-between p-4 bg-gray-900/40 border border-white/5 rounded-2xl hover:bg-gray-800 transition cursor-pointer group"
+                     style="animation-delay: ${i*0.03}s" onclick='window.app.openBuyModal(${JSON.stringify(ev)})'>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 bg-gray-800 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-purple-500/50 transition">
+                            <span class="text-sm font-bold text-white">${ev.date.split(' ')[0]}</span>
+                            <span class="text-[9px] uppercase text-gray-500 font-bold">${ev.date.split(' ')[1]}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-lg">${ev.artist}</h4>
+                            <span class="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">${ev.price} Dupas</span>
+                        </div>
+                    </div>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition">
+                        <i class="fas fa-plus text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function updateHeaderUI() {
+            document.getElementById('displayDupas').innerText = currentUser.dupas.toLocaleString();
+            document.getElementById('statInvested').innerText = '$' + (currentUser.invested / 1000000).toFixed(1) + 'M';
+        }
+
+        // --- COMPRAS (ESCRIBE EN FIREBASE) ---
+        window.app.confirmPurchase = async () => {
+            if(!selectedShopEvent) return;
+            
+            if (currentUser.dupas < selectedShopEvent.price) {
+                alert("Fondos insuficientes. Necesitas más Dupas.");
+                return;
+            }
+
+            showLoader(true);
+
+            try {
+                // 1. Descontar Dupas
+                const userRef = doc(db, "users", USER_ID);
+                await updateDoc(userRef, {
+                    dupas: currentUser.dupas - selectedShopEvent.price,
+                    invested: currentUser.invested + (selectedShopEvent.price * 1000) // Simulación valor
+                });
+
+                // 2. Crear Ticket
+                await addDoc(collection(db, "tickets"), {
+                    userId: USER_ID,
+                    artist: selectedShopEvent.artist,
+                    date: selectedShopEvent.date,
+                    venue: selectedShopEvent.venue,
+                    city: "Manizales", // Default
+                    color: "from-purple-900 to-black"
+                });
+
+                showLoader(false);
+                window.app.closeBuyModal();
+                window.app.switchTab('home');
+                alert("¡Compra exitosa! Tu ticket está seguro en Google Cloud.");
+
+            } catch (error) {
+                console.error("Error comprando:", error);
+                showLoader(false);
+                alert("Error de conexión");
+            }
+        };
+
+        // --- UTILIDADES ---
+        function showLoader(show) {
+            const l = document.getElementById('cloudLoader');
+            if(show) l.classList.remove('hidden'); else l.classList.add('hidden');
+        }
+        
+        // Exportar funciones al objeto global 'window.app' para que el HTML las vea
+        window.app = window.app || {};
+        window.app.openBuyModal = (ev) => {
+            if(typeof ev === 'string') ev = JSON.parse(ev); // Fallback
+            selectedShopEvent = ev;
+            document.getElementById('buyArtist').innerText = ev.artist;
+            document.getElementById('buyPrice').innerText = ev.price;
+            document.getElementById('buyDate').innerText = ev.date;
+            document.getElementById('buyDesc').innerText = ev.desc;
+            const modal = document.getElementById('buyModal');
+            const sheet = document.getElementById('buySheetContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
+        };
+        
+        // --- INICIAR ---
+        initApp();
+
+    </script>
+
+    <script>
+        // Funciones UI simples que no necesitan Firebase
+        window.app = window.app || {};
+        
+        window.app.closeBuyModal = () => {
+            const modal = document.getElementById('buyModal');
+            const sheet = document.getElementById('buySheetContent');
+            sheet.classList.add('translate-y-full');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        window.app.openTicket = (artist, venue) => {
+            document.getElementById('modalArtist').innerText = artist;
+            document.getElementById('modalVenue').innerText = venue;
+            const modal = document.getElementById('ticketModal');
+            const card = document.getElementById('ticketCard');
+            modal.classList.remove('hidden');
+            setTimeout(() => { modal.classList.remove('opacity-0'); card.classList.remove('scale-90'); card.classList.add('scale-100'); }, 10);
+        };
+
+        window.app.closeTicket = () => {
+            const modal = document.getElementById('ticketModal');
+            const card = document.getElementById('ticketCard');
+            modal.classList.add('opacity-0'); card.classList.remove('scale-100'); card.classList.add('scale-90');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        window.app.switchTab = (tab) => {
+            const views = ['viewHome', 'viewShop', 'viewProfile'];
+            const btns = ['btnHome', 'btnShop', 'btnProfile'];
+            views.forEach(v => document.getElementById(v).classList.add('hidden'));
+            btns.forEach(b => {
+                document.getElementById(b).classList.remove('text-white', 'text-purple-500');
+                document.getElementById(b).classList.add('text-gray-600');
+            });
+
+            if(tab === 'home') {
+                document.getElementById('viewHome').classList.remove('hidden');
+                document.getElementById('btnHome').classList.add('text-white');
+                document.getElementById('btnHome').classList.remove('text-gray-600');
+            } else if(tab === 'shop') {
+                document.getElementById('viewShop').classList.remove('hidden');
+                document.getElementById('btnShop').classList.add('text-purple-500');
+                document.getElementById('btnShop').classList.remove('text-gray-600');
+            } else {
+                document.getElementById('viewProfile').classList.remove('hidden');
+                document.getElementById('btnProfile').classList.add('text-white');
+                document.getElementById('btnProfile').classList.remove('text-gray-600');
+            }
+        };
+
+        // Manejo de Foto Local (Por simplicidad y evitar configurar Firebase Storage)
+        window.app.handlePhotoUpload = (input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    localStorage.setItem('marlonProfilePicV8', imageData);
+                    updateAvatarUI(imageData);
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        function loadProfileImage() {
+            const savedImage = localStorage.getItem('marlonProfilePicV8');
+            if (savedImage) updateAvatarUI(savedImage);
+        }
+
+        function updateAvatarUI(src) {
+            document.getElementById('profileImage').src = src;
+            document.getElementById('profileImage').classList.remove('hidden');
+            document.getElementById('profilePlaceholder').classList.add('hidden');
+            document.getElementById('headerAvatar').src = src;
+            document.getElementById('headerAvatar').classList.remove('hidden');
+            document.getElementById('headerPlaceholder').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
