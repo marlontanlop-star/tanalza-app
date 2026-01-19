@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nodlum ID - V15 Renamed</title>
+    <title>Nodlum ID - V16 Polished</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -13,17 +13,25 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
         
+        /* Animaciones Generales */
         .fade-in { opacity: 0; animation: fadeIn 1.5s ease-out forwards; }
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         .pulse-logo { animation: pulse 3s infinite ease-in-out; }
-        
         @keyframes fadeIn { to { opacity: 1; } }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
 
-        .svg-arch { stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawArch 2s ease-out forwards; }
-        @keyframes drawArch { to { stroke-dashoffset: 0; } }
+        /* NUEVA ANIMACIÓN HOLOGRÁFICA PARA TARJETAS */
+        .holo-pattern {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: holoMove 8s linear infinite;
+            opacity: 0.15;
+            mix-blend-mode: screen;
+        }
+        @keyframes holoMove { to { stroke-dashoffset: 0; } }
 
+        /* Componentes */
         .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(168, 85, 247, 0.2); }
         .insta-grid { display: grid; gap: 1.5rem; }
         .profile-upload:hover .overlay { opacity: 1; }
@@ -103,13 +111,13 @@
 
     <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
         <div class="text-center fade-in">
-            <svg width="220" height="80" viewBox="0 0 280 100" fill="none" class="mb-2">
-                <text x="10" y="70" fill="white" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">Nod</text>
-                <text x="145" y="70" fill="#14b8a6" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">lum</text>
-                <path d="M148 20 V 70" stroke="#14b8a6" stroke-width="8" stroke-linecap="round" class="svg-arch" style="animation-delay: 0.3s;"/>
-                <text x="265" y="35" fill="white" font-family="Inter" font-weight="500" font-size="18">®</text>
+            <svg width="240" height="100" viewBox="0 0 300 120" fill="none" class="mb-2">
+                <path d="M40 90 V 30 L 100 90 V 30" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M160 30 V 90 H 220" stroke="#14b8a6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="20" y="145" fill="white" font-family="Inter" font-weight="900" font-size="40" letter-spacing="2">NODLUM</text>
+                <text x="280" y="40" fill="white" font-family="Inter" font-weight="500" font-size="18">®</text>
             </svg>
-            <p class="text-sm text-gray-400 font-medium tracking-widest uppercase">By TanAlza</p>
+            <p class="text-sm text-gray-400 font-medium tracking-widest uppercase mt-8">By TanAlza</p>
         </div>
         <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando Ecosistema</p>
     </div>
@@ -124,11 +132,10 @@
             
             <div class="flex items-center justify-between pt-4 pb-2">
                 <div class="text-left fade-in" style="animation-delay: 0.3s;">
-                    <svg width="160" height="60" viewBox="0 0 280 100" fill="none">
-                        <text x="10" y="70" fill="white" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">Nod</text>
-                        <text x="145" y="70" fill="#14b8a6" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">lum</text>
-                        <path d="M148 20 V 70" stroke="#14b8a6" stroke-width="8" stroke-linecap="round"/>
-                        <text x="265" y="35" fill="white" font-family="Inter" font-weight="500" font-size="18">®</text>
+                     <svg width="180" height="60" viewBox="0 0 300 100" fill="none">
+                        <path d="M30 70 V 20 L 80 70 V 20" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M130 20 V 70 H 180" stroke="#14b8a6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                        <text x="200" y="70" fill="white" font-family="Inter" font-weight="900" font-size="60" letter-spacing="-1">Nodlum</text>
                     </svg>
                     <p class="text-[10px] text-gray-400 font-medium tracking-widest uppercase ml-2 mt-1">By TanAlza</p>
                 </div>
@@ -215,13 +222,12 @@
              
             <div class="relative z-10 text-center">
                 <div class="mb-10 pulse-logo">
-                    <svg width="200" height="70" viewBox="0 0 280 100" fill="none" class="mx-auto">
-                        <text x="10" y="70" fill="white" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">Nod</text>
-                        <text x="145" y="70" fill="#14b8a6" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">lum</text>
-                        <path d="M148 20 V 70" stroke="#14b8a6" stroke-width="8" stroke-linecap="round"/>
-                        <text x="265" y="35" fill="white" font-family="Inter" font-weight="500" font-size="18">®</text>
+                    <svg width="220" height="80" viewBox="0 0 300 100" fill="none" class="mx-auto">
+                        <path d="M30 70 V 20 L 80 70 V 20" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M130 20 V 70 H 180" stroke="#14b8a6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <text x="200" y="70" fill="white" font-family="Inter" font-weight="900" font-size="60" letter-spacing="-1">Nodlum</text>
                     </svg>
-                    <p class="text-xs text-gray-500 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
+                    <p class="text-xs text-gray-500 font-medium tracking-widest uppercase mt-2">By TanAlza</p>
                 </div>
                 
                 <div class="border-t border-b border-white/10 py-6 mb-6">
@@ -322,6 +328,7 @@
             }, 1500);
         }
 
+        // RENDERIZADO DE TICKETS CON NUEVA ANIMACIÓN HOLOGRÁFICA GLOBAL
         function renderTickets(tickets) {
             const container = document.getElementById('ticketsContainer');
             if (tickets.length === 0) {
@@ -331,15 +338,15 @@
             container.innerHTML = tickets.map(ev => `
                 <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
                      onclick="window.openTicket('${ev.artist}', '${ev.venue}')">
-                    <div class="absolute top-4 right-4 z-20 opacity-50 group-hover:opacity-100 transition-opacity text-right">
-                         <svg width="70" height="25" viewBox="0 0 280 100" fill="none">
-                            <text x="10" y="70" fill="white" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">Nod</text>
-                            <text x="145" y="70" fill="#14b8a6" font-family="Inter" font-weight="900" font-size="70" letter-spacing="-2">lum</text>
-                            <path d="M148 20 V 70" stroke="#14b8a6" stroke-width="8" stroke-linecap="round"/>
-                            <text x="265" y="35" fill="white" font-family="Inter" font-weight="500" font-size="18">®</text>
+                    
+                    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                        <svg class="w-full h-full holo-pattern" viewBox="0 0 400 400" fill="none">
+                             <path d="M-100 200 Q 100 100, 300 200 T 700 200" stroke="#14b8a6" stroke-width="2" opacity="0.5"/>
+                             <path d="M-100 250 Q 100 150, 300 250 T 700 250" stroke="#14b8a6" stroke-width="4" opacity="0.3" style="animation-delay: -2s;"/>
+                             <path d="M-100 300 Q 100 200, 300 300 T 700 300" stroke="#14b8a6" stroke-width="6" opacity="0.1" style="animation-delay: -4s;"/>
                         </svg>
-                         <p class="text-[8px] text-gray-400 font-medium tracking-widest uppercase">By TanAlza</p>
                     </div>
+
                     <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
                     <div class="absolute inset-0 p-6 flex flex-col justify-between z-10">
                         <div class="flex justify-between items-start">
