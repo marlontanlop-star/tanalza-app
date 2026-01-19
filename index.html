@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V25 Wallet Pro</title>
+    <title>Loop ID - V26 Final Polish</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -50,7 +50,7 @@
         @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* --- Wallet Styles --- */
+        /* --- NFC & Wallet --- */
         .nfc-arc { stroke: currentColor; fill: none; stroke-linecap: round; opacity: 0.2; }
         .nfc-active { animation: nfcPulse 1.5s infinite; }
         @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
@@ -71,6 +71,47 @@
     </style>
 
     <script>
+        // --- MANEJO DE FOTOS ROBUSTO ---
+        window.handlePhotoUpload = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    // Guardar en LocalStorage (Memoria del navegador)
+                    try {
+                        localStorage.setItem('loopProfilePicV26', imageData);
+                        updateAllAvatars(imageData);
+                    } catch (error) {
+                        alert("Imagen muy grande para guardar localmente. Intenta con una más liviana.");
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        function updateAllAvatars(src) {
+            // Actualizar todas las imagenes con la clase avatar-img
+            const imgs = document.querySelectorAll('.avatar-img');
+            const placeholders = document.querySelectorAll('.avatar-placeholder');
+            
+            imgs.forEach(img => { 
+                img.src = src; 
+                img.classList.remove('hidden'); 
+            });
+            placeholders.forEach(ph => ph.classList.add('hidden'));
+        }
+
+        // Cargar foto AL INICIO
+        window.onload = function() {
+            // 1. Cargar Foto
+            const savedImage = localStorage.getItem('loopProfilePicV26');
+            if (savedImage) updateAllAvatars(savedImage);
+
+            // 2. Inicializar Firebase (simulado trigger)
+            if(window.initApp) window.initApp();
+        };
+
+        // --- NAVEGACION ---
         window.switchTab = function(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -100,6 +141,7 @@
             setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         };
 
+        // --- WALLET MODAL LOGIC ---
         window.openWalletCard = function(type) {
             const modalContent = document.getElementById('walletModalContent');
             const cardName = document.getElementById('walletCardName');
@@ -156,27 +198,6 @@
             document.getElementById('buySheetContent').classList.add('translate-y-full');
             setTimeout(() => document.getElementById('buyModal').classList.add('hidden'), 300);
         };
-        
-        window.handlePhotoUpload = function(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    localStorage.setItem('loopProfilePic', e.target.result);
-                    updateAllAvatars(e.target.result);
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        };
-
-        function updateAllAvatars(src) {
-            document.querySelectorAll('.avatar-img').forEach(img => { img.src = src; img.classList.remove('hidden'); });
-            document.querySelectorAll('.avatar-placeholder').forEach(ph => ph.classList.add('hidden'));
-        }
-
-        window.onload = function() {
-            const savedImage = localStorage.getItem('loopProfilePic');
-            if (savedImage) updateAllAvatars(savedImage);
-        };
     </script>
 </head>
 <body class="pb-32 pt-6">
@@ -187,7 +208,10 @@
             <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
             <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/>
             <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/>
-            <g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g>
+            <g class="fill-final">
+                <path class="stroke-anim" d="M340 100 V150" stroke-width="6"/>
+                <circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/>
+            </g>
             <text x="325" y="155" class="subtext" text-anchor="end">By TanAlza</text>
         </svg>
         <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando</p>
@@ -243,7 +267,15 @@
             <div class="insta-grid">
                 
                 <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('dupass')">
-                    <div class="absolute top-4 right-4 opacity-50"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="20"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="15"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="12"/><path d="M340 100 V150" stroke="white" stroke-width="20"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="15"/></svg></div>
+                    <div class="absolute top-4 right-4 opacity-50">
+                        <svg width="50" height="20" viewBox="0 0 500 200" fill="none">
+                            <path d="M100 80 V135 H135" stroke="white" stroke-width="6"/>
+                            <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
+                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/>
+                            <path d="M340 100 V150" stroke="white" stroke-width="6"/>
+                            <circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/>
+                        </svg>
+                    </div>
                     <div class="flex flex-col justify-between h-full relative z-10">
                         <div class="flex justify-between items-start mt-2">
                             <div class="bg-black/20 p-3 rounded-full backdrop-blur-md"><i class="fas fa-wifi text-emerald-300 rotate-90 text-2xl"></i></div>
@@ -256,7 +288,15 @@
                 </div>
 
                 <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('titanium')">
-                    <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="20"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="15"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="12"/><path d="M340 100 V150" stroke="white" stroke-width="20"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="15"/></svg></div>
+                    <div class="absolute top-4 right-4 opacity-30">
+                        <svg width="50" height="20" viewBox="0 0 500 200" fill="none">
+                            <path d="M100 80 V135 H135" stroke="white" stroke-width="6"/>
+                            <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
+                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/>
+                            <path d="M340 100 V150" stroke="white" stroke-width="6"/>
+                            <circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/>
+                        </svg>
+                    </div>
                     <div class="flex flex-col justify-between h-full relative z-10">
                         <div class="flex justify-between items-start mt-1">
                             <i class="fas fa-crown text-gray-400 text-3xl"></i>
@@ -269,7 +309,15 @@
                 </div>
 
                 <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('evva')">
-                    <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="20"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="15"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="12"/><path d="M340 100 V150" stroke="white" stroke-width="20"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="15"/></svg></div>
+                    <div class="absolute top-4 right-4 opacity-30">
+                        <svg width="50" height="20" viewBox="0 0 500 200" fill="none">
+                            <path d="M100 80 V135 H135" stroke="white" stroke-width="6"/>
+                            <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
+                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/>
+                            <path d="M340 100 V150" stroke="white" stroke-width="6"/>
+                            <circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/>
+                        </svg>
+                    </div>
                     <div class="flex flex-col justify-between h-full relative z-10">
                         <div class="flex justify-between items-start mt-1">
                             <i class="fas fa-fire text-red-300 text-3xl"></i>
@@ -300,42 +348,28 @@
                     </div>
                 </div>
                 <h2 class="text-3xl font-thin text-white mb-1">Marlon Tangarife</h2>
-                <p class="text-xs text-gray-500 uppercase tracking-widest mb-6">Loop Member Since 2025</p>
+                <div class="flex items-center justify-center gap-2">
+                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-pink-300 border border-pink-300/20">Global Nomad</span>
+                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
+                </div>
             </div>
-
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                    <p class="text-[9px] text-gray-500 uppercase tracking-wider mb-2">Eventos Totales</p>
+                <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
+                    <p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p>
                     <p class="text-3xl font-black text-white" id="statTicketCount">0</p>
                 </div>
-                <div class="bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                    <p class="text-[9px] text-gray-500 uppercase tracking-wider mb-2">Portfolio Value</p>
-                    <p class="text-lg font-bold text-emerald-400" id="statInvested">...</p>
+                <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
+                    <p class="text-gray-500 text-[10px] uppercase mb-1">Localidad</p>
+                    <p class="text-lg font-bold text-pink-300">Backstage</p>
                 </div>
-                <div class="col-span-2 bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm flex justify-between items-center">
+                <div class="bg-gray-900 p-6 rounded-2xl col-span-2 flex justify-between items-center border border-white/10">
                     <div>
-                        <p class="text-[9px] text-gray-500 uppercase tracking-wider">Pasaporte Global</p>
-                        <p class="text-xl font-bold text-white mt-1">4 Países</p>
+                        <p class="text-gray-400 text-[10px] uppercase mb-1 tracking-widest">Inversión Total</p>
+                        <p class="text-3xl font-black text-white" id="statInvested">...</p>
                     </div>
-                    <div class="flex gap-2">
-                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">MX</span>
-                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">CO</span>
-                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">VE</span>
-                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">PE</span>
-                    </div>
-                </div>
-                <div class="col-span-2 bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
-                    <p class="text-[9px] text-gray-500 uppercase tracking-wider mb-3">Ruta de Clubs 2026</p>
-                    <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-500/30 mb-2"><i class="fas fa-music text-purple-300"></i></div><span class="text-[8px] text-gray-400">Evva</span></div>
-                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30 mb-2"><i class="fas fa-tree text-blue-300"></i></div><span class="text-[8px] text-gray-400">CityPark</span></div>
-                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-emerald-900/50 flex items-center justify-center border border-emerald-500/30 mb-2"><i class="fas fa-leaf text-emerald-300"></i></div><span class="text-[8px] text-gray-400">EcoCcs</span></div>
-                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-orange-900/50 flex items-center justify-center border border-orange-500/30 mb-2"><i class="fas fa-sun text-orange-300"></i></div><span class="text-[8px] text-gray-400">Tulum</span></div>
-                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-red-900/50 flex items-center justify-center border border-red-500/30 mb-2"><i class="fas fa-star text-red-300"></i></div><span class="text-[8px] text-gray-400">Lima</span></div>
-                    </div>
+                    <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
                 </div>
             </div>
-
             <div class="bg-black/50 p-4 rounded-3xl border border-white/5 relative overflow-hidden flex justify-center">
                 <div class="w-full max-w-sm h-64 relative">
                     <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
@@ -361,21 +395,22 @@
 
     <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
         <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
-            
             <div class="absolute top-8 w-full text-center opacity-80">
-                <svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="15"/><circle cx="180" cy="115" r="30" stroke="white" stroke-width="12"/><rect x="230" y="85" width="110" height="60" rx="30" stroke="white" stroke-width="10"/><g><path d="M370 85 V160" stroke="white" stroke-width="15"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="12"/></g></svg>
+                <svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto">
+                    <path d="M100 80 V135 H135" stroke="white" stroke-width="6"/>
+                    <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
+                    <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/>
+                    <g><path d="M370 85 V160" stroke="white" stroke-width="6"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="5"/></g>
+                </svg>
             </div>
-
             <div class="mb-10 relative mt-10">
                 <div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
                 <div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl">
                     <i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i>
                 </div>
             </div>
-            
             <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
             <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
-            
             <div class="flex flex-col items-center gap-2">
                 <p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p>
                 <i class="fas fa-arrow-up text-white animate-bounce"></i>
@@ -467,7 +502,7 @@
             { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
         ];
 
-        async function initApp() {
+        window.initApp = async function() {
             showLoader(true);
             const userRef = doc(db, "users", USER_ID);
             const userSnap = await getDoc(userRef);
@@ -544,19 +579,6 @@
             `).join('');
         }
 
-        window.openBuyModal = (ev) => {
-            if(typeof ev === 'string') ev = JSON.parse(ev);
-            selectedShopEvent = ev;
-            document.getElementById('buyArtist').innerText = ev.artist;
-            document.getElementById('buyPrice').innerText = ev.price;
-            document.getElementById('buyDate').innerText = ev.date;
-            document.getElementById('buyDesc').innerText = ev.desc;
-            const modal = document.getElementById('buyModal');
-            const sheet = document.getElementById('buySheetContent');
-            modal.classList.remove('hidden');
-            setTimeout(() => sheet.classList.remove('translate-y-full'), 10);
-        };
-
         window.confirmPurchase = async () => {
             if(!selectedShopEvent) return;
             if (currentUser.dupas < selectedShopEvent.price) { alert("Fondos insuficientes."); return; }
@@ -573,8 +595,6 @@
             const l = document.getElementById('cloudLoader');
             if(show) l.classList.remove('hidden'); else l.classList.add('hidden');
         }
-
-        initApp();
     </script>
 </body>
 </html>
