@@ -3,58 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - By TanAlza (V19 Fixed)</title>
+    <title>Loop ID - V20 Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --bg-color: #000000;
             --logo-color: #ffffff;
-            --accent-color: #ffb6c1; /* Rosado Clarito */
+            --accent-color: #ffb6c1; 
         }
 
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* --- ANIMACIONES DEL LOGO (SOLO ANIMACIÓN, NO GROSOR) --- */
-        .stroke-anim {
-            fill: none;
-            stroke: var(--logo-color);
-            /* SE ELIMINÓ stroke-width DE AQUÍ PARA RESPETAR EL SVG ORIGINAL */
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: drawIn 2s ease-out forwards;
-        }
-        .loop-capsule {
-            fill: none;
-            stroke: var(--logo-color);
-             /* SE ELIMINÓ stroke-width DE AQUÍ */
-            stroke-linecap: round;
-            animation: drawIn 2.5s ease-out forwards;
-        }
-        .loop-glow {
-            fill: none;
-            stroke: var(--accent-color);
-             /* SE ELIMINÓ stroke-width DE AQUÍ */
-            stroke-linecap: round;
-            stroke-dasharray: 50, 150;
-            opacity: 0;
-            animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s;
-        }
-        .fill-final {
-            fill: rgba(255,255,255,0);
-            animation: fillWhite 1s ease-in forwards 1.5s;
-        }
-        .subtext {
-            font-family: 'Inter', sans-serif; /* Usando Inter para consistencia */
-            font-size: 14px;
-            fill: #888;
-            opacity: 0;
-            animation: fadeIn 1s ease-out forwards 2.2s;
-        }
+        /* --- ANIMACIONES LOGO --- */
+        .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
+        .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
+        .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
+        .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
+        .subtext { font-family: 'Inter', sans-serif; font-size: 14px; fill: #888; opacity: 0; animation: fadeIn 1s ease-out forwards 2.2s; }
 
         @keyframes drawIn { to { stroke-dashoffset: 0; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
@@ -65,6 +35,10 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
+        /* NFC Animation */
+        .nfc-ripple { position: absolute; border-radius: 50%; border: 1px solid rgba(56, 189, 248, 0.5); animation: nfcWave 2s infinite ease-out; }
+        @keyframes nfcWave { 0% { width: 100%; height: 100%; opacity: 0.8; stroke-width: 2px; } 100% { width: 160%; height: 160%; opacity: 0; stroke-width: 0px; } }
+
         /* Componentes */
         .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
         .insta-grid { display: grid; gap: 1.5rem; }
@@ -74,6 +48,7 @@
         /* Stats & Map */
         .map-node { fill: #ffb6c1; animation: pulse-node 2s infinite; }
         .map-line { stroke-dasharray: 10; animation: dash 30s linear infinite; stroke: #ffb6c1; }
+        .map-croquis { fill: rgba(255, 255, 255, 0.05); stroke: rgba(255, 255, 255, 0.1); stroke-width: 0.5; }
         @keyframes pulse-node { 0% { r: 2; opacity: 1; } 50% { r: 4; opacity: 0.5; } 100% { r: 2; opacity: 1; } }
         @keyframes dash { to { stroke-dashoffset: -1000; } }
     </style>
@@ -135,9 +110,7 @@
         };
     </script>
 </head>
-<body class="pb-32">
-
-    <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
+<body class="pb-32 pt-6"> <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
         <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
             <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
             <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
@@ -156,19 +129,11 @@
         <div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <header class="fixed top-0 w-full z-40 bg-black/80 backdrop-blur-md px-6 py-4 flex justify-between items-center border-b border-white/5">
-        <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Online</span>
-        </div>
-        <button class="text-gray-400 hover:text-white"><i class="fas fa-bell"></i></button>
-    </header>
-
-    <main class="mt-20 px-4 max-w-md mx-auto min-h-screen relative">
+    <main class="px-4 max-w-md mx-auto min-h-screen relative">
         
         <div id="viewHome" class="space-y-8 fade-in-up">
             
-            <div class="flex items-center justify-between pt-4 pb-2">
+            <div class="flex items-center justify-between pt-2 pb-2">
                 <div class="text-left fade-in" style="animation-delay: 0.3s;">
                      <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                         <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
@@ -192,10 +157,13 @@
                     </div>
                     <input type="file" id="photoInputHome" hidden accept="image/*" onchange="window.handlePhotoUpload(this)">
 
-                    <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-1 flex items-center gap-2 backdrop-blur-md">
-                        <span class="w-1.5 h-1.5 rounded-full bg-pink-300"></span>
-                        <span class="text-sm font-bold text-white" id="displayDupas">...</span>
-                        <span class="text-[9px] font-bold text-pink-300 uppercase tracking-widest">Dupas</span>
+                    <div class="text-right">
+                        <h2 class="text-lg font-thin text-white leading-none mb-1">Marlon T.</h2>
+                        <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-0.5 flex items-center gap-2 backdrop-blur-md justify-end">
+                            <span class="w-1.5 h-1.5 rounded-full bg-pink-300"></span>
+                            <span class="text-xs font-bold text-white" id="displayDupas">...</span>
+                            <span class="text-[8px] font-bold text-pink-300 uppercase tracking-widest">Dupas</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -229,7 +197,7 @@
                     </div>
                 </div>
                 
-                <h2 class="text-3xl font-black text-white mb-1">Marlon Tangarife</h2>
+                <h2 class="text-3xl font-thin text-white mb-1">Marlon Tangarife</h2>
                 <div class="flex items-center justify-center gap-2">
                     <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-pink-300 border border-pink-300/20">Global Nomad</span>
                     <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
@@ -258,13 +226,23 @@
                 <h3 class="text-lg font-bold text-white mb-4">Tour Map 2026</h3>
                 <div class="w-full h-56 relative flex items-center justify-center bg-gray-900/20 rounded-xl border border-white/5">
                     <svg width="100%" height="100%" viewBox="0 0 100 100" class="absolute inset-0">
+                        <path d="M10 10 Q 30 15 40 30 T 70 20 T 90 30 T 85 60 T 60 90 T 35 80 T 20 40 T 10 10" class="map-croquis" />
+                        
                         <path d="M20 20 L 45 50 L 40 85" stroke="#333" stroke-width="1" fill="none" />
                         <path d="M45 50 L 80 25" stroke="#333" stroke-width="1" fill="none" />
                         <path d="M20 20 L 45 50 L 80 25" class="map-line" stroke-width="0.5" fill="none"/>
+                        
                         <circle cx="20" cy="20" r="2" class="map-node" />
+                        <text x="10" y="15" fill="#666" font-size="3" font-weight="bold">MEXICO (MX)</text>
+                        
                         <circle cx="80" cy="25" r="2" class="map-node" style="animation-delay: 0.5s"/>
+                        <text x="75" y="20" fill="#666" font-size="3" font-weight="bold">VENEZUELA (VE)</text>
+                        
                         <circle cx="45" cy="50" r="4" fill="#ffb6c1" style="filter: drop-shadow(0 0 6px #ffb6c1);"/>
+                        <text x="50" y="55" fill="white" font-size="4" font-weight="bold">COLOMBIA (CO)</text>
+                        
                         <circle cx="40" cy="85" r="2" class="map-node" style="animation-delay: 1s"/>
+                        <text x="30" y="92" fill="#666" font-size="3" font-weight="bold">PERU (PE)</text>
                     </svg>
                 </div>
             </div>
@@ -275,14 +253,14 @@
         <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[85vh]">
              
             <div class="bg-white/5 p-4 border-b border-white/10 text-center flex-shrink-0">
-                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet">
+                <svg width="120" height="50" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-1" preserveAspectRatio="xMidYMid meet">
                     <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
                     <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
                     <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4" />
                     <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2" />
                     <g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g>
                 </svg>
-                <p class="text-[9px] text-gray-400 uppercase tracking-widest">Official Smart Ticket</p>
+                <p class="text-[9px] text-gray-400 uppercase tracking-widest">By TanAlza</p>
             </div>
 
             <div class="p-6 overflow-y-auto flex-1 no-scrollbar">
@@ -290,6 +268,9 @@
                 <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
 
                 <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center">
+                    <div class="nfc-ripple" style="animation-delay: 0s;"></div>
+                    <div class="nfc-ripple" style="animation-delay: 1s;"></div>
+                    
                     <svg class="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100" style="animation: spin 8s linear infinite;">
                         <defs>
                             <linearGradient id="gradTicket" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -300,10 +281,12 @@
                         <path d="M50 10 A 40 40 0 0 1 50 90 A 40 40 0 0 1 50 10" stroke="url(#gradTicket)" stroke-width="2" fill="none" stroke-dasharray="20 10"/>
                     </svg>
                     
-                    <div class="bg-white p-3 rounded-xl w-44 h-44 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.3)]">
+                    <div class="bg-white p-3 rounded-xl w-44 h-44 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.3)] relative z-10">
                         <i class="fas fa-qrcode text-9xl text-black"></i>
                     </div>
                 </div>
+                
+                <p class="text-center text-[10px] text-blue-400 font-bold mb-6 animate-pulse">ACERCAR PARA TRANSFERENCIA NFC</p>
 
                 <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left">
                     <div>
