@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V24 Radiant Wallet</title>
+    <title>Loop ID - V25 Wallet Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -50,18 +50,18 @@
         @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* --- NFC & Wallet --- */
+        /* --- Wallet Styles --- */
         .nfc-arc { stroke: currentColor; fill: none; stroke-linecap: round; opacity: 0.2; }
         .nfc-active { animation: nfcPulse 1.5s infinite; }
         @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
         
-        /* Card Gradients "Radiantes" */
-        .card-titanium { background: radial-gradient(circle at 0% 0%, #4b5563 0%, #1f2937 50%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 0 30px rgba(255,255,255,0.1); }
-        .card-evva { background: radial-gradient(circle at 100% 0%, #ef4444 0%, #7f1d1d 60%, #450a0a 100%); border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: 0 0 30px rgba(220, 38, 38, 0.2); }
-        .card-dupass { background: radial-gradient(circle at 50% 0%, #34d399 0%, #059669 50%, #064e3b 100%); border: 1px solid rgba(52, 211, 153, 0.3); box-shadow: 0 0 40px rgba(16, 185, 129, 0.25); }
+        .card-titanium { background: radial-gradient(circle at 0% 0%, #4b5563 0%, #1f2937 50%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); }
+        .card-evva { background: radial-gradient(circle at 100% 0%, #ef4444 0%, #7f1d1d 60%, #450a0a 100%); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .card-dupass { background: radial-gradient(circle at 50% 0%, #34d399 0%, #059669 50%, #064e3b 100%); border: 1px solid rgba(52, 211, 153, 0.3); }
 
-        .card-float { animation: floatCard 4s ease-in-out infinite; }
-        @keyframes floatCard { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .modal-titanium { background: radial-gradient(circle at 50% 0%, #4b5563 0%, #000000 80%); }
+        .modal-evva { background: radial-gradient(circle at 50% 0%, #991b1b 0%, #000000 80%); }
+        .modal-dupass { background: radial-gradient(circle at 50% 0%, #065f46 0%, #000000 80%); }
 
         /* Componentes */
         .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
@@ -84,7 +84,6 @@
             if(tab === 'profile') activeBtn = 'btnProfile';
 
             const activeView = 'view' + tab.charAt(0).toUpperCase() + tab.slice(1);
-            
             document.getElementById(activeView).classList.remove('hidden');
             document.getElementById(activeBtn).classList.remove('text-gray-600');
             document.getElementById(activeBtn).classList.add(tab === 'shop' || tab === 'wallet' ? 'text-pink-300' : 'text-white');
@@ -101,32 +100,34 @@
             setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         };
 
-        window.openWalletCard = function(type, name) {
-            const modal = document.getElementById('walletModal');
+        window.openWalletCard = function(type) {
+            const modalContent = document.getElementById('walletModalContent');
             const cardName = document.getElementById('walletCardName');
             const cardDesc = document.getElementById('walletCardDesc');
             const cardIcon = document.getElementById('walletCardIcon');
             
-            // Set data based on card type
+            // Reset Classes
+            modalContent.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10";
+            
             if(type === 'titanium') {
+                modalContent.classList.add('modal-titanium');
                 cardName.innerText = "CLUBMEM TITANIUM";
-                cardName.className = "text-3xl font-black text-white";
-                cardDesc.innerText = "Acceso Total + Descuentos CityPark";
-                cardIcon.className = "fas fa-crown text-6xl text-gray-400";
+                cardDesc.innerText = "ACCESO TOTAL · 2026";
+                cardIcon.className = "fas fa-crown text-6xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]";
             } else if(type === 'evva') {
+                modalContent.classList.add('modal-evva');
                 cardName.innerText = "TEMPLO EVVA";
-                cardName.className = "text-3xl font-black text-red-500";
-                cardDesc.innerText = "Membresía Semestral VIP";
-                cardIcon.className = "fas fa-fire text-6xl text-red-500";
+                cardDesc.innerText = "MEMBRESÍA SEMESTRAL";
+                cardIcon.className = "fas fa-fire text-6xl text-red-200 drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]";
             } else if(type === 'dupass') {
+                modalContent.classList.add('modal-dupass');
                 cardName.innerText = "DUPASS PAY";
-                cardName.className = "text-3xl font-black text-emerald-400";
-                cardDesc.innerText = "Terminal de Pago NFC Activa";
-                cardIcon.className = "fas fa-wifi text-6xl text-emerald-400 rotate-90";
+                cardDesc.innerText = "BILLETERA ECO-HABITANTE";
+                cardIcon.className = "fas fa-wifi text-6xl text-emerald-200 rotate-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]";
             }
 
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.firstElementChild.classList.remove('scale-90'), 10);
+            document.getElementById('walletModal').classList.remove('hidden');
+            setTimeout(() => modalContent.classList.remove('scale-90'), 10);
         };
 
         window.closeWalletModal = function() {
@@ -239,52 +240,46 @@
 
         <div id="viewWallet" class="hidden space-y-6 fade-in-up pb-20">
             <h2 class="text-2xl font-black text-white px-2 mt-4">Wallet & Pay</h2>
-            
             <div class="insta-grid">
                 
-                <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group" onclick="window.openWalletCard('dupass')">
-                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10"></div>
+                <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('dupass')">
+                    <div class="absolute top-4 right-4 opacity-50"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="20"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="15"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="12"/><path d="M340 100 V150" stroke="white" stroke-width="20"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="15"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
-                        <div class="flex justify-between items-start">
-                            <div class="bg-black/20 p-2 rounded-full backdrop-blur-md"><i class="fas fa-wifi text-emerald-300 rotate-90"></i></div>
-                            <span class="text-[10px] font-bold text-emerald-900 bg-emerald-400 px-2 py-1 rounded-full uppercase">Active</span>
+                        <div class="flex justify-between items-start mt-2">
+                            <div class="bg-black/20 p-3 rounded-full backdrop-blur-md"><i class="fas fa-wifi text-emerald-300 rotate-90 text-2xl"></i></div>
                         </div>
                         <div>
                             <h3 class="text-2xl font-black text-white tracking-tighter">DUPASS PAY</h3>
-                            <p class="text-xs text-emerald-200">Terminal de Pago</p>
+                            <p class="text-xs text-emerald-200">Terminal Eco-Habitante</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group" onclick="window.openWalletCard('titanium')">
+                <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('titanium')">
+                    <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="20"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="15"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="12"/><path d="M340 100 V150" stroke="white" stroke-width="20"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="15"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
-                        <div class="flex justify-between items-start">
-                            <i class="fas fa-crown text-gray-400 text-xl"></i>
-                            <div class="w-10 h-7 bg-gradient-to-br from-yellow-100 to-yellow-600 rounded opacity-80"></div>
-                        </div>
-                        <div class="text-center my-auto opacity-30 group-hover:opacity-60 transition-opacity">
-                            <svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="15"/><circle cx="180" cy="115" r="30" stroke="white" stroke-width="12"/><rect x="230" y="85" width="110" height="60" rx="30" stroke="white" stroke-width="10"/><g><path d="M370 85 V160" stroke="white" stroke-width="15"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="12"/></g></svg>
+                        <div class="flex justify-between items-start mt-1">
+                            <i class="fas fa-crown text-gray-400 text-3xl"></i>
                         </div>
                         <div>
                             <h3 class="text-xl font-bold text-white tracking-widest">TITANIUM</h3>
-                            <p class="text-[9px] text-gray-400 font-mono">CLUBMEM ANNUAL PASS</p>
+                            <p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest">ClubMem Annual Pass</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group" onclick="window.openWalletCard('evva')">
+                <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="window.openWalletCard('evva')">
+                    <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="20"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="15"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="12"/><path d="M340 100 V150" stroke="white" stroke-width="20"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="15"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
-                        <div class="flex justify-between items-start">
-                            <i class="fas fa-fire text-red-300 text-xl"></i>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" class="nfc-active"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/></svg>
+                        <div class="flex justify-between items-start mt-1">
+                            <i class="fas fa-fire text-red-300 text-3xl"></i>
                         </div>
                         <div>
                             <h3 class="text-xl font-black text-white tracking-tighter">EVVA RED</h3>
-                            <p class="text-[9px] text-red-200">SEMESTRAL ACCESS</p>
+                            <p class="text-[9px] text-red-200 uppercase tracking-widest">Semestral Access</p>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -298,35 +293,49 @@
 
         <div id="viewProfile" class="hidden space-y-6 pb-20 fade-in-up">
             <div class="text-center mt-8">
-                <div class="relative w-32 h-32 mx-auto rounded-full border-2 border-pink-300 p-1 mb-6 shadow-[0_0_30px_rgba(255,182,193,0.15)]">
+                <div class="relative w-32 h-32 mx-auto rounded-full border-2 border-pink-300 p-1 mb-4 shadow-[0_0_30px_rgba(255,182,193,0.15)]">
                     <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
                         <img class="w-full h-full object-cover hidden avatar-img" src="">
                         <div class="w-full h-full flex items-center justify-center bg-gray-900 avatar-placeholder"><span class="text-4xl font-black text-white">MT</span></div>
                     </div>
                 </div>
                 <h2 class="text-3xl font-thin text-white mb-1">Marlon Tangarife</h2>
-                <div class="flex items-center justify-center gap-2">
-                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-pink-300 border border-pink-300/20">Global Nomad</span>
-                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
-                </div>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mb-6">Loop Member Since 2025</p>
             </div>
+
             <div class="grid grid-cols-2 gap-3">
-                <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
-                    <p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p>
+                <div class="bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                    <p class="text-[9px] text-gray-500 uppercase tracking-wider mb-2">Eventos Totales</p>
                     <p class="text-3xl font-black text-white" id="statTicketCount">0</p>
                 </div>
-                <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
-                    <p class="text-gray-500 text-[10px] uppercase mb-1">Localidad</p>
-                    <p class="text-lg font-bold text-pink-300">Backstage</p>
+                <div class="bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                    <p class="text-[9px] text-gray-500 uppercase tracking-wider mb-2">Portfolio Value</p>
+                    <p class="text-lg font-bold text-emerald-400" id="statInvested">...</p>
                 </div>
-                <div class="bg-gray-900 p-6 rounded-2xl col-span-2 flex justify-between items-center border border-white/10">
+                <div class="col-span-2 bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm flex justify-between items-center">
                     <div>
-                        <p class="text-gray-400 text-[10px] uppercase mb-1 tracking-widest">Inversión Total</p>
-                        <p class="text-3xl font-black text-white" id="statInvested">...</p>
+                        <p class="text-[9px] text-gray-500 uppercase tracking-wider">Pasaporte Global</p>
+                        <p class="text-xl font-bold text-white mt-1">4 Países</p>
                     </div>
-                    <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
+                    <div class="flex gap-2">
+                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">MX</span>
+                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">CO</span>
+                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">VE</span>
+                        <span class="bg-white/10 px-2 py-1 rounded text-xs font-mono">PE</span>
+                    </div>
+                </div>
+                <div class="col-span-2 bg-gray-900/80 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                    <p class="text-[9px] text-gray-500 uppercase tracking-wider mb-3">Ruta de Clubs 2026</p>
+                    <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-500/30 mb-2"><i class="fas fa-music text-purple-300"></i></div><span class="text-[8px] text-gray-400">Evva</span></div>
+                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-blue-900/50 flex items-center justify-center border border-blue-500/30 mb-2"><i class="fas fa-tree text-blue-300"></i></div><span class="text-[8px] text-gray-400">CityPark</span></div>
+                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-emerald-900/50 flex items-center justify-center border border-emerald-500/30 mb-2"><i class="fas fa-leaf text-emerald-300"></i></div><span class="text-[8px] text-gray-400">EcoCcs</span></div>
+                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-orange-900/50 flex items-center justify-center border border-orange-500/30 mb-2"><i class="fas fa-sun text-orange-300"></i></div><span class="text-[8px] text-gray-400">Tulum</span></div>
+                        <div class="flex flex-col items-center min-w-[60px]"><div class="w-10 h-10 rounded-full bg-red-900/50 flex items-center justify-center border border-red-500/30 mb-2"><i class="fas fa-star text-red-300"></i></div><span class="text-[8px] text-gray-400">Lima</span></div>
+                    </div>
                 </div>
             </div>
+
             <div class="bg-black/50 p-4 rounded-3xl border border-white/5 relative overflow-hidden flex justify-center">
                 <div class="w-full max-w-sm h-64 relative">
                     <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
@@ -351,26 +360,28 @@
     </main>
 
     <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
-        <div class="w-full max-w-sm flex flex-col items-center transform transition-transform duration-300 scale-90">
-            <div class="mb-8 relative">
+        <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
+            
+            <div class="absolute top-8 w-full text-center opacity-80">
+                <svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="15"/><circle cx="180" cy="115" r="30" stroke="white" stroke-width="12"/><rect x="230" y="85" width="110" height="60" rx="30" stroke="white" stroke-width="10"/><g><path d="M370 85 V160" stroke="white" stroke-width="15"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="12"/></g></svg>
+            </div>
+
+            <div class="mb-10 relative mt-10">
                 <div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div>
-                <div class="relative bg-white/10 p-6 rounded-full border border-white/20 backdrop-blur-xl">
+                <div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl">
                     <i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i>
                 </div>
             </div>
             
-            <h2 id="walletCardName" class="text-3xl font-black text-white text-center mb-2">CARD NAME</h2>
-            <p id="walletCardDesc" class="text-gray-400 text-sm text-center mb-8 uppercase tracking-widest">Description</p>
+            <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
+            <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
             
-            <p class="text-blue-400 text-xs font-bold animate-pulse tracking-[0.2em]">READY TO TAP</p>
-            
-            <div class="mt-8 flex gap-1">
-                <div class="w-1 h-8 bg-blue-500 rounded-full animate-[pulse_1s_ease-in-out_infinite]"></div>
-                <div class="w-1 h-12 bg-blue-500 rounded-full animate-[pulse_1s_ease-in-out_0.2s_infinite]"></div>
-                <div class="w-1 h-8 bg-blue-500 rounded-full animate-[pulse_1s_ease-in-out_0.4s_infinite]"></div>
+            <div class="flex flex-col items-center gap-2">
+                <p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p>
+                <i class="fas fa-arrow-up text-white animate-bounce"></i>
             </div>
         </div>
-        <button onclick="window.closeWalletModal()" class="fixed bottom-10 w-12 h-12 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md"><i class="fas fa-times"></i></button>
+        <button onclick="window.closeWalletModal()" class="fixed bottom-10 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
     </div>
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
@@ -502,12 +513,7 @@
                 <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
                      onclick="window.openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
                     <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
-                        <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-                            <path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/>
-                            <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
-                            <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/>
-                            <g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g>
-                        </svg>
+                        <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
                         <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
                     </div>
                     <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
