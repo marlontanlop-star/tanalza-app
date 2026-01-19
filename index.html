@@ -3,33 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V28 Failsafe</title>
+    <title>Loop ID - V29 Stable</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Courier+New&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --bg-color: #000000;
-            --logo-color: #ffffff;
-            --accent-color: #ffb6c1; 
-            --white: #ffffff;
-            --pink-accent: #ffb6c1;
-            --line-width: 1.5px;
-        }
-
+        :root { --bg-color: #000000; --logo-color: #ffffff; --accent-color: #ffb6c1; --pink-accent: #ffb6c1; }
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
 
-        /* --- ANIMACIONES --- */
+        /* Animaciones */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
         .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
         .subtext { font-family: 'Inter', sans-serif; font-size: 14px; fill: #888; opacity: 0; animation: fadeIn 1s ease-out forwards 2.2s; }
-
+        
         @keyframes drawIn { to { stroke-dashoffset: 0; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes rotateGlow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
@@ -37,25 +29,24 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* --- ESTILOS DEL MAPA --- */
+        /* Map & Wallet */
         .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
-        .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: var(--line-width); stroke-linecap: round; }
+        .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: 1.5; stroke-linecap: round; }
         .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
         .airport-node { fill: var(--pink-accent); }
         .airport-pulse { fill: var(--pink-accent); transform-origin: center; animation: pulseRing 2.5s ease-out infinite; }
-        .iata-code { fill: var(--white); font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; letter-spacing: 2px; opacity: 0; animation: fadeIn 1s forwards 2.5s; }
+        .iata-code { fill: #fff; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; letter-spacing: 2px; opacity: 0; animation: fadeIn 1s forwards 2.5s; }
         @keyframes drawPath { to { stroke-dashoffset: 0; } }
         @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* --- NFC & Wallet --- */
-        .nfc-arc { stroke: currentColor; fill: none; stroke-linecap: round; opacity: 0.2; }
         .nfc-active { animation: nfcPulse 1.5s infinite; }
         @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
         
         .card-titanium { background: radial-gradient(circle at 0% 0%, #4b5563 0%, #1f2937 50%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); }
         .card-evva { background: radial-gradient(circle at 100% 0%, #ef4444 0%, #7f1d1d 60%, #450a0a 100%); border: 1px solid rgba(239, 68, 68, 0.3); }
         .card-dupass { background: radial-gradient(circle at 50% 0%, #34d399 0%, #059669 50%, #064e3b 100%); border: 1px solid rgba(52, 211, 153, 0.3); }
+        
         .modal-titanium { background: radial-gradient(circle at 50% 0%, #4b5563 0%, #000000 80%); }
         .modal-evva { background: radial-gradient(circle at 50% 0%, #991b1b 0%, #000000 80%); }
         .modal-dupass { background: radial-gradient(circle at 50% 0%, #065f46 0%, #000000 80%); }
@@ -67,7 +58,8 @@
     </style>
 
     <script>
-        // Datos Base
+        // Datos Base Globales
+        let selectedShopEvent = null;
         const staticShopEvents = [
             { date: "21 FEB", artist: "CORE Medellín", venue: "Parque Norte", price: 250, desc: "El escenario más impresionante de Tomorrowland llega a Medellín." },
             { date: "07 MAR", artist: "Artbat", venue: "Templo Evva", price: 300, desc: "Melodic Techno ucraniano en su máxima expresión." },
@@ -76,16 +68,17 @@
             { date: "11 ABR", artist: "Boris Brejcha", venue: "CDMX", price: 500, desc: "High-Tech Minimal con máscara veneciana." },
             { date: "20 JUN", artist: "Tale Of Us", venue: "CDMX", price: 550, desc: "Afterlife Experience completa." }
         ];
-        
-        let selectedShopEvent = null;
 
-        // --- GESTOR DE ARRANQUE ---
+        // --- ARRANQUE SEGURO ---
         window.onload = function() {
-            // 1. Cargar UI Estática inmediatamente
-            renderInitialShop();
-            loadSavedPhoto();
-            
-            // 2. Forzar ocultar Splash Screen después de 2.5s (Seguro contra fallos)
+            // 1. Cargar Foto Guardada
+            const savedImage = localStorage.getItem('loopProfilePicV26');
+            if (savedImage) updateAllAvatars(savedImage);
+
+            // 2. Renderizar Tienda Inicial (Para que no esté vacía)
+            renderShop(staticShopEvents);
+
+            // 3. Forzar desbloqueo de pantalla a los 2.5s (Pase lo que pase)
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
                 if(splash) {
@@ -95,7 +88,7 @@
             }, 2500);
         };
 
-        // --- UI FUNCTIONS ---
+        // --- FUNCIONES UI (Globales) ---
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -157,12 +150,14 @@
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
 
         function openBuyModal(evStr) {
-            const ev = JSON.parse(decodeURIComponent(evStr));
+            // Decodifica el string JSON seguro
+            const ev = typeof evStr === 'string' ? JSON.parse(decodeURIComponent(evStr)) : evStr;
             selectedShopEvent = ev;
             document.getElementById('buyArtist').innerText = ev.artist;
             document.getElementById('buyPrice').innerText = ev.price;
             document.getElementById('buyDate').innerText = ev.date;
             document.getElementById('buyDesc').innerText = ev.desc;
+            
             const modal = document.getElementById('buyModal');
             document.getElementById('buySheetContent').classList.remove('translate-y-full');
             modal.classList.remove('hidden');
@@ -178,17 +173,12 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
-                        localStorage.setItem('loopProfilePic', e.target.result);
+                        localStorage.setItem('loopProfilePicV26', e.target.result);
                         updateAllAvatars(e.target.result);
                     } catch(err) { alert("Imagen muy pesada"); }
                 }
                 reader.readAsDataURL(input.files[0]);
             }
-        }
-
-        function loadSavedPhoto() {
-            const savedImage = localStorage.getItem('loopProfilePic');
-            if (savedImage) updateAllAvatars(savedImage);
         }
 
         function updateAllAvatars(src) {
@@ -198,25 +188,29 @@
 
         function generateComplexQR() {
             const svg = document.getElementById('complexQrSvg');
+            if(!svg) return;
             let content = '';
             for(let i=0; i<19; i++) {
                 for(let j=0; j<19; j++) {
+                    // Espacio central para NFC
                     if (i > 6 && i < 12 && j > 6 && j < 12) continue;
                     if(Math.random() > 0.4 && !((i<6 && j<6) || (i>12 && j<6) || (i<6 && j>12))) {
                         content += `<rect x="${i*8 + 20}" y="${j*8 + 20}" width="6" height="6" fill="black" />`;
                     }
                 }
             }
+            // Position markers
             content += `<rect x="20" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="32" width="16" height="16" fill="black"/>`;
             content += `<rect x="132" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="144" y="32" width="16" height="16" fill="black"/>`;
             content += `<rect x="20" y="132" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="144" width="16" height="16" fill="black"/>`;
             svg.innerHTML = content;
         }
 
-        function renderInitialShop() {
+        // Renderizadores Globales
+        function renderShop(events) {
             const container = document.getElementById('shopContainer');
             if(container) {
-                container.innerHTML = staticShopEvents.map((ev, i) => `
+                container.innerHTML = events.map((ev, i) => `
                     <div class="fade-in-up flex items-center justify-between p-4 bg-gray-900/40 border border-white/5 rounded-2xl hover:bg-gray-800 transition cursor-pointer group"
                          style="animation-delay: ${i*0.03}s" onclick="openBuyModal('${encodeURIComponent(JSON.stringify(ev))}')">
                         <div class="flex items-center gap-4">
@@ -237,11 +231,11 @@
             }
         }
 
-        // Placeholder para compra (se sobrescribe con módulo)
+        // Placeholder compra (será reemplazada si carga Firebase)
         window.confirmPurchase = function() {
             alert("Conectando...");
         };
-        
+
         function showLoader(show) {
             const l = document.getElementById('cloudLoader');
             if(show) l.classList.remove('hidden'); else l.classList.add('hidden');
@@ -271,7 +265,13 @@
         <div id="viewHome" class="space-y-8 fade-in-up">
             <div class="flex items-center justify-between pt-2 pb-2">
                 <div class="text-left fade-in" style="animation-delay: 0.3s;">
-                     <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
+                     <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                        <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/>
+                        <circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/>
+                        <rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/>
+                        <rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/>
+                        <g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g>
+                    </svg>
                     <p class="text-[9px] text-gray-400 font-medium tracking-widest uppercase ml-8 -mt-2">By TanAlza</p>
                 </div>
                 <div class="flex flex-col items-end gap-2">
@@ -298,12 +298,15 @@
                 <h2 class="text-2xl font-black text-white">Mis Eventos</h2>
                 <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> ACTIVOS</span>
             </div>
-            <div id="ticketsContainer" class="insta-grid pb-10"><p class="text-gray-500 text-center py-10 text-xs">Cargando...</p></div>
+            <div id="ticketsContainer" class="insta-grid pb-10">
+                <p class="text-gray-500 text-center py-10 text-xs">Cargando tickets...</p>
+            </div>
         </div>
 
         <div id="viewWallet" class="hidden space-y-6 fade-in-up pb-20">
             <h2 class="text-2xl font-black text-white px-2 mt-4">Wallet & Pay</h2>
             <div class="insta-grid">
+                
                 <div class="relative w-full aspect-square card-dupass rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('dupass')">
                     <div class="absolute top-4 right-4 opacity-50"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
@@ -311,6 +314,7 @@
                         <div><h3 class="text-2xl font-black text-white tracking-tighter">DUPASS PAY</h3><p class="text-xs text-emerald-200">Terminal Eco-Habitante</p></div>
                     </div>
                 </div>
+
                 <div class="relative w-full aspect-square card-titanium rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('titanium')">
                     <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
@@ -318,6 +322,7 @@
                         <div><h3 class="text-xl font-bold text-white tracking-widest">TITANIUM</h3><p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest">ClubMem Annual Pass</p></div>
                     </div>
                 </div>
+
                 <div class="relative w-full aspect-square card-evva rounded-3xl overflow-hidden p-6 cursor-pointer group shadow-2xl transition-transform active:scale-95" onclick="openWalletCard('evva')">
                     <div class="absolute top-4 right-4 opacity-30"><svg width="50" height="20" viewBox="0 0 500 200" fill="none"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></svg></div>
                     <div class="flex flex-col justify-between h-full relative z-10">
@@ -400,7 +405,7 @@
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
         <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 flex flex-col h-[85vh]">
             <div class="bg-white/5 p-4 border-b border-white/10 text-center flex-shrink-0">
-                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
+                <svg width="150" height="60" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-2" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
                 <p class="text-[9px] text-gray-400 uppercase tracking-widest">By TanAlza</p>
             </div>
             <div class="p-6 overflow-y-auto flex-1 no-scrollbar">
@@ -438,13 +443,6 @@
             <button onclick="window.confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition">Canjear Ahora</button>
         </div>
     </div>
-
-    <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
-        <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
-        <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
-        <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
-        <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
-    </nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
@@ -487,7 +485,27 @@
         onSnapshot(q, (snapshot) => {
             const tickets = [];
             snapshot.forEach((doc) => tickets.push({ id: doc.id, ...doc.data() }));
-            renderTickets(tickets);
+            
+            const container = document.getElementById('ticketsContainer');
+            if(tickets.length > 0) {
+                container.innerHTML = tickets.map(ev => `
+                    <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
+                         onclick="openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
+                            <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6" stroke-linecap="round"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
+                            <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
+                        </div>
+                        <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
+                        <div class="absolute inset-0 p-6 flex flex-col justify-between z-10">
+                            <div class="flex justify-between items-start">
+                                <div><span class="text-4xl font-black text-white leading-none tracking-tighter block">${ev.date.split(' ')[0]}</span><span class="text-xs font-bold text-white/60 tracking-widest uppercase">${ev.date.split(' ')[1]}</span></div>
+                                 <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm"><i class="fas fa-arrow-right text-white text-xs -rotate-45 group-hover:rotate-0 transition-transform"></i></div>
+                            </div>
+                            <div><p class="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-1">${ev.city || 'Event'}</p><h2 class="text-2xl font-black text-white leading-tight">${ev.artist}</h2></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
             document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
         });
     </script>
