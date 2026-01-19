@@ -207,10 +207,10 @@
                     container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs py-10">Sin tickets activos.</p>';
                 } else {
                     container.innerHTML = tickets.map(ev => {
-                        // Usar la imagen guardada en el ticket o degradado por defecto
+                        // FIX: Mejor manejo de imagen en el grid de tickets
                         const bgStyle = ev.image 
-                            ? `background-image: url('${ev.image}'); background-size: cover; background-position: center;` 
-                            : `background-image: linear-gradient(to bottom right, #1f2937, #000000);`;
+                            ? `background: url('${ev.image}') center/cover no-repeat;` 
+                            : `background: linear-gradient(to bottom right, #1f2937, #000000);`;
 
                         return `
                         <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300" 
@@ -263,10 +263,10 @@
                     visibleCount++;
                     const evString = encodeURIComponent(JSON.stringify(ev));
                     
-                    // Estilo de fondo con imagen
+                    // FIX: Estilo de fondo con imagen más robusto
                     const bgImageStyle = ev.image 
-                        ? `background-image: url('${ev.image}'); background-size: cover; background-position: center;` 
-                        : `background-color: #111;`; // Fallback si no hay foto
+                        ? `background: url('${ev.image}') center/cover no-repeat;` 
+                        : `background-color: #111;`; 
 
                     htmlContent += `
                     <div class="fade-in-up w-full h-48 rounded-2xl relative overflow-hidden mb-4 cursor-pointer group shadow-lg border border-white/10" 
@@ -309,17 +309,16 @@
             document.getElementById('modalPurchaseDate').innerText = "ASIENTO: " + seat;
             document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
             
-            // Imagen de fondo en el modal del ticket
+            // FIX: Imagen de fondo en el modal del ticket usando estilo directo
             const header = document.getElementById('ticketModalHeader');
-            if(image) {
-                header.style.backgroundImage = `url('${image}')`;
-                header.style.backgroundSize = 'cover';
-                header.style.height = '200px';
+            if(image && image !== 'null' && image !== 'undefined' && image.trim() !== "") {
+                header.style.background = `url('${image}') center/cover no-repeat`;
+                header.style.minHeight = '200px';
                 // Ocultar logo si hay foto para que se vea bien
                 header.querySelector('svg').style.opacity = '0.7'; 
             } else {
-                header.style.backgroundImage = 'none';
-                header.style.height = 'auto';
+                header.style.background = 'linear-gradient(to bottom, #1f2937, #000000)';
+                header.style.minHeight = 'auto';
                 header.querySelector('svg').style.opacity = '1';
             }
 
@@ -352,15 +351,13 @@
             const ev = JSON.parse(decodeURIComponent(evStr));
             selectedShopEvent = ev;
             
-            // Imagen en el modal de compra
+            // FIX: Imagen en el modal de compra más segura
             const header = document.getElementById('buyHeader');
-            if(ev.image) {
-                header.style.backgroundImage = `url('${ev.image}')`;
-                header.style.height = '150px';
-                header.style.backgroundSize = 'cover';
-                header.style.backgroundPosition = 'center';
+            if(ev.image && ev.image.trim() !== "") {
+                header.style.background = `url('${ev.image}') center/cover no-repeat`;
+                header.style.height = '200px'; // Un poco más alto para que luzca
             } else {
-                header.style.backgroundImage = 'none';
+                header.style.background = '#1f2937';
                 header.style.height = '20px';
             }
 
@@ -400,15 +397,18 @@
                     dupas: currentUser.dupas - selectedShopEvent.price, 
                     invested: (currentUser.invested || 0) + (selectedShopEvent.price * 1000) 
                 }).then(() => {
-                    db.collection("tickets").add({ 
+                    // FIX: Asegurar que el campo 'image' se pasa correctamente como string
+                    const ticketData = { 
                         userId: currentUserUID, 
                         artist: selectedShopEvent.artist, 
                         date: selectedShopEvent.date, 
                         venue: selectedShopEvent.venue, 
                         city: "Manizales", 
-                        image: selectedShopEvent.image || null, // Guardamos la foto en el ticket
-                        seat: seatCode // Guardamos el asiento
-                    }).then(() => {
+                        image: selectedShopEvent.image || "", // Si es undefined, guarda string vacío
+                        seat: seatCode 
+                    };
+
+                    db.collection("tickets").add(ticketData).then(() => {
                         showLoader(false); 
                         closeBuyModal(); 
                         switchTab('home'); 
