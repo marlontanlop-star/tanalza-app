@@ -318,11 +318,15 @@
 
         // --- 7. MODALES ---
         function openTicket(artist, venue, date, seat, image, city) {
+            // Obtenemos el nombre del usuario actual
+            const userName = document.getElementById('displayUserName').innerText || "Usuario";
+
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
             document.getElementById('modalDate').innerText = date;
             document.getElementById('modalCity').innerText = city || 'Manizales';
             document.getElementById('modalPurchaseDate').innerText = "ASIENTO: " + seat;
+            document.getElementById('modalOwner').innerText = userName; // Actualizamos quien registra
             document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
             
             const header = document.getElementById('ticketModalHeader');
@@ -612,7 +616,7 @@
 
     <div id="walletModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
         <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
-            <div class="absolute top-8 w-full text-center opacity-80"><svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M370 85 V160" stroke="white" stroke-width="6"/><circle cx="390" cy="115" r="30" stroke="white" stroke-width="5"/></g></svg></div>
+            <div class="absolute top-8 w-full text-center opacity-80"><svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg></div>
             <div class="mb-10 relative mt-10"><div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div><div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl"><i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i></div></div>
             <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
             <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
@@ -628,7 +632,14 @@
                 <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
                 <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
                 <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center"><div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div><svg id="complexQrSvg" width="90%" height="90%" viewBox="0 0 200 200" class="absolute z-10"></svg><div class="absolute z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-sm border border-pink-100 flex flex-col items-center justify-center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-active"/><path d="M1.42 9a16 16 0 0 1 21.16 0" class="nfc-active"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="nfc-active"/></svg></div></div>
-                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left"><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Ciudad</p><p class="font-bold text-pink-300 text-sm" id="modalCity">Manizales</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div><div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div></div>
+                <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left">
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Hora</p><p class="font-bold text-white text-sm">22:00 PM</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Ciudad</p><p class="font-bold text-pink-300 text-sm" id="modalCity">Manizales</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Zona</p><p class="font-bold text-white text-sm">VIP Backstage</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Puerta</p><p class="font-bold text-white text-sm">G-01</p></div>
+                    <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Titular</p><p class="font-bold text-white text-sm truncate" id="modalOwner">User</p></div>
+                </div>
                 <div class="mt-8 pt-4 border-t border-white/10 mb-4"><p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p></div>
             </div>
         </div>
