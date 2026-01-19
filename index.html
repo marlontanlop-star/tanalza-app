@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V22 Final Integration</title>
+    <title>Loop ID - V23 Wallet Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -50,10 +50,14 @@
         @keyframes travelEffect { from { stroke-dashoffset: 1000; } to { stroke-dashoffset: 0; } }
         @keyframes pulseRing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
 
-        /* --- NFC Minimalista --- */
+        /* --- NFC Minimalista & Cards --- */
         .nfc-arc { stroke: #ffb6c1; fill: none; stroke-linecap: round; opacity: 0.2; }
         .nfc-active { animation: nfcPulse 1.5s infinite; }
         @keyframes nfcPulse { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+        
+        .card-shine { background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%); }
+        .titanium-gradient { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); border: 1px solid rgba(255,255,255,0.2); }
+        .evva-gradient { background: linear-gradient(135deg, #7f1d1d 0%, #450a0a 50%, #000000 100%); border: 1px solid rgba(220, 38, 38, 0.3); }
 
         /* Componentes */
         .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
@@ -64,16 +68,22 @@
 
     <script>
         window.switchTab = function(tab) {
-            ['viewHome', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('text-white', 'text-pink-300');
                 btn.classList.add('text-gray-600');
             });
-            const activeView = tab === 'home' ? 'viewHome' : tab === 'shop' ? 'viewShop' : 'viewProfile';
-            const activeBtn = tab === 'home' ? 'btnHome' : tab === 'shop' ? 'btnShop' : 'btnProfile';
+            
+            let activeBtn = 'btnHome';
+            if(tab === 'wallet') activeBtn = 'btnWallet';
+            if(tab === 'shop') activeBtn = 'btnShop';
+            if(tab === 'profile') activeBtn = 'btnProfile';
+
+            const activeView = 'view' + tab.charAt(0).toUpperCase() + tab.slice(1);
+            
             document.getElementById(activeView).classList.remove('hidden');
             document.getElementById(activeBtn).classList.remove('text-gray-600');
-            document.getElementById(activeBtn).classList.add(tab === 'shop' ? 'text-pink-300' : 'text-white');
+            document.getElementById(activeBtn).classList.add(tab === 'shop' || tab === 'wallet' ? 'text-pink-300' : 'text-white');
         };
 
         window.openTicket = function(artist, venue, date) {
@@ -83,7 +93,6 @@
             document.getElementById('modalPurchaseDate').innerText = "15 ENE 2026";
             document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
             
-            // Generar QR complejo
             generateComplexQR();
 
             document.getElementById('ticketModal').classList.remove('hidden');
@@ -93,23 +102,17 @@
         function generateComplexQR() {
             const svg = document.getElementById('complexQrSvg');
             let content = '';
-            // Matriz base más densa
             for(let i=0; i<19; i++) {
                 for(let j=0; j<19; j++) {
-                    // Dejar espacio vacío en el centro para el NFC
                     if (i > 6 && i < 12 && j > 6 && j < 12) continue;
-
                     if(Math.random() > 0.4 && !((i<6 && j<6) || (i>12 && j<6) || (i<6 && j>12))) {
-                         // Usar rectángulos más pequeños para mayor densidad visual
                         content += `<rect x="${i*8 + 20}" y="${j*8 + 20}" width="6" height="6" fill="black" />`;
                     }
                 }
             }
-            // Marcadores de esquina
             content += `<rect x="20" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="32" width="16" height="16" fill="black"/>`;
             content += `<rect x="132" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="144" y="32" width="16" height="16" fill="black"/>`;
             content += `<rect x="20" y="132" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="144" width="16" height="16" fill="black"/>`;
-            
             svg.innerHTML = content;
         }
 
@@ -217,6 +220,66 @@
                 </div>
         </div>
 
+        <div id="viewWallet" class="hidden space-y-6 fade-in-up">
+            <h2 class="text-2xl font-black text-white px-2 mt-4">Membresías</h2>
+            
+            <div class="relative w-full aspect-[1.6/1] titanium-gradient rounded-2xl overflow-hidden shadow-2xl p-6 flex flex-col justify-between group">
+                <div class="absolute inset-0 card-shine"></div>
+                <div class="flex justify-between items-start z-10">
+                    <div class="w-12 h-9 bg-gradient-to-br from-yellow-200 to-yellow-600 rounded-md border border-yellow-700/50"></div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" class="nfc-active">
+                        <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                    </svg>
+                </div>
+                
+                <div class="z-10">
+                    <h3 class="text-2xl font-black text-white tracking-widest mb-1">CLUBMEM</h3>
+                    <p class="text-xs text-gray-400 font-mono tracking-[0.2em] uppercase">Palco Titanium</p>
+                </div>
+                
+                <div class="flex justify-between items-end z-10">
+                    <div>
+                        <p class="text-[9px] text-gray-500 uppercase">Holder</p>
+                        <p class="text-sm font-bold text-white tracking-wider">MARLON TANGARIFE</p>
+                    </div>
+                    <div class="flex items-center gap-1 bg-white/10 px-2 py-1 rounded">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-[8px] font-bold text-white uppercase">Dupas Pay Ready</span>
+                    </div>
+                </div>
+                
+                <p class="absolute bottom-2 right-4 text-[7px] text-gray-600 uppercase">By TanAlza Eco-System</p>
+            </div>
+
+            <div class="relative w-full aspect-[1.6/1] evva-gradient rounded-2xl overflow-hidden shadow-2xl p-6 flex flex-col justify-between group">
+                <div class="absolute inset-0 card-shine"></div>
+                <div class="flex justify-between items-start z-10">
+                    <div class="w-12 h-9 bg-gradient-to-br from-yellow-200 to-yellow-600 rounded-md border border-yellow-700/50"></div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" class="nfc-active">
+                        <path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                    </svg>
+                </div>
+                
+                <div class="z-10">
+                    <h3 class="text-2xl font-black text-white tracking-widest mb-1">TEMPLO EVVA</h3>
+                    <p class="text-xs text-red-200 font-mono tracking-[0.2em] uppercase">Semestral Pass</p>
+                </div>
+                
+                <div class="flex justify-between items-end z-10">
+                    <div>
+                        <p class="text-[9px] text-red-300/70 uppercase">Vence</p>
+                        <p class="text-sm font-bold text-white tracking-wider">DIC 2026</p>
+                    </div>
+                    <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded border border-red-500/30">
+                        <i class="fas fa-bolt text-[8px] text-red-400"></i>
+                        <span class="text-[8px] font-bold text-white uppercase">Fast Entry</span>
+                    </div>
+                </div>
+                
+                <p class="absolute bottom-2 right-4 text-[7px] text-red-900/50 uppercase">By TanAlza</p>
+            </div>
+        </div>
+
         <div id="viewShop" class="hidden space-y-4 pb-10 fade-in-up">
             <div class="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-pink-300/20 mb-6 text-center mt-4">
                 <i class="fas fa-gem text-3xl text-pink-300 mb-2"></i>
@@ -302,10 +365,8 @@
                 <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
 
                 <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center">
-                     <div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div>
-                    
+                    <div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div>
                     <svg id="complexQrSvg" width="90%" height="90%" viewBox="0 0 200 200" class="absolute z-10"></svg>
-
                     <div class="absolute z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-sm border border-pink-100 flex flex-col items-center justify-center">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-arc nfc-active" style="animation-delay: 0s;"/>
@@ -347,6 +408,9 @@
 
     <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
         <button onclick="window.switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
+        
+        <button onclick="window.switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
+        
         <button onclick="window.switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
         <button onclick="window.switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
     </nav>
