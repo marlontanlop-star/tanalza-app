@@ -3,82 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nodlum ID - V16 Polished</title>
+    <title>Loop ID - By TanAlza</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
     
     <style>
-        body { background-color: #000000; color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        /* --- TUS VARIABLES Y ESTILOS DEL LOGO LOOP --- */
+        :root {
+            --bg-color: #000000;
+            --logo-color: #ffffff;
+            --accent-color: #ffb6c1; /* Rosado Clarito */
+        }
+
+        body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .glass-nav { background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1); }
-        
-        /* Animaciones Generales */
-        .fade-in { opacity: 0; animation: fadeIn 1.5s ease-out forwards; }
-        .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
-        .pulse-logo { animation: pulse 3s infinite ease-in-out; }
-        @keyframes fadeIn { to { opacity: 1; } }
-        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
 
-        /* NUEVA ANIMACIÓN HOLOGRÁFICA PARA TARJETAS */
-        .holo-pattern {
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: holoMove 8s linear infinite;
-            opacity: 0.15;
-            mix-blend-mode: screen;
+        /* Animaciones Loop (Tu código integrado) */
+        .stroke-anim {
+            fill: none; stroke: var(--logo-color); stroke-width: 4;
+            stroke-dasharray: 1000; stroke-dashoffset: 1000;
+            animation: drawIn 2s ease-out forwards;
         }
-        @keyframes holoMove { to { stroke-dashoffset: 0; } }
+        .loop-capsule {
+            fill: none; stroke: var(--logo-color); stroke-width: 4;
+            stroke-linecap: round; animation: drawIn 2.5s ease-out forwards;
+        }
+        .loop-glow {
+            fill: none; stroke: var(--accent-color); stroke-width: 3;
+            stroke-linecap: round; stroke-dasharray: 50, 150;
+            opacity: 0; animation: rotateGlow 3s linear infinite, fadeIn 2s forwards 1s;
+        }
+        .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
+        .subtext { font-family: 'Inter', sans-serif; font-size: 14px; fill: #888; opacity: 0; animation: fadeIn 1s ease-out forwards 2s; }
+
+        @keyframes drawIn { to { stroke-dashoffset: 0; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes rotateGlow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
+        @keyframes fillWhite { to { fill: rgba(255,255,255,1); } }
+
+        /* UI Animations */
+        .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
+        @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
         /* Componentes */
-        .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(168, 85, 247, 0.2); }
+        .buy-sheet { background: linear-gradient(to top, #0f0f0f, #1a1a1a); border-radius: 2rem 2rem 0 0; border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -10px 50px rgba(255, 182, 193, 0.15); }
         .insta-grid { display: grid; gap: 1.5rem; }
         .profile-upload:hover .overlay { opacity: 1; }
         #cloudLoader { backdrop-filter: blur(10px); background: rgba(0,0,0,0.8); }
+        
+        /* Map styles */
+        .map-node { fill: #ffb6c1; animation: pulse-node 2s infinite; }
+        .map-line { stroke-dasharray: 10; animation: dash 30s linear infinite; stroke: #ffb6c1; }
+        @keyframes pulse-node { 0% { r: 2; opacity: 1; } 50% { r: 4; opacity: 0.5; } 100% { r: 2; opacity: 1; } }
+        @keyframes dash { to { stroke-dashoffset: -1000; } }
     </style>
 
     <script>
+        // Lógica Global UI (Botones estables)
         window.switchTab = function(tab) {
-            document.getElementById('viewHome').classList.add('hidden');
-            document.getElementById('viewShop').classList.add('hidden');
-            document.getElementById('viewProfile').classList.add('hidden');
+            ['viewHome', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('text-white', 'text-purple-500');
+                btn.classList.remove('text-white', 'text-pink-300');
                 btn.classList.add('text-gray-600');
             });
-            if(tab === 'home') {
-                document.getElementById('viewHome').classList.remove('hidden');
-                document.getElementById('btnHome').classList.add('text-white');
-                document.getElementById('btnHome').classList.remove('text-gray-600');
-            } else if(tab === 'shop') {
-                document.getElementById('viewShop').classList.remove('hidden');
-                document.getElementById('btnShop').classList.add('text-purple-500');
-                document.getElementById('btnShop').classList.remove('text-gray-600');
-            } else if(tab === 'profile') {
-                document.getElementById('viewProfile').classList.remove('hidden');
-                document.getElementById('btnProfile').classList.add('text-white');
-                document.getElementById('btnProfile').classList.remove('text-gray-600');
-            }
+            
+            const activeView = tab === 'home' ? 'viewHome' : tab === 'shop' ? 'viewShop' : 'viewProfile';
+            const activeBtn = tab === 'home' ? 'btnHome' : tab === 'shop' ? 'btnShop' : 'btnProfile';
+            
+            document.getElementById(activeView).classList.remove('hidden');
+            const btn = document.getElementById(activeBtn);
+            btn.classList.remove('text-gray-600');
+            btn.classList.add(tab === 'shop' ? 'text-pink-300' : 'text-white');
         };
 
-        window.openTicket = function(artist, venue) {
+        window.openTicket = function(artist, venue, date) {
             document.getElementById('modalArtist').innerText = artist;
             document.getElementById('modalVenue').innerText = venue;
-            const modal = document.getElementById('ticketModal');
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.firstElementChild.classList.remove('scale-90'), 10);
+            document.getElementById('modalDate').innerText = date || "Fecha Pendiente";
+            document.getElementById('ticketModal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('ticketModal').firstElementChild.classList.remove('scale-90'), 10);
         };
 
         window.closeTicket = function() {
-            const modal = document.getElementById('ticketModal');
-            modal.classList.add('hidden');
+            document.getElementById('ticketModal').classList.add('hidden');
         };
 
         window.closeBuyModal = function() {
             const modal = document.getElementById('buyModal');
-            const sheet = document.getElementById('buySheetContent');
-            sheet.classList.add('translate-y-full');
+            document.getElementById('buySheetContent').classList.add('translate-y-full');
             setTimeout(() => modal.classList.add('hidden'), 300);
         };
         
@@ -86,23 +100,20 @@
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const imageData = e.target.result;
-                    localStorage.setItem('marlonProfilePicV8', imageData);
-                    updateAllAvatars(imageData);
+                    localStorage.setItem('loopProfilePic', e.target.result);
+                    updateAllAvatars(e.target.result);
                 }
                 reader.readAsDataURL(input.files[0]);
             }
         };
 
         function updateAllAvatars(src) {
-            const imgs = document.querySelectorAll('.avatar-img');
-            const placeholders = document.querySelectorAll('.avatar-placeholder');
-            imgs.forEach(img => { img.src = src; img.classList.remove('hidden'); });
-            placeholders.forEach(ph => ph.classList.add('hidden'));
+            document.querySelectorAll('.avatar-img').forEach(img => { img.src = src; img.classList.remove('hidden'); });
+            document.querySelectorAll('.avatar-placeholder').forEach(ph => ph.classList.add('hidden'));
         }
 
         window.onload = function() {
-            const savedImage = localStorage.getItem('marlonProfilePicV8');
+            const savedImage = localStorage.getItem('loopProfilePic');
             if (savedImage) updateAllAvatars(savedImage);
         };
     </script>
@@ -110,39 +121,53 @@
 <body class="pb-32">
 
     <div id="splashScreen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
-        <div class="text-center fade-in">
-            <svg width="240" height="100" viewBox="0 0 300 120" fill="none" class="mb-2">
-                <path d="M40 90 V 30 L 100 90 V 30" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M160 30 V 90 H 220" stroke="#14b8a6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-                <text x="20" y="145" fill="white" font-family="Inter" font-weight="900" font-size="40" letter-spacing="2">NODLUM</text>
-                <text x="280" y="40" fill="white" font-family="Inter" font-weight="500" font-size="18">®</text>
-            </svg>
-            <p class="text-sm text-gray-400 font-medium tracking-widest uppercase mt-8">By TanAlza</p>
-        </div>
-        <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando Ecosistema</p>
+        <svg width="300" height="120" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+            <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="12" stroke-linecap="round"/>
+            <circle class="stroke-anim" cx="180" cy="115" r="25" stroke-width="10"/>
+            <rect class="loop-capsule" x="225" y="90" width="100" height="50" rx="25" stroke-width="8"/>
+            <rect class="loop-glow" x="225" y="90" width="100" height="50" rx="25" stroke-width="6"/>
+            <g class="fill-final">
+                <path class="stroke-anim" d="M350 90 V160" stroke-width="12" stroke-linecap="round"/>
+                <circle class="stroke-anim" cx="370" cy="115" r="25" stroke-width="10"/>
+            </g>
+            <text x="390" y="155" class="subtext" text-anchor="end">By TanAlza</text>
+        </svg>
+        <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando</p>
     </div>
 
     <div id="cloudLoader" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center">
-        <div class="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+        <div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <main class="mt-8 px-4 max-w-md mx-auto min-h-screen relative">
+    <header class="fixed top-0 w-full z-40 bg-black/80 backdrop-blur-md px-6 py-4 flex justify-end items-center border-b border-white/5">
+        <div class="w-10 h-10 rounded-full bg-gray-800 border border-white/10 overflow-hidden cursor-pointer shadow-lg hover:scale-105 transition" onclick="window.switchTab('profile')">
+             <img class="w-full h-full object-cover hidden avatar-img" src="">
+             <div class="w-full h-full flex items-center justify-center bg-gray-900 text-gray-400 avatar-placeholder"><i class="fas fa-user"></i></div>
+        </div>
+    </header>
+
+    <main class="mt-20 px-4 max-w-md mx-auto min-h-screen relative">
         
         <div id="viewHome" class="space-y-8 fade-in-up">
             
             <div class="flex items-center justify-between pt-4 pb-2">
                 <div class="text-left fade-in" style="animation-delay: 0.3s;">
-                     <svg width="180" height="60" viewBox="0 0 300 100" fill="none">
-                        <path d="M30 70 V 20 L 80 70 V 20" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M130 20 V 70 H 180" stroke="#14b8a6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-                        <text x="200" y="70" fill="white" font-family="Inter" font-weight="900" font-size="60" letter-spacing="-1">Nodlum</text>
+                     <svg width="140" height="55" viewBox="0 0 500 200" fill="none">
+                        <path class="stroke-anim" d="M100 80 V135 H135" stroke-width="15" stroke-linecap="round"/>
+                        <circle class="stroke-anim" cx="180" cy="115" r="30" stroke-width="12"/>
+                        <rect class="loop-capsule" x="230" y="85" width="110" height="60" rx="30" stroke-width="10"/>
+                        <rect class="loop-glow" x="230" y="85" width="110" height="60" rx="30" stroke-width="8"/>
+                        <g class="fill-final">
+                            <path class="stroke-anim" d="M370 85 V160" stroke-width="15" stroke-linecap="round"/>
+                            <circle class="stroke-anim" cx="390" cy="115" r="30" stroke-width="12"/>
+                        </g>
                     </svg>
-                    <p class="text-[10px] text-gray-400 font-medium tracking-widest uppercase ml-2 mt-1">By TanAlza</p>
+                    <p class="text-[9px] text-gray-400 font-medium tracking-widest uppercase ml-8 -mt-2">By TanAlza</p>
                 </div>
                 
                 <div class="flex flex-col items-end gap-3">
-                    <div class="relative w-14 h-14 rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 p-[2px] shadow-lg cursor-pointer profile-upload group" onclick="document.getElementById('photoInputHome').click()">
-                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative border-2 border-black">
+                    <div class="relative w-14 h-14 rounded-full border-2 border-pink-300 p-0.5 cursor-pointer profile-upload group" onclick="document.getElementById('photoInputHome').click()">
+                        <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
                             <img class="w-full h-full object-cover hidden avatar-img" src="">
                             <div class="w-full h-full flex items-center justify-center bg-gray-900 text-white font-black text-sm avatar-placeholder">MT</div>
                             <div class="overlay absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 transition-opacity duration-300 backdrop-blur-sm group-hover:opacity-100"><i class="fas fa-camera text-white text-xs"></i></div>
@@ -151,40 +176,39 @@
                     <input type="file" id="photoInputHome" hidden accept="image/*" onchange="window.handlePhotoUpload(this)">
 
                     <div class="text-right">
-                        <div class="bg-white/10 border border-white/10 rounded-full px-3 py-1 flex items-center gap-2 backdrop-blur-md ml-auto w-fit">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <div class="bg-white/5 border border-pink-300/30 rounded-full px-3 py-1 flex items-center gap-2 backdrop-blur-md ml-auto w-fit">
+                            <span class="w-1.5 h-1.5 rounded-full bg-pink-300 animate-pulse"></span>
                             <span class="text-sm font-bold text-white" id="displayDupas">...</span>
-                            <span class="text-[9px] font-bold text-purple-400 uppercase tracking-widest">Dupas</span>
+                            <span class="text-[9px] font-bold text-pink-300 uppercase tracking-widest">Dupas</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="w-full h-px bg-white/10"></div>
+            <div class="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
 
             <div class="flex items-end justify-between px-2">
                 <h2 class="text-2xl font-black text-white">Mis Eventos</h2>
-                <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> ACTIVOS</span>
+                <span class="text-xs text-gray-500 font-mono mb-1"><span id="ticketCount">0</span> TICKETS</span>
             </div>
             
             <div id="ticketsContainer" class="insta-grid pb-10">
-                <p class="text-gray-500 text-center py-10">Cargando tickets...</p>
-            </div>
+                </div>
         </div>
 
         <div id="viewShop" class="hidden space-y-4 pb-10 fade-in-up">
-            <div class="p-6 bg-gradient-to-br from-purple-900/20 to-black rounded-2xl border border-purple-500/20 mb-6 text-center mt-4">
-                <i class="fas fa-gem text-3xl text-purple-400 mb-2"></i>
-                <h3 class="text-xl font-bold text-white">Mercado Nodlum</h3>
-                <p class="text-xs text-purple-200">Acceso exclusivo.</p>
+            <div class="p-6 bg-gradient-to-br from-gray-900 to-black rounded-2xl border border-pink-300/20 mb-6 text-center mt-4">
+                <i class="fas fa-gem text-3xl text-pink-300 mb-2"></i>
+                <h3 class="text-xl font-bold text-white">Loop Market</h3>
+                <p class="text-xs text-pink-200/70">Experiencias exclusivas.</p>
             </div>
             <div id="shopContainer" class="space-y-3"></div>
         </div>
 
         <div id="viewProfile" class="hidden space-y-6 pb-20 fade-in-up">
             <div class="text-center mt-8">
-                <div class="relative w-32 h-32 mx-auto rounded-full bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-6 shadow-2xl">
-                    <div class="w-full h-full rounded-full bg-black overflow-hidden relative border-4 border-black">
+                <div class="relative w-32 h-32 mx-auto rounded-full border-2 border-pink-300 p-1 mb-6 shadow-[0_0_30px_rgba(255,182,193,0.15)]">
+                    <div class="w-full h-full rounded-full bg-black overflow-hidden relative">
                         <img class="w-full h-full object-cover hidden avatar-img" src="">
                         <div class="w-full h-full flex items-center justify-center bg-gray-900 avatar-placeholder"><span class="text-4xl font-black text-white">MT</span></div>
                     </div>
@@ -192,8 +216,8 @@
                 
                 <h2 class="text-3xl font-black text-white mb-1">Marlon Tangarife</h2>
                 <div class="flex items-center justify-center gap-2">
-                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Global Nomad</span>
-                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-purple-400 border border-purple-500/20">Whale</span>
+                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-pink-300 border border-pink-300/20">Global Nomad</span>
+                    <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
                 </div>
             </div>
 
@@ -204,7 +228,7 @@
                 </div>
                 <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
                     <p class="text-gray-500 text-[10px] uppercase mb-1">Localidad</p>
-                    <p class="text-lg font-bold text-purple-400">Backstage</p>
+                    <p class="text-lg font-bold text-pink-300">Backstage</p>
                 </div>
                 <div class="bg-gray-900 p-6 rounded-2xl col-span-2 flex justify-between items-center border border-white/10">
                     <div>
@@ -214,32 +238,65 @@
                     <i class="fas fa-chart-line text-emerald-400 text-xl"></i>
                 </div>
             </div>
+
+            <div class="bg-black/50 p-6 rounded-3xl border border-white/5 relative overflow-hidden">
+                <h3 class="text-lg font-bold text-white mb-4">Tour Map 2026</h3>
+                <div class="w-full h-56 relative flex items-center justify-center bg-gray-900/20 rounded-xl border border-white/5">
+                    <svg width="100%" height="100%" viewBox="0 0 100 100" class="absolute inset-0">
+                        <path d="M20 20 L 45 50 L 40 85" stroke="#333" stroke-width="1" fill="none" />
+                        <path d="M45 50 L 80 25" stroke="#333" stroke-width="1" fill="none" />
+                        <path d="M20 20 L 45 50 L 80 25" class="map-line" stroke-width="0.5" fill="none"/>
+                        <circle cx="20" cy="20" r="2" class="map-node" />
+                        <circle cx="80" cy="25" r="2" class="map-node" style="animation-delay: 0.5s"/>
+                        <circle cx="45" cy="50" r="4" fill="#ffb6c1" style="filter: drop-shadow(0 0 6px #ffb6c1);"/>
+                        <circle cx="40" cy="85" r="2" class="map-node" style="animation-delay: 1s"/>
+                    </svg>
+                </div>
+            </div>
         </div>
     </main>
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
         <div class="w-full max-w-sm bg-gradient-to-b from-gray-900 to-black border border-white/10 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90">
              
-            <div class="relative z-10 text-center">
-                <div class="mb-10 pulse-logo">
-                    <svg width="220" height="80" viewBox="0 0 300 100" fill="none" class="mx-auto">
-                        <path d="M30 70 V 20 L 80 70 V 20" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M130 20 V 70 H 180" stroke="#14b8a6" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-                        <text x="200" y="70" fill="white" font-family="Inter" font-weight="900" font-size="60" letter-spacing="-1">Nodlum</text>
-                    </svg>
-                    <p class="text-xs text-gray-500 font-medium tracking-widest uppercase mt-2">By TanAlza</p>
-                </div>
-                
-                <div class="border-t border-b border-white/10 py-6 mb-6">
+            <div class="relative z-10 flex flex-col items-center text-center">
+                <div class="w-full border-b border-white/10 pb-4 mb-6">
                     <h2 class="text-2xl font-black text-white leading-tight mb-1" id="modalArtist">Artist</h2>
-                    <p class="text-gray-400 text-sm font-medium" id="modalVenue">Venue</p>
+                    <p class="text-pink-300 text-sm font-bold" id="modalVenue">Venue</p>
+                    <p class="text-gray-500 text-xs mt-1" id="modalDate">Date</p>
                 </div>
                 
-                <div class="bg-white p-3 rounded-xl w-40 h-40 mx-auto flex items-center justify-center shadow-lg mb-6">
-                    <i class="fas fa-qrcode text-8xl text-black"></i>
+                <div class="relative w-56 h-56 flex items-center justify-center mb-6">
+                    <svg class="absolute inset-0 w-full h-full animate-spin-slow" viewBox="0 0 100 100" style="animation: spin 10s linear infinite;">
+                        <defs>
+                            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#ffb6c1;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#000;stop-opacity:0" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="50" cy="50" r="48" stroke="url(#grad1)" stroke-width="1" fill="none" stroke-dasharray="100 150" />
+                        <circle cx="50" cy="50" r="44" stroke="#ffb6c1" stroke-width="0.5" fill="none" opacity="0.3" />
+                    </svg>
+                    
+                    <div class="bg-white p-3 rounded-xl w-40 h-40 flex items-center justify-center shadow-[0_0_30px_rgba(255,182,193,0.2)]">
+                        <i class="fas fa-qrcode text-8xl text-black"></i>
+                    </div>
                 </div>
                 
-                <p class="text-[10px] font-bold text-emerald-400 tracking-[0.3em] uppercase animate-pulse">Ticket Verificado</p>
+                <div class="grid grid-cols-2 gap-4 w-full text-left bg-white/5 p-4 rounded-xl border border-white/5">
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider">Zona</p>
+                        <p class="font-bold text-white text-sm">VIP Backstage</p>
+                    </div>
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider">Puerta</p>
+                        <p class="font-bold text-white text-sm">G-04</p>
+                    </div>
+                    <div class="col-span-2 border-t border-white/5 pt-2 mt-1">
+                        <p class="text-[8px] text-gray-500 uppercase tracking-wider">ID Seguridad</p>
+                        <p class="font-mono text-pink-300 text-[10px]">#LP-8829-SECURE-HASH</p>
+                    </div>
+                </div>
             </div>
         </div>
         <button onclick="window.closeTicket()" class="mt-8 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition"><i class="fas fa-times text-xl"></i></button>
@@ -249,7 +306,7 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="window.closeBuyModal()"></div>
         <div class="absolute bottom-0 w-full buy-sheet p-8 transform transition-transform duration-300 translate-y-full" id="buySheetContent">
             <div class="w-16 h-1 bg-gray-700 rounded-full mx-auto mb-8"></div>
-            <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-purple-400" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
+            <div class="flex justify-between items-start mb-2"><h2 class="text-3xl font-black text-white leading-none w-3/4" id="buyArtist">Artist</h2><div class="text-right"><p class="text-xl font-black text-pink-300" id="buyPrice">0</p><p class="text-[10px] text-gray-500 uppercase">Dupas</p></div></div>
             <p class="text-emerald-400 font-bold text-sm mb-6 flex items-center gap-2"><i class="far fa-calendar"></i> <span id="buyDate">Date</span></p>
             <div class="bg-white/5 p-4 rounded-xl mb-6"><p class="text-gray-300 text-sm leading-relaxed" id="buyDesc">Descripción...</p></div>
             <button onclick="window.confirmPurchase()" class="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:scale-[1.02] transition">Canjear Ahora</button>
@@ -258,7 +315,7 @@
 
     <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
         <button onclick="window.switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
-        <button onclick="window.switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-purple-500 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+        <button onclick="window.switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
         <button onclick="window.switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
     </nav>
 
@@ -328,7 +385,6 @@
             }, 1500);
         }
 
-        // RENDERIZADO DE TICKETS CON NUEVA ANIMACIÓN HOLOGRÁFICA GLOBAL
         function renderTickets(tickets) {
             const container = document.getElementById('ticketsContainer');
             if (tickets.length === 0) {
@@ -337,13 +393,17 @@
             }
             container.innerHTML = tickets.map(ev => `
                 <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
-                     onclick="window.openTicket('${ev.artist}', '${ev.venue}')">
+                     onclick="window.openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
                     
-                    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                        <svg class="w-full h-full holo-pattern" viewBox="0 0 400 400" fill="none">
-                             <path d="M-100 200 Q 100 100, 300 200 T 700 200" stroke="#14b8a6" stroke-width="2" opacity="0.5"/>
-                             <path d="M-100 250 Q 100 150, 300 250 T 700 250" stroke="#14b8a6" stroke-width="4" opacity="0.3" style="animation-delay: -2s;"/>
-                             <path d="M-100 300 Q 100 200, 300 300 T 700 300" stroke="#14b8a6" stroke-width="6" opacity="0.1" style="animation-delay: -4s;"/>
+                    <div class="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity">
+                        <svg width="200" height="80" viewBox="0 0 500 200" fill="none">
+                            <path d="M100 80 V135 H135" stroke="white" stroke-width="15" stroke-linecap="round"/>
+                            <circle cx="180" cy="115" r="30" stroke="white" stroke-width="12"/>
+                            <rect x="230" y="85" width="110" height="60" rx="30" stroke="white" stroke-width="10"/>
+                            <g>
+                                <path d="M370 85 V160" stroke="white" stroke-width="15" stroke-linecap="round"/>
+                                <circle cx="390" cy="115" r="30" stroke="white" stroke-width="12"/>
+                            </g>
                         </svg>
                     </div>
 
@@ -372,13 +432,13 @@
                 <div class="fade-in-up flex items-center justify-between p-4 bg-gray-900/40 border border-white/5 rounded-2xl hover:bg-gray-800 transition cursor-pointer group"
                      style="animation-delay: ${i*0.03}s" onclick='window.openBuyModal(${JSON.stringify(ev)})'>
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 bg-gray-800 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-purple-500/50 transition">
+                        <div class="w-14 h-14 bg-gray-800 rounded-xl flex flex-col items-center justify-center border border-white/5 group-hover:border-pink-300/50 transition">
                             <span class="text-sm font-bold text-white">${ev.date.split(' ')[0]}</span>
                             <span class="text-[9px] uppercase text-gray-500 font-bold">${ev.date.split(' ')[1]}</span>
                         </div>
                         <div>
                             <h4 class="font-bold text-white text-lg">${ev.artist}</h4>
-                            <span class="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">${ev.price} Dupas</span>
+                            <span class="text-[10px] font-bold text-pink-300 bg-pink-300/10 px-2 py-0.5 rounded">${ev.price} Dupas</span>
                         </div>
                     </div>
                     <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition">
