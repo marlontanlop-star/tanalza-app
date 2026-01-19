@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V31 Clean</title>
+    <title>Loop ID - V32 Crystal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -14,11 +14,11 @@
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        /* NAV ORIGINAL RESTAURADA (Clean Glass) */
+        /* NAV CORREGIDA: SUTIL Y TRANSPARENTE */
         .glass-nav { 
-            background: rgba(10, 10, 10, 0.85); 
-            backdrop-filter: blur(20px); 
-            border-top: 1px solid rgba(255,255,255,0.1); 
+            background: rgba(0, 0, 0, 0.6); /* Más transparencia */
+            backdrop-filter: blur(15px); 
+            border-top: 1px solid rgba(255,255,255,0.08); 
         }
 
         /* Animaciones */
@@ -89,6 +89,7 @@
         function switchTab(tab) {
             ['viewHome', 'viewWallet', 'viewShop', 'viewProfile'].forEach(id => document.getElementById(id).classList.add('hidden'));
             
+            // Resetear colores botones
             ['btnHome', 'btnWallet', 'btnShop', 'btnProfile'].forEach(id => {
                 const btn = document.getElementById(id);
                 btn.classList.remove('text-white', 'text-pink-300');
@@ -347,7 +348,6 @@
                     <span class="px-3 py-1 bg-white/5 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/20">Whale</span>
                 </div>
             </div>
-            
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-gray-900/50 p-5 rounded-2xl border border-white/5 text-center">
                     <p class="text-gray-500 text-[10px] uppercase mb-1">Eventos</p>
@@ -392,7 +392,7 @@
             <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
             <div class="flex flex-col items-center gap-2"><p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p><i class="fas fa-arrow-up text-white animate-bounce"></i></div>
         </div>
-        <button onclick="closeWalletModal()" class="fixed bottom-10 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
+        <button onclick="closeWalletModal()" class="fixed bottom-24 w-14 h-14 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur-md border border-white/10"><i class="fas fa-times text-xl"></i></button>
     </div>
 
     <div id="ticketModal" class="fixed inset-0 z-[200] hidden flex flex-col items-center justify-center p-6 bg-black/95 backdrop-blur-md transition-opacity duration-300">
@@ -437,11 +437,11 @@
         </div>
     </div>
 
-    <nav class="fixed bottom-0 w-full glass-nav pb-8 pt-4 px-10 flex justify-between items-center z-50">
-        <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-3xl flex flex-col items-center gap-1 transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
-        <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-3xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
-        <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-3xl flex flex-col items-center gap-1 hover:text-pink-300 transition transform active:scale-90"><i class="fas fa-heart"></i></button>
-        <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-3xl flex flex-col items-center gap-1 hover:text-white transition transform active:scale-90"><i class="fas fa-user"></i></button>
+    <nav class="fixed bottom-0 w-full glass-nav pb-6 pt-4 px-12 flex justify-between items-center z-50">
+        <button onclick="switchTab('home')" id="btnHome" class="nav-btn text-white text-2xl transition transform active:scale-90"><i class="fas fa-ticket-alt"></i></button>
+        <button onclick="switchTab('wallet')" id="btnWallet" class="nav-btn text-gray-600 text-2xl transition transform active:scale-90"><i class="fas fa-wallet"></i></button>
+        <button onclick="switchTab('shop')" id="btnShop" class="nav-btn text-gray-600 text-2xl transition transform active:scale-90"><i class="fas fa-heart"></i></button>
+        <button onclick="switchTab('profile')" id="btnProfile" class="nav-btn text-gray-600 text-2xl transition transform active:scale-90"><i class="fas fa-user"></i></button>
     </nav>
 
     <script type="module">
@@ -476,6 +476,8 @@
             if (doc.exists()) {
                 const data = doc.data();
                 document.querySelectorAll('#displayDupas').forEach(el => el.innerText = data.dupas.toLocaleString());
+                
+                // CORRECCION DE ESTADISTICAS (Ahora sí encontrará el ID)
                 const inv = document.getElementById('statInvested');
                 if(inv) inv.innerText = '$' + (data.invested / 1000000).toFixed(1) + 'M';
             }
@@ -507,7 +509,7 @@
                 `).join('');
             }
             
-            // ACTUALIZACIÓN DE ESTADISTICAS CON ID ESPECÍFICO
+            // CORRECCION DE ESTADISTICAS
             const statCount = document.getElementById('statTicketCount');
             const homeCount = document.getElementById('ticketCount');
             if(statCount) statCount.innerText = tickets.length;
