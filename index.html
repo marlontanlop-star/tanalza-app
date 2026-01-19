@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loop ID - V21 Master</title>
+    <title>Loop ID - V22 Final Integration</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;500;700;900&display=swap" rel="stylesheet">
@@ -14,7 +14,6 @@
             --bg-color: #000000;
             --logo-color: #ffffff;
             --accent-color: #ffb6c1; 
-            /* Variables del Mapa */
             --white: #ffffff;
             --pink-accent: #ffb6c1;
             --line-width: 1.5px;
@@ -40,7 +39,7 @@
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* --- ESTILOS DEL MAPA (INTEGRADOS TAL CUAL) --- */
+        /* --- ESTILOS DEL MAPA --- */
         .country-outline { fill: rgba(255, 255, 255, 0.02); stroke: rgba(255, 255, 255, 0.3); stroke-width: 1; stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawPath 3s ease-out forwards; }
         .route-path { fill: none; stroke: rgba(255, 182, 193, 0.15); stroke-width: var(--line-width); stroke-linecap: round; }
         .travel-glow { fill: none; stroke: var(--pink-accent); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 40, 400; stroke-dashoffset: 1000; animation: travelEffect 5s linear infinite; filter: drop-shadow(0 0 5px var(--pink-accent)); }
@@ -84,7 +83,7 @@
             document.getElementById('modalPurchaseDate').innerText = "15 ENE 2026";
             document.getElementById('modalHash').innerText = "0x" + Math.random().toString(16).substr(2, 12).toUpperCase();
             
-            // Generar QR complejo visualmente
+            // Generar QR complejo
             generateComplexQR();
 
             document.getElementById('ticketModal').classList.remove('hidden');
@@ -94,18 +93,22 @@
         function generateComplexQR() {
             const svg = document.getElementById('complexQrSvg');
             let content = '';
-            // Generar matriz aleatoria para que parezca un QR real y denso
-            for(let i=0; i<15; i++) {
-                for(let j=0; j<15; j++) {
-                    if(Math.random() > 0.5 && !((i<5 && j<5) || (i>10 && j<5) || (i<5 && j>10))) {
-                        content += `<rect x="${i*10 + 25}" y="${j*10 + 25}" width="8" height="8" fill="black" />`;
+            // Matriz base más densa
+            for(let i=0; i<19; i++) {
+                for(let j=0; j<19; j++) {
+                    // Dejar espacio vacío en el centro para el NFC
+                    if (i > 6 && i < 12 && j > 6 && j < 12) continue;
+
+                    if(Math.random() > 0.4 && !((i<6 && j<6) || (i>12 && j<6) || (i<6 && j>12))) {
+                         // Usar rectángulos más pequeños para mayor densidad visual
+                        content += `<rect x="${i*8 + 20}" y="${j*8 + 20}" width="6" height="6" fill="black" />`;
                     }
                 }
             }
-            // Marcadores de esquina (Position patterns)
-            content += `<rect x="25" y="25" width="40" height="40" stroke="black" stroke-width="8" fill="none"/><rect x="37" y="37" width="16" height="16" fill="black"/>`;
-            content += `<rect x="135" y="25" width="40" height="40" stroke="black" stroke-width="8" fill="none"/><rect x="147" y="37" width="16" height="16" fill="black"/>`;
-            content += `<rect x="25" y="135" width="40" height="40" stroke="black" stroke-width="8" fill="none"/><rect x="37" y="147" width="16" height="16" fill="black"/>`;
+            // Marcadores de esquina
+            content += `<rect x="20" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="32" width="16" height="16" fill="black"/>`;
+            content += `<rect x="132" y="20" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="144" y="32" width="16" height="16" fill="black"/>`;
+            content += `<rect x="20" y="132" width="40" height="40" stroke="black" stroke-width="6" fill="none"/><rect x="32" y="144" width="16" height="16" fill="black"/>`;
             
             svg.innerHTML = content;
         }
@@ -179,6 +182,7 @@
                             <circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/>
                         </g>
                     </svg>
+                    <p class="text-[9px] text-gray-400 font-medium tracking-widest uppercase ml-8 -mt-2">By TanAlza</p>
                 </div>
                 
                 <div class="flex flex-col items-end gap-2">
@@ -269,18 +273,10 @@
                             <path id="col-per" class="route-path" d="M360 330 Q 355 385, 365 420" />
                             <path class="travel-glow" d="M360 330 Q 355 385, 365 420" style="animation-delay: -2.5s;" />
                         </g>
-                        <g transform="translate(210, 200)">
-                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="-45" y="5">MEX</text>
-                        </g>
-                        <g transform="translate(360, 330)">
-                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">COL</text>
-                        </g>
-                        <g transform="translate(450, 305)">
-                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">VEN</text>
-                        </g>
-                        <g transform="translate(365, 420)">
-                            <circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">PER</text>
-                        </g>
+                        <g transform="translate(210, 200)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="-45" y="5">MEX</text></g>
+                        <g transform="translate(360, 330)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">COL</text></g>
+                        <g transform="translate(450, 305)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">VEN</text></g>
+                        <g transform="translate(365, 420)"><circle class="airport-pulse" r="4" /><circle class="airport-node" r="3" /><text class="iata-code" x="12" y="5">PER</text></g>
                     </svg>
                 </div>
             </div>
@@ -305,19 +301,21 @@
                 <h2 class="text-3xl font-black text-white leading-tight mb-1 text-center" id="modalArtist">Artist</h2>
                 <p class="text-pink-300 text-sm font-bold text-center mb-6" id="modalVenue">Venue</p>
 
-                <div class="flex items-center justify-center gap-4 mb-8">
-                    <div class="bg-white p-2 rounded-lg w-40 h-40 shadow-[0_0_30px_rgba(255,182,193,0.2)]">
-                        <svg id="complexQrSvg" width="100%" height="100%" viewBox="0 0 200 200"></svg>
-                    </div>
+                <div class="relative w-56 h-56 mx-auto mb-8 flex items-center justify-center">
+                     <div class="absolute inset-0 bg-white rounded-xl shadow-[0_0_30px_rgba(255,182,193,0.3)]"></div>
                     
-                    <div class="flex flex-col items-center justify-center gap-1">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg id="complexQrSvg" width="90%" height="90%" viewBox="0 0 200 200" class="absolute z-10"></svg>
+
+                    <div class="absolute z-20 bg-white/90 backdrop-blur-md p-3 rounded-full shadow-sm border border-pink-100 flex flex-col items-center justify-center">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ffb6c1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12.55a11 11 0 0 1 14.08 0" class="nfc-arc nfc-active" style="animation-delay: 0s;"/>
                             <path d="M1.42 9a16 16 0 0 1 21.16 0" class="nfc-arc nfc-active" style="animation-delay: 0.3s;"/>
                             <path d="M8.53 16.11a6 6 0 0 1 6.95 0" class="nfc-arc nfc-active" style="animation-delay: 0.6s;"/>
                         </svg>
                     </div>
                 </div>
+                
+                <p class="text-center text-[10px] text-pink-400 font-bold mb-6 animate-pulse tracking-widest">ACERCAR PARA TRANSFERENCIA NFC</p>
 
                 <div class="grid grid-cols-2 gap-y-6 gap-x-4 text-left">
                     <div><p class="text-[8px] text-gray-500 uppercase tracking-wider mb-1">Fecha</p><p class="font-bold text-white text-sm" id="modalDate">Date</p></div>
@@ -329,7 +327,7 @@
                 </div>
 
                 <div class="mt-8 pt-4 border-t border-white/10 mb-4">
-                    <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH...</p>
+                    <p class="text-[8px] text-gray-600 font-mono break-all text-center" id="modalHash">SECURE_HASH_GENERATING...</p>
                 </div>
             </div>
         </div>
@@ -429,8 +427,8 @@
                 <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden bg-gradient-to-br ${ev.color || 'from-gray-800 to-black'} border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300"
                      onclick="window.openTicket('${ev.artist}', '${ev.venue}', '${ev.date}')">
                     
-                    <div class="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
-                        <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity">
+                        <svg width="180" height="70" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
                             <path d="M100 80 V135 H135" stroke="white" stroke-width="6" stroke-linecap="round"/>
                             <circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/>
                             <rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/>
@@ -439,6 +437,7 @@
                                 <circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/>
                             </g>
                         </svg>
+                        <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
                     </div>
 
                     <div class="absolute inset-0 opacity-30 mix-blend-overlay" style="background-image: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.4), transparent 20%);"></div>
