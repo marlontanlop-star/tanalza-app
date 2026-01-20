@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loop ID - Master Full v6</title>
+    <title>Loop ID - Master Full v7</title>
     
     <meta http-equiv="Access-Control-Allow-Origin" content="*">
     
@@ -59,7 +59,7 @@
             background: rgba(255,255,255,0.1); 
         }
 
-        /* --- ANIMACIONES SPLASH SHOW (7 SEGUNDOS) --- */
+        /* Animaciones SVG */
         .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 3s ease-in-out forwards; }
         .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 3.5s ease-in-out forwards; }
         .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeInGlow 2s forwards 3.5s; }
@@ -70,23 +70,6 @@
         @keyframes fadeInGlow { to { opacity: 1; } }
         @keyframes fillWhite { to { fill: rgba(255,255,255,1); } }
         @keyframes pulseLogo { 0% { filter: drop-shadow(0 0 0px var(--accent-color)); } 50% { filter: drop-shadow(0 0 15px var(--accent-color)); } 100% { filter: drop-shadow(0 0 0px var(--accent-color)); } }
-
-        /* Glitch Text Effect */
-        .glitch-text {
-            font-family: 'Courier New', monospace;
-            position: relative;
-            color: white;
-            letter-spacing: 0.2em;
-            animation: glitch-anim 3s infinite linear alternate-reverse;
-        }
-        @keyframes glitch-anim {
-            0% { opacity: 1; transform: skewX(0deg); }
-            5% { opacity: 0.8; transform: skewX(2deg); }
-            10% { opacity: 1; transform: skewX(0deg); }
-            15% { opacity: 1; transform: skewX(-2deg); }
-            20% { opacity: 1; transform: skewX(0deg); }
-            100% { opacity: 1; transform: skewX(0deg); }
-        }
 
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
@@ -156,59 +139,58 @@
         let myPurchasedEvents = [];
         let totalSpent = 0;
         let totalTickets = 0;
-        let authStateUser = null; // Store user state during animation
+        let authStateUser = null; 
 
         // --- 3. INICIO CON SHOW DE 7 SEGUNDOS ---
         window.onload = function() {
-            // Iniciar textos dinámicos del splash
-            startSplashTextSequence();
-
             // Escuchar Auth en segundo plano
             auth.onAuthStateChanged((user) => {
-                authStateUser = user; // Guardar estado para usarlo después de la animación
+                authStateUser = user; 
             });
 
-            // Temporizador estricto de 7 segundos para el show
+            // Temporizador estricto de 7 segundos
             setTimeout(() => {
                 const splash = document.getElementById('splashScreen');
-                splash.style.opacity = '0'; // Fade out suave
+                splash.style.opacity = '0';
                 
                 setTimeout(() => {
-                    splash.style.display = 'none'; // Quitar del DOM
+                    splash.style.display = 'none';
                     
                     if (authStateUser) {
-                        // Usuario recordado -> IR DIRECTO AL PORTAL
                         currentUserUID = authStateUser.uid;
                         document.getElementById('viewLogin').classList.add('hidden');
                         document.getElementById('appContainer').classList.remove('hidden');
                         initUserData(authStateUser.uid);
                         initNews();
                     } else {
-                        // Usuario no recordado -> MOSTRAR LOGIN con animación
                         currentUserUID = null;
                         const loginView = document.getElementById('viewLogin');
                         loginView.classList.remove('hidden');
-                        loginView.classList.add('fade-in-up'); // Añadir animación de entrada al login
+                        loginView.classList.add('fade-in-up');
                         document.getElementById('appContainer').classList.add('hidden');
                     }
-                }, 1000); // Tiempo para que termine el fade out
-            }, 7000); // 7000ms = 7 segundos exactos de show
+                }, 1000); 
+            }, 7000);
         };
 
-        function startSplashTextSequence() {
-            const texts = ["INITIALIZING KERNEL...", "CONNECTING NODES...", "VERIFYING BIOMETRICS...", "ACCESS GRANTED"];
-            const textEl = document.getElementById('splashText');
-            let i = 0;
+        // Helper para validar fecha de evento pasada
+        function isEventPast(dateStr) {
+            // Asume formato "DD MMM" ej: "21 FEB". Año actual.
+            if(!dateStr) return false;
+            const months = {ENE:0, FEB:1, MAR:2, ABR:3, MAY:4, JUN:5, JUL:6, AGO:7, SEP:8, OCT:9, NOV:10, DIC:11};
+            const parts = dateStr.toUpperCase().split(' ');
+            if(parts.length < 2) return false;
             
-            // Cambiar texto cada 1.5s
-            const interval = setInterval(() => {
-                if(i < texts.length) {
-                    textEl.innerText = texts[i];
-                    i++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 1500);
+            const day = parseInt(parts[0]);
+            const month = months[parts[1]];
+            if (month === undefined) return false;
+
+            const now = new Date();
+            // Creamos fecha del evento a medianoche del día siguiente para dar margen
+            const eventDate = new Date(now.getFullYear(), month, day + 1); 
+            
+            // Si hoy es mayor que la fecha del evento + 1 dia, ya pasó
+            return now > eventDate;
         }
 
         // --- 4. AUTH & PROFILE ---
@@ -221,7 +203,6 @@
             auth.signInWithEmailAndPassword(email, pass)
                 .then((userCredential) => {
                     showLoader(false);
-                    // Actualizar UI manualmente tras login exitoso
                     currentUserUID = userCredential.user.uid;
                     document.getElementById('viewLogin').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
@@ -235,7 +216,7 @@
                 });
         }
 
-        function handleLogout() { auth.signOut(); window.location.reload(); } // Reload para mostrar splash de nuevo
+        function handleLogout() { auth.signOut(); window.location.reload(); }
 
         // --- 5. FOTOS EN LA NUBE (STORAGE) ---
         function handlePhotoUpload(input) {
@@ -290,17 +271,14 @@
                 const tickets = [];
                 myPurchasedEvents = [];
                 totalSpent = 0;
-                totalTickets = snapshot.size;
+                totalTickets = 0; // Reset para contar solo activos
                 const movementsList = document.getElementById('movementsList');
                 if(movementsList) movementsList.innerHTML = '';
 
                 snapshot.forEach((doc) => {
                     const t = doc.data();
-                    tickets.push({ id: doc.id, ...t });
-                    myPurchasedEvents.push(t.artist);
-                    if(t.price) totalSpent += t.price;
-
-                    // Agregar al historial de movimientos simulado
+                    
+                    // Agregar al historial siempre
                     if(movementsList) {
                         movementsList.innerHTML += `
                             <div class="flex justify-between items-center py-2 border-b border-white/5">
@@ -312,9 +290,17 @@
                             </div>
                         `;
                     }
+
+                    // FILTRO DE FECHA: Si ya pasó, no se agrega a la lista visual de tickets activos
+                    if(isEventPast(t.date)) return;
+
+                    tickets.push({ id: doc.id, ...t });
+                    myPurchasedEvents.push(t.artist);
+                    if(t.price) totalSpent += t.price;
+                    totalTickets++;
                 });
                 
-                document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = tickets.length);
+                document.querySelectorAll('#ticketCount, #statTicketCount').forEach(el => el.innerText = totalTickets);
                 const spentElement = document.getElementById('statTotalSpent');
                 if(spentElement) spentElement.innerText = totalSpent.toLocaleString();
                 const avgElement = document.getElementById('statAvgSpent');
@@ -331,21 +317,15 @@
                         const recompradaTag = ev.recomprada ? '<span class="absolute top-2 right-2 bg-yellow-500/80 text-black text-[8px] font-bold px-1 rounded z-30">RECOMPRADA</span>' : '';
                         
                         if (ev.image) {
-                            // TICKET CON IMAGEN (HOME): OPACO, DIFUMINADO, CON LOGO MARCA DE AGUA
                             return `
                             <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300 border border-white/10" 
                                  onclick="openTicketFromData('${safeData}')">
-                                
                                 ${recompradaTag}
-                                
                                 <div class="absolute inset-0 z-0 bg-cover bg-center blur-sm opacity-40" style="background-image: url('${ev.image}');"></div>
-                                
                                 <div class="absolute inset-0 bg-black/30 z-10"></div>
-
                                 <div class="absolute inset-0 z-10 flex items-center justify-center opacity-80">
                                      <svg width="120" height="50" viewBox="0 0 500 200"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
                                 </div>
-
                                 <div class="absolute inset-0 p-6 flex flex-col justify-between z-20">
                                     <div class="flex justify-between items-start">
                                         <div><span class="text-3xl font-black text-white leading-none tracking-tighter block drop-shadow-md">${ev.date.split(' ')[0]}</span><span class="text-[10px] font-bold text-white/90 tracking-widest uppercase drop-shadow-sm">${ev.date.split(' ')[1]}</span></div>
@@ -355,7 +335,6 @@
                                 </div>
                             </div>`;
                         } else {
-                            // TICKET METÁLICO (DEFAULT)
                             const metalClass = `ticket-metal-${(index % 8) + 1}`;
                             return `
                             <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300 ${metalClass}" 
@@ -435,7 +414,7 @@
         
         function openTicketFromData(encodedJson) {
             const ev = JSON.parse(decodeURIComponent(encodedJson));
-            selectedTicketToSell = ev; // Guardar referencia para vender
+            selectedTicketToSell = ev; 
             openTicket(ev.artist, ev.venue, ev.date, ev.seat, ev.image, ev.city, ev.price);
         }
 
@@ -450,13 +429,12 @@
             const uniqueHash = "0x" + Math.random().toString(16).substr(2, 6).toUpperCase() + "-" + Date.now().toString().substr(-6);
             document.getElementById('modalHash').innerText = uniqueHash;
             
-            // SIEMPRE NEUTRAL EN EL MODAL (IGNORAR IMAGEN DE FONDO)
+            // NEUTRAL EN MODAL
             const header = document.getElementById('ticketModalHeader');
             header.style.backgroundImage = 'none'; 
             header.style.height = 'auto'; 
             header.querySelector('svg').style.opacity = '1';
 
-            // Preparar info venta
             if(selectedTicketToSell) {
                 const maxPrice = Math.floor(originalPrice * 1.20);
                 document.getElementById('sellInfoText').innerText = `Precio Máx: ${maxPrice} Dupas`;
@@ -470,13 +448,8 @@
         }
         function closeTicket() { document.getElementById('ticketModal').classList.add('hidden'); }
 
-        // --- LOGICA DE VENTA (RESELL) ---
-        function openSellModal() {
-            document.getElementById('sellModal').classList.remove('hidden');
-        }
-        function closeSellModal() {
-            document.getElementById('sellModal').classList.add('hidden');
-        }
+        function openSellModal() { document.getElementById('sellModal').classList.remove('hidden'); }
+        function closeSellModal() { document.getElementById('sellModal').classList.add('hidden'); }
 
         function confirmSell() {
             const email = document.getElementById('sellEmailInput').value;
@@ -520,7 +493,39 @@
             }).catch(e => { console.error(e); showLoader(false); alert("Error en venta"); });
         }
 
-        // ... (Resto de funciones IGUALES A LA V5) ...
+        // --- CORRECCIÓN WALLET NAMES & NFC ---
+        function openWalletCard(type) {
+            const modalContent = document.getElementById('walletModalContent');
+            const cardName = document.getElementById('walletCardName');
+            const cardDesc = document.getElementById('walletCardDesc');
+            const cardIcon = document.getElementById('walletCardIcon');
+            
+            modalContent.className = "w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10";
+            
+            // Remove active class first
+            cardIcon.classList.remove('nfc-active');
+
+            if(type === 'titanium') {
+                modalContent.classList.add('modal-titanium'); 
+                cardName.innerText = "CLUBMEM TITANIUM"; 
+                cardDesc.innerText = "SUSCRIPCIÓN ANUAL"; 
+                cardIcon.className = "fas fa-crown text-6xl text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]";
+            } else if(type === 'evva') {
+                modalContent.classList.add('modal-evva'); 
+                cardName.innerText = "TEMPLO EVVA"; 
+                cardDesc.innerText = "SUSCRIPCIÓN SEMESTRAL"; 
+                cardIcon.className = "fas fa-fire text-6xl text-red-200 drop-shadow-[0_0_15px_rgba(255,0,0,0.8)]";
+            } else if(type === 'dupass') {
+                modalContent.classList.add('modal-dupass'); 
+                cardName.innerText = "DUPASS PAY"; 
+                cardDesc.innerText = "PAGOS TERMINAL RFID"; 
+                cardIcon.className = "fas fa-wifi text-6xl text-emerald-200 rotate-90 drop-shadow-[0_0_15px_rgba(16,185,129,0.8)] nfc-active"; // Add nfc-active
+            }
+            document.getElementById('walletModal').classList.remove('hidden');
+            setTimeout(() => modalContent.classList.remove('scale-90'), 10);
+        }
+
+        // ... (Resto de funciones: News, Buy, Nav, QR, Loader - IGUALES) ...
         function openNewsModalFromData(encodedJson) {
             const news = JSON.parse(decodeURIComponent(encodedJson));
             document.getElementById('newsModalTitle').innerText = news.title;
@@ -534,7 +539,6 @@
             document.getElementById('newsModalContent').classList.add('translate-y-full');
             setTimeout(() => document.getElementById('newsModal').classList.add('hidden'), 300);
         }
-        function openWalletCard(type) { document.getElementById('walletModal').classList.remove('hidden'); setTimeout(() => document.getElementById('walletModalContent').classList.remove('scale-90'), 10); } 
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
         function openBuyModal(evStr) {
             const ev = JSON.parse(decodeURIComponent(evStr));
@@ -575,16 +579,18 @@
 
     <div id="splashScreen" class="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center transition-opacity duration-1000">
         <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
-        <p id="splashText" class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 glitch-text">INITIALIZING...</p>
+        <p class="text-gray-500 text-[12px] tracking-[0.3em] uppercase mt-8 font-light">TanAlza Group</p>
     </div>
 
     <div id="cloudLoader" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center"><div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div></div>
 
     <div id="viewLogin" class="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center p-8 hidden">
-        <div class="w-full max-w-sm">
-            <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-12"><path d="M100 80 V135 H135" stroke="white" stroke-width="12"/><circle cx="160" cy="115" r="25" stroke="white" stroke-width="10"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="8"/><g><path d="M340 100 V150" stroke="white" stroke-width="12"/><circle cx="360" cy="115" r="25" stroke="white" stroke-width="10"/></g></svg>
-            <h2 class="text-2xl font-bold text-white mb-6 text-center">Bienvenido</h2>
-            <input type="email" id="loginEmail" placeholder="Correo electrónico" class="login-input mb-4">
+        <div class="w-full max-w-sm text-center">
+            <svg width="200" height="80" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-4"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="25" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="25" stroke="white" stroke-width="5"/></g></svg>
+            <p class="text-gray-500 text-[10px] tracking-[0.2em] uppercase mb-12">TanAlza Group</p>
+            
+            <h2 class="text-2xl font-bold text-white mb-6">Bienvenido</h2>
+            <input type="email" id="loginEmail" placeholder="LoopID" class="login-input mb-4">
             <input type="password" id="loginPass" placeholder="Contraseña" class="login-input mb-8">
             <button onclick="handleLogin()" class="w-full py-4 bg-white text-black font-bold rounded-xl hover:scale-[1.02] transition">Ingresar</button>
             <p id="loginError" class="text-red-500 text-xs text-center mt-4 hidden">Error de credenciales</p>
@@ -791,7 +797,7 @@
         <div id="walletModalContent" class="w-full max-w-sm flex flex-col items-center justify-center p-8 rounded-3xl shadow-2xl relative overflow-hidden transform transition-transform duration-300 scale-90 h-[70vh] border border-white/10">
             <div class="absolute top-8 w-full text-center opacity-80"><svg width="100" height="40" viewBox="0 0 500 200" fill="none" class="mx-auto"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4"/><g><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg></div>
             <div class="mb-10 relative mt-10"><div class="absolute inset-0 bg-white/20 rounded-full animate-ping"></div><div class="relative bg-white/10 p-8 rounded-full border border-white/20 backdrop-blur-xl shadow-xl"><i id="walletCardIcon" class="fas fa-wifi text-6xl text-white"></i></div></div>
-            <h2 id="walletCardName" class="text-4xl font-black text-white text-center mb-2 tracking-tight">CARD NAME</h2>
+            <h2 id="walletCardName" class="text-3xl font-black text-white text-center mb-2 tracking-tight leading-none">CARD NAME</h2>
             <p id="walletCardDesc" class="text-white/70 text-xs text-center mb-12 uppercase tracking-[0.2em] font-bold">Description</p>
             <div class="flex flex-col items-center gap-2"><p class="text-white font-bold text-xs animate-pulse tracking-[0.3em]">TAP TO TERMINAL</p><i class="fas fa-arrow-up text-white animate-bounce"></i></div>
         </div>
