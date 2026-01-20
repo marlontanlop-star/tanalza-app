@@ -535,9 +535,9 @@
             document.getElementById('newsModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('newsModalContent').classList.remove('translate-y-full'), 10);
         }
-        function closeNewsModal() {
-            document.getElementById('newsModalContent').classList.add('translate-y-full');
-            setTimeout(() => document.getElementById('newsModal').classList.add('hidden'), 300);
+        function closeNewsModal() { 
+            document.getElementById('newsModalContent').classList.add('translate-y-full'); 
+            setTimeout(() => document.getElementById('newsModal').classList.add('hidden'), 300); 
         }
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
         function openBuyModal(evStr) {
@@ -710,6 +710,65 @@
                     </div>
                 </div>
 
+                <div>
+                    <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2 px-2">
+                        <i class="fas fa-id-card"></i> Membresías Activas
+                    </h3>
+
+                    <div id="membership-clubmem" class="card-titanium p-5 rounded-3xl border border-white/10 mb-4 relative overflow-hidden shadow-lg">
+                         <div class="absolute top-4 right-4 bg-white/10 px-2 py-0.5 rounded text-[8px] font-bold uppercase backdrop-blur-md border border-white/5 text-gray-300">Activa</div>
+                         
+                         <div class="flex items-center gap-3 mb-4">
+                            <i class="fas fa-crown text-2xl text-gray-400"></i>
+                            <div>
+                                <h4 class="text-lg font-black text-white leading-none">TITANIUM</h4>
+                                <p class="text-[8px] text-gray-400 uppercase tracking-widest">ClubMem Annual Pass</p>
+                            </div>
+                         </div>
+
+                         <div class="grid grid-cols-2 gap-2 text-xs mb-4 bg-black/20 p-3 rounded-xl border border-white/5">
+                             <div><span class="text-gray-500 block text-[8px] uppercase tracking-wider">Inicio</span> <span class="text-white font-mono">01 ENE 2026</span></div>
+                             <div><span class="text-gray-500 block text-[8px] uppercase tracking-wider">Vence</span> <span class="text-white font-mono">01 ENE 2027</span></div>
+                             <div class="col-span-2 pt-1 border-t border-white/5 mt-1"><span class="text-gray-500 block text-[8px] uppercase tracking-wider">Valor Pagado</span> <span class="text-emerald-400 font-bold font-mono">2,000,000 Dupas</span></div>
+                         </div>
+
+                         <div class="bg-black/30 rounded-xl p-3 border border-white/5">
+                             <p class="text-[8px] text-gray-400 uppercase mb-2 tracking-wider font-bold">Beneficios Incluidos</p>
+                             <ul class="text-[10px] text-gray-300 space-y-1 pl-1">
+                                 <li class="flex items-center gap-2"><i class="fas fa-check text-[8px] text-emerald-400"></i> Acceso VIP Total</li>
+                                 <li class="flex items-center gap-2"><i class="fas fa-check text-[8px] text-emerald-400"></i> Fast Pass en eventos</li>
+                                 <li class="flex items-center gap-2"><i class="fas fa-check text-[8px] text-emerald-400"></i> Welcome Kit Anual</li>
+                             </ul>
+                         </div>
+                    </div>
+
+                    <div id="membership-evva" class="card-evva p-5 rounded-3xl border border-red-500/20 mb-4 relative overflow-hidden shadow-lg">
+                         <div class="absolute top-4 right-4 bg-black/30 px-2 py-0.5 rounded text-[8px] font-bold uppercase backdrop-blur-md border border-white/5 text-red-200">Activa</div>
+                         
+                         <div class="flex items-center gap-3 mb-4">
+                            <i class="fas fa-fire text-2xl text-red-300"></i>
+                            <div>
+                                <h4 class="text-lg font-black text-white leading-none">EVVA RED</h4>
+                                <p class="text-[8px] text-red-200 uppercase tracking-widest">Semestral Access</p>
+                            </div>
+                         </div>
+
+                         <div class="grid grid-cols-2 gap-2 text-xs mb-4 bg-black/20 p-3 rounded-xl border border-white/5">
+                             <div><span class="text-gray-400 block text-[8px] uppercase tracking-wider">Inicio</span> <span class="text-white font-mono">15 FEB 2026</span></div>
+                             <div><span class="text-gray-400 block text-[8px] uppercase tracking-wider">Vence</span> <span class="text-white font-mono">15 AGO 2026</span></div>
+                             <div class="col-span-2 pt-1 border-t border-white/5 mt-1"><span class="text-gray-400 block text-[8px] uppercase tracking-wider">Valor Pagado</span> <span class="text-emerald-400 font-bold font-mono">800,000 Dupas</span></div>
+                         </div>
+
+                         <div class="bg-black/30 rounded-xl p-3 border border-white/5">
+                             <p class="text-[8px] text-gray-400 uppercase mb-2 tracking-wider font-bold">Beneficios Incluidos</p>
+                             <ul class="text-[10px] text-gray-300 space-y-1 pl-1">
+                                 <li class="flex items-center gap-2"><i class="fas fa-check text-[8px] text-red-400"></i> 50% Off Cover</li>
+                                 <li class="flex items-center gap-2"><i class="fas fa-check text-[8px] text-red-400"></i> Zona Privada</li>
+                                 <li class="flex items-center gap-2"><i class="fas fa-check text-[8px] text-red-400"></i> Descuento en Barra</li>
+                             </ul>
+                         </div>
+                    </div>
+                </div>
                 <div class="bg-[#111] p-6 rounded-3xl border border-white/10">
                     <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center gap-2">
                         <i class="fas fa-history"></i> Historial de Movimientos
