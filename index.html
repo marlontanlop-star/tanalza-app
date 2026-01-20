@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loop ID - Master Full v5</title>
+    <title>Loop ID - Master Full v6</title>
     
     <meta http-equiv="Access-Control-Allow-Origin" content="*">
     
@@ -59,17 +59,35 @@
             background: rgba(255,255,255,0.1); 
         }
 
-        /* Animaciones SVG */
-        .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 2s ease-out forwards; }
-        .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 2.5s ease-out forwards; }
-        .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeIn 2s forwards 2s; }
-        .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1s ease-in forwards 1.5s; }
+        /* --- ANIMACIONES SPLASH SHOW (7 SEGUNDOS) --- */
+        .stroke-anim { fill: none; stroke: var(--logo-color); stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawIn 3s ease-in-out forwards; }
+        .loop-capsule { fill: none; stroke: var(--logo-color); stroke-linecap: round; animation: drawIn 3.5s ease-in-out forwards; }
+        .loop-glow { fill: none; stroke: var(--accent-color); stroke-linecap: round; stroke-dasharray: 50, 150; opacity: 0; animation: rotateGlow 4s linear infinite, fadeInGlow 2s forwards 3.5s; }
+        .fill-final { fill: rgba(255,255,255,0); animation: fillWhite 1.5s ease-in forwards 3s, pulseLogo 2s infinite 4.5s; }
         
         @keyframes drawIn { to { stroke-dashoffset: 0; } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes rotateGlow { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
+        @keyframes fadeInGlow { to { opacity: 1; } }
         @keyframes fillWhite { to { fill: rgba(255,255,255,1); } }
-        
+        @keyframes pulseLogo { 0% { filter: drop-shadow(0 0 0px var(--accent-color)); } 50% { filter: drop-shadow(0 0 15px var(--accent-color)); } 100% { filter: drop-shadow(0 0 0px var(--accent-color)); } }
+
+        /* Glitch Text Effect */
+        .glitch-text {
+            font-family: 'Courier New', monospace;
+            position: relative;
+            color: white;
+            letter-spacing: 0.2em;
+            animation: glitch-anim 3s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim {
+            0% { opacity: 1; transform: skewX(0deg); }
+            5% { opacity: 0.8; transform: skewX(2deg); }
+            10% { opacity: 1; transform: skewX(0deg); }
+            15% { opacity: 1; transform: skewX(-2deg); }
+            20% { opacity: 1; transform: skewX(0deg); }
+            100% { opacity: 1; transform: skewX(0deg); }
+        }
+
         .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(30px); }
         @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 
@@ -138,29 +156,60 @@
         let myPurchasedEvents = [];
         let totalSpent = 0;
         let totalTickets = 0;
+        let authStateUser = null; // Store user state during animation
 
-        // --- 3. INICIO ---
+        // --- 3. INICIO CON SHOW DE 7 SEGUNDOS ---
         window.onload = function() {
+            // Iniciar textos dinámicos del splash
+            startSplashTextSequence();
+
+            // Escuchar Auth en segundo plano
             auth.onAuthStateChanged((user) => {
-                const splash = document.getElementById('splashScreen');
-                
-                if (user) {
-                    currentUserUID = user.uid;
-                    document.getElementById('viewLogin').classList.add('hidden');
-                    document.getElementById('appContainer').classList.remove('hidden');
-                    initUserData(user.uid);
-                    initNews();
-                } else {
-                    currentUserUID = null;
-                    document.getElementById('viewLogin').classList.remove('hidden');
-                    document.getElementById('appContainer').classList.add('hidden');
-                }
-                
-                if(splash) {
-                    setTimeout(() => splash.style.display = 'none', 500);
-                }
+                authStateUser = user; // Guardar estado para usarlo después de la animación
             });
+
+            // Temporizador estricto de 7 segundos para el show
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                splash.style.opacity = '0'; // Fade out suave
+                
+                setTimeout(() => {
+                    splash.style.display = 'none'; // Quitar del DOM
+                    
+                    if (authStateUser) {
+                        // Usuario recordado -> IR DIRECTO AL PORTAL
+                        currentUserUID = authStateUser.uid;
+                        document.getElementById('viewLogin').classList.add('hidden');
+                        document.getElementById('appContainer').classList.remove('hidden');
+                        initUserData(authStateUser.uid);
+                        initNews();
+                    } else {
+                        // Usuario no recordado -> MOSTRAR LOGIN con animación
+                        currentUserUID = null;
+                        const loginView = document.getElementById('viewLogin');
+                        loginView.classList.remove('hidden');
+                        loginView.classList.add('fade-in-up'); // Añadir animación de entrada al login
+                        document.getElementById('appContainer').classList.add('hidden');
+                    }
+                }, 1000); // Tiempo para que termine el fade out
+            }, 7000); // 7000ms = 7 segundos exactos de show
         };
+
+        function startSplashTextSequence() {
+            const texts = ["INITIALIZING KERNEL...", "CONNECTING NODES...", "VERIFYING BIOMETRICS...", "ACCESS GRANTED"];
+            const textEl = document.getElementById('splashText');
+            let i = 0;
+            
+            // Cambiar texto cada 1.5s
+            const interval = setInterval(() => {
+                if(i < texts.length) {
+                    textEl.innerText = texts[i];
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 1500);
+        }
 
         // --- 4. AUTH & PROFILE ---
         function handleLogin() {
@@ -170,7 +219,15 @@
             
             showLoader(true);
             auth.signInWithEmailAndPassword(email, pass)
-                .then(() => { showLoader(false); })
+                .then((userCredential) => {
+                    showLoader(false);
+                    // Actualizar UI manualmente tras login exitoso
+                    currentUserUID = userCredential.user.uid;
+                    document.getElementById('viewLogin').classList.add('hidden');
+                    document.getElementById('appContainer').classList.remove('hidden');
+                    initUserData(currentUserUID);
+                    initNews();
+                })
                 .catch((error) => {
                     showLoader(false);
                     document.getElementById('loginError').classList.remove('hidden');
@@ -178,7 +235,7 @@
                 });
         }
 
-        function handleLogout() { auth.signOut(); }
+        function handleLogout() { auth.signOut(); window.location.reload(); } // Reload para mostrar splash de nuevo
 
         // --- 5. FOTOS EN LA NUBE (STORAGE) ---
         function handlePhotoUpload(input) {
@@ -393,7 +450,7 @@
             const uniqueHash = "0x" + Math.random().toString(16).substr(2, 6).toUpperCase() + "-" + Date.now().toString().substr(-6);
             document.getElementById('modalHash').innerText = uniqueHash;
             
-            // MODIFICACION: SIEMPRE NEUTRAL EN EL MODAL (IGNORAR IMAGEN DE FONDO)
+            // SIEMPRE NEUTRAL EN EL MODAL (IGNORAR IMAGEN DE FONDO)
             const header = document.getElementById('ticketModalHeader');
             header.style.backgroundImage = 'none'; 
             header.style.height = 'auto'; 
@@ -431,7 +488,6 @@
 
             showLoader(true);
             
-            // 1. Buscar usuario destino
             db.collection("users").where("email", "==", email).get().then(snap => {
                 if(snap.empty) { showLoader(false); return alert("Usuario no encontrado"); }
                 const buyerDoc = snap.docs[0];
@@ -440,20 +496,14 @@
 
                 if(buyerData.dupas < price) { showLoader(false); return alert("El comprador no tiene suficientes Dupas"); }
 
-                // 2. Transacción
                 const batch = db.batch();
-                
-                // Restar al comprador
                 batch.update(db.collection("users").doc(buyerId), { dupas: buyerData.dupas - price });
                 
-                // Sumar al vendedor (Yo)
                 const myRef = db.collection("users").doc(currentUserUID);
-                // Necesitamos leer mi saldo actual primero (o usar incremento atómico, pero usaremos lectura simple aqui)
                 myRef.get().then(mySnap => {
                     const myData = mySnap.data();
                     batch.update(myRef, { dupas: myData.dupas + price });
 
-                    // Transferir Ticket y marcar Recomprada
                     batch.update(db.collection("tickets").doc(selectedTicketToSell.id), {
                         userId: buyerId,
                         recomprada: true
@@ -470,9 +520,7 @@
             }).catch(e => { console.error(e); showLoader(false); alert("Error en venta"); });
         }
 
-
-        // ... (Resto de funciones: openNewsModalFromData, closeNewsModal, openWalletCard, closeWalletModal, openBuyModal, closeBuyModal, confirmPurchase, switchTab, generateComplexQR, showLoader - IGUALES A LA V3) ...
-        
+        // ... (Resto de funciones IGUALES A LA V5) ...
         function openNewsModalFromData(encodedJson) {
             const news = JSON.parse(decodeURIComponent(encodedJson));
             document.getElementById('newsModalTitle').innerText = news.title;
@@ -486,7 +534,7 @@
             document.getElementById('newsModalContent').classList.add('translate-y-full');
             setTimeout(() => document.getElementById('newsModal').classList.add('hidden'), 300);
         }
-        function openWalletCard(type) { document.getElementById('walletModal').classList.remove('hidden'); setTimeout(() => document.getElementById('walletModalContent').classList.remove('scale-90'), 10); } // Simplificado para ahorrar espacio visual aqui
+        function openWalletCard(type) { document.getElementById('walletModal').classList.remove('hidden'); setTimeout(() => document.getElementById('walletModalContent').classList.remove('scale-90'), 10); } 
         function closeWalletModal() { document.getElementById('walletModal').classList.add('hidden'); }
         function openBuyModal(evStr) {
             const ev = JSON.parse(decodeURIComponent(evStr));
@@ -525,9 +573,9 @@
 </head>
 <body class="pb-32 pt-6">
 
-    <div id="splashScreen" class="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center transition-opacity duration-700">
+    <div id="splashScreen" class="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center transition-opacity duration-1000">
         <svg width="350" height="140" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"><path class="stroke-anim" d="M100 80 V135 H135" stroke-width="6"/><circle class="stroke-anim" cx="160" cy="115" r="20" stroke-width="5"/><rect class="loop-capsule" x="195" y="100" width="130" height="30" rx="15" stroke-width="4"/><rect class="loop-glow" x="195" y="100" width="130" height="30" rx="15" stroke-width="2"/><g class="fill-final"><path class="stroke-anim" d="M340 100 V150" stroke-width="6"/><circle class="stroke-anim" cx="360" cy="115" r="20" stroke-width="5"/></g></svg>
-        <p class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 animate-pulse">Iniciando</p>
+        <p id="splashText" class="text-gray-500 text-[10px] tracking-[0.5em] uppercase mt-8 glitch-text">INITIALIZING...</p>
     </div>
 
     <div id="cloudLoader" class="fixed inset-0 z-[90] hidden flex flex-col items-center justify-center"><div class="w-10 h-10 border-4 border-pink-300 border-t-transparent rounded-full animate-spin"></div></div>
