@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Loop ID - Master Full v3</title>
+    <title>Loop ID - Master Full v4</title>
     
     <meta http-equiv="Access-Control-Allow-Origin" content="*">
     
@@ -138,7 +138,6 @@
         let myPurchasedEvents = [];
         let totalSpent = 0;
         let totalTickets = 0;
-        // La variable newsData estática ha sido eliminada para usar DB
 
         // --- 3. INICIO ---
         window.onload = function() {
@@ -150,7 +149,7 @@
                     document.getElementById('viewLogin').classList.add('hidden');
                     document.getElementById('appContainer').classList.remove('hidden');
                     initUserData(user.uid);
-                    initNews(); // Ahora carga desde BD
+                    initNews();
                 } else {
                     currentUserUID = null;
                     document.getElementById('viewLogin').classList.remove('hidden');
@@ -255,27 +254,45 @@
                     container.innerHTML = '<p class="text-center text-gray-500 col-span-1 text-xs py-10">Sin tickets activos.</p>';
                 } else {
                     container.innerHTML = tickets.map((ev, index) => {
-                        const metalClass = `ticket-metal-${(index % 8) + 1}`;
-                        const bgStyle = ev.image ? `background-image: url('${ev.image}'); background-size: cover; background-position: center;` : '';
                         const safeData = encodeURIComponent(JSON.stringify(ev));
-
-                        return `
-                        <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300 ${!ev.image ? metalClass : ''}" 
-                             style="${bgStyle}" onclick="openTicketFromData('${safeData}')">
-                            <div class="absolute inset-0 ${ev.image ? 'bg-black/40' : 'bg-black/20'} group-hover:bg-black/10 transition-colors"></div>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity z-10">
-                                <svg width="180" height="70" viewBox="0 0 500 200"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
-                                <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
-                            </div>
-                            <div class="absolute inset-0 p-6 flex flex-col justify-between z-20">
-                                <div class="flex justify-between items-start">
-                                    <div><span class="text-4xl font-black text-white leading-none tracking-tighter block drop-shadow-md">${ev.date.split(' ')[0]}</span><span class="text-xs font-bold text-white/80 tracking-widest uppercase drop-shadow-sm">${ev.date.split(' ')[1]}</span></div>
-                                    <div class="bg-black/50 backdrop-blur-md px-2 py-1 rounded border border-white/20"><span class="text-[10px] font-bold text-white">ASIENTO: ${ev.seat || 'G-01'}</span></div>
+                        
+                        // LÓGICA DE VISUALIZACIÓN DE TICKET (Metálico vs Imagen)
+                        if (ev.image) {
+                            // Estilo con Imagen (Tipo Noticias)
+                            return `
+                            <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300 border border-white/10" 
+                                 style="background-image: url('${ev.image}'); background-size: cover; background-position: center;"
+                                 onclick="openTicketFromData('${safeData}')">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
+                                <div class="absolute inset-0 p-6 flex flex-col justify-between z-20">
+                                    <div class="flex justify-between items-start">
+                                        <div><span class="text-3xl font-black text-white leading-none tracking-tighter block drop-shadow-md">${ev.date.split(' ')[0]}</span><span class="text-[10px] font-bold text-white/90 tracking-widest uppercase drop-shadow-sm">${ev.date.split(' ')[1]}</span></div>
+                                        <div class="bg-white/20 backdrop-blur-md px-2 py-1 rounded border border-white/20"><span class="text-[10px] font-bold text-white">ASIENTO: ${ev.seat || 'G-01'}</span></div>
+                                    </div>
+                                    <div><p class="text-[9px] font-bold text-pink-300 uppercase tracking-widest mb-1 drop-shadow-sm flex items-center gap-1"><i class="fas fa-ticket-alt"></i> ADQUIRIDO</p><h2 class="text-xl font-black text-white leading-tight drop-shadow-md">${ev.artist}</h2></div>
                                 </div>
-                                <div><p class="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1 drop-shadow-sm">${ev.city || 'Manizales'}</p><h2 class="text-2xl font-black text-white leading-tight drop-shadow-md">${ev.artist}</h2></div>
-                            </div>
-                        </div>
-                    `}).join('');
+                            </div>`;
+                        } else {
+                            // Estilo Metálico (Default)
+                            const metalClass = `ticket-metal-${(index % 8) + 1}`;
+                            return `
+                            <div class="fade-in-up relative aspect-square w-full rounded-3xl overflow-hidden border border-white/5 shadow-2xl cursor-pointer group hover:scale-[1.02] transition-transform duration-300 ${metalClass}" 
+                                 onclick="openTicketFromData('${safeData}')">
+                                <div class="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center opacity-30 pointer-events-none group-hover:opacity-50 transition-opacity z-10">
+                                    <svg width="180" height="70" viewBox="0 0 500 200"><path d="M100 80 V135 H135" stroke="white" stroke-width="6"/><circle cx="160" cy="115" r="20" stroke="white" stroke-width="5"/><rect x="195" y="100" width="130" height="30" rx="15" stroke="white" stroke-width="4" fill="none"/><g><path d="M340 100 V150" stroke="white" stroke-width="6"/><circle cx="360" cy="115" r="20" stroke="white" stroke-width="5"/></g></svg>
+                                    <p class="text-[8px] text-gray-300 font-medium tracking-widest uppercase mt-1">By TanAlza</p>
+                                </div>
+                                <div class="absolute inset-0 p-6 flex flex-col justify-between z-20">
+                                    <div class="flex justify-between items-start">
+                                        <div><span class="text-4xl font-black text-white leading-none tracking-tighter block drop-shadow-md">${ev.date.split(' ')[0]}</span><span class="text-xs font-bold text-white/80 tracking-widest uppercase drop-shadow-sm">${ev.date.split(' ')[1]}</span></div>
+                                        <div class="bg-black/50 backdrop-blur-md px-2 py-1 rounded border border-white/20"><span class="text-[10px] font-bold text-white">ASIENTO: ${ev.seat || 'G-01'}</span></div>
+                                    </div>
+                                    <div><p class="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-1 drop-shadow-sm">${ev.city || 'Manizales'}</p><h2 class="text-2xl font-black text-white leading-tight drop-shadow-md">${ev.artist}</h2></div>
+                                </div>
+                            </div>`;
+                        }
+                    }).join('');
                 }
             });
         }
@@ -285,7 +302,6 @@
             const container = document.getElementById('newsContainer');
             if(!container) return;
             
-            // Escuchar colección 'news' en lugar del array estático
             db.collection("news").orderBy("order", "desc").onSnapshot((snapshot) => {
                 if(snapshot.empty) {
                     container.innerHTML = '<p class="text-center text-gray-500 py-4 text-xs">Sin noticias recientes.</p>';
@@ -295,7 +311,7 @@
                 let htmlContent = '';
                 snapshot.forEach((doc) => {
                     const news = doc.data();
-                    const newsStr = encodeURIComponent(JSON.stringify(news)); // Preparar datos para el modal
+                    const newsStr = encodeURIComponent(JSON.stringify(news));
                     const bgImage = news.image ? `background-image: url('${news.image}');` : 'background-color: #111;';
 
                     htmlContent += `
@@ -370,7 +386,6 @@
         }
         function closeTicket() { document.getElementById('ticketModal').classList.add('hidden'); }
 
-        // Wrapper para abrir noticia desde BD
         function openNewsModalFromData(encodedJson) {
             const news = JSON.parse(decodeURIComponent(encodedJson));
             document.getElementById('newsModalTitle').innerText = news.title;
@@ -434,8 +449,19 @@
                 const zone = zones[Math.floor(Math.random() * zones.length)];
                 const num = Math.floor(Math.random() * 200) + 1;
                 const seatCode = `${zone}-${num}`;
+                
+                // AQUÍ SE GUARDA LA IMAGEN TAMBIÉN
                 userRef.update({ dupas: currentUser.dupas - selectedShopEvent.price, invested: (currentUser.invested || 0) + (selectedShopEvent.price * 1000) }).then(() => {
-                    db.collection("tickets").add({ userId: currentUserUID, artist: selectedShopEvent.artist, date: selectedShopEvent.date, venue: selectedShopEvent.venue, city: selectedShopEvent.city || "Manizales", image: selectedShopEvent.image || null, seat: seatCode, price: selectedShopEvent.price }).then(() => {
+                    db.collection("tickets").add({ 
+                        userId: currentUserUID, 
+                        artist: selectedShopEvent.artist, 
+                        date: selectedShopEvent.date, 
+                        venue: selectedShopEvent.venue, 
+                        city: selectedShopEvent.city || "Manizales", 
+                        image: selectedShopEvent.image || null, // Guardamos la imagen
+                        seat: seatCode, 
+                        price: selectedShopEvent.price 
+                    }).then(() => {
                         showLoader(false); closeBuyModal(); switchTab('home'); alert(`¡Compra exitosa! Asiento: ${seatCode}`);
                     });
                 });
