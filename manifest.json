@@ -10,13 +10,13 @@
   "scope": "/",
   "icons": [
     {
-      "src": https://res.cloudinary.com/ddjurj8s7/image/upload/v1774392921/ClubMem_1_hfym1j.png,
+      "src": "https://res.cloudinary.com/ddjurj8s7/image/upload/v1774392921/ClubMem_1_hfymij.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": https://res.cloudinary.com/ddjurj8s7/image/upload/v1774392921/ClubMem_1_hfym1j.png,
+      "src": "https://res.cloudinary.com/ddjurj8s7/image/upload/v1774392921/ClubMem_1_hfymij.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
