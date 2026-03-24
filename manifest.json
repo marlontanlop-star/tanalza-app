@@ -2,11 +2,12 @@
   "name": "MANDRÉ | Specialty Coffee & Wellness",
   "short_name": "MANDRÉ",
   "start_url": "./index.html",
-  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#F5F5F0",
   "theme_color": "#3E2723",
+  "description": "Sistema POS para MANDRÉ Coffee",
+  "orientation": "portrait",
+  "scope": "/",
   "icons": [
     {
       "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Coffee_bean_icon.svg/192px-Coffee_bean_icon.svg.png",
