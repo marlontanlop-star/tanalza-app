@@ -1,3 +1,5 @@
+const CACHE_NAME = 'mandre-v2'; // Cambiamos v1 por v2
+
 self.addEventListener('install', (event) => {
     self.skipWaiting();
 });
@@ -7,6 +9,5 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Esto es lo mínimo que pide Chrome para dejarte instalar
     event.respondWith(fetch(event.request));
 });
