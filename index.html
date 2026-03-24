@@ -11,24 +11,16 @@
     <meta name="theme-color" content="#F5F5F0">
     <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Coffee_bean_icon.svg/512px-Coffee_bean_icon.svg.png">
     
-    <!-- NUEVO: GENERACIÓN DINÁMICA DE MANIFEST PARA PWA (Quita la barra de Chrome) -->
+   <link rel="manifest" href="manifest.json">
+    
     <script>
-        const manifestData = {
-            "name": "MANDRÉ POS",
-            "short_name": "MANDRÉ",
-            "start_url": "/",
-            "display": "standalone",
-            "background_color": "#F5F5F0",
-            "theme_color": "#3E2723",
-            "icons": [{
-                "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Coffee_bean_icon.svg/512px-Coffee_bean_icon.svg.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            }]
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-        const manifestUrl = URL.createObjectURL(manifestBlob);
-        document.write('<link rel="manifest" href="' + manifestUrl + '">');
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registrado'))
+                    .catch(err => console.log('Error en SW', err));
+            });
+        }
     </script>
 
     <title>MANDRÉ | Specialty Coffee & Wellness</title>
