@@ -2456,5 +2456,39 @@ return (
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+    <div id="install-banner" class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[200] hidden">
+        <button id="btn-install" class="bg-[#3E2723] text-white px-8 py-4 rounded-full shadow-2xl font-bold flex items-center gap-2 animate-bounce border-2 border-white">
+            <span>📲 INSTALAR APP MANDRÉ</span>
+        </button>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        const installBanner = document.getElementById('install-banner');
+        const btnInstall = document.getElementById('btn-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('✅ Chrome detectó que Mandré puede ser App');
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.classList.remove('hidden');
+        });
+
+        btnInstall.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    installBanner.classList.add('hidden');
+                }
+                deferredPrompt = null;
+            }
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBanner.classList.add('hidden');
+            alert('¡Listo! Abre MANDRÉ desde tu menú de aplicaciones.');
+        });
+    </script>
 </body>
 </html>
