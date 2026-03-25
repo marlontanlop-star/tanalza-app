@@ -308,6 +308,10 @@
             const [isAbonoModalOpen, setIsAbonoModalOpen] = useState(false);
             const [activeCredit, setActiveCredit] = useState(null);
             const [abonoForm, setAbonoForm] = useState({ amount: '', method: 'efectivo', assignedUser: '' });
+            // NUEVOS ESTADOS PARA UNIFICAR Y POS
+            const [isMergeMode, setIsMergeMode] = useState(false);
+            const [selectedCreditsForMerge, setSelectedCreditsForMerge] = useState([]);
+            const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
             // Canje Caja Modals
             const [cashAdjustForm, setCashAdjustForm] = useState({ employee: '', amount: '', type: 'add' });
@@ -596,6 +600,64 @@
                 setAbonoForm({ amount: credit.balance, method: 'efectivo', assignedUser: '' });
                 setIsAbonoModalOpen(true);
             };
+
+            // --- NUEVO: UNIFICAR CRÉDITOS MANUALMENTE ---
+            const handleManualMerge = async () => {
+                if (selectedCreditsForMerge.length < 2) {
+                    return alert("Seleccione al menos 2 cuentas marcando la casilla al lado del nombre.");
+                }
+
+                const creditsToMerge = credits.filter(c => selectedCreditsForMerge.includes(c.id));
+                const defaultName = creditsToMerge[0].customer;
+                
+                const finalName = prompt(`Va a unificar ${creditsToMerge.length} cuentas.\n\n¿Qué nombre definitivo le pondremos a este cliente? (Corríjalo si desea)`, defaultName);
+                
+                if (!finalName) return;
+
+                const batch = db.batch();
+                let totalBalance = 0;
+                let totalGeneral = 0;
+                let allItems = [];
+
+                // Reusamos la primera cuenta seleccionada
+                const mainCredit = creditsToMerge[0];
+
+                creditsToMerge.forEach(c => {
+                    totalBalance += (c.balance || 0);
+                    totalGeneral += (c.total || 0);
+                    const itemsWithDate = (c.items || []).map(i => ({...i, appendDate: i.appendDate || c.date.split(',')[0]}));
+                    allItems = [...allItems, ...itemsWithDate];
+                });
+
+                // Actualizar la principal
+                batch.update(db.collection('creditos').doc(mainCredit.id.toString()), {
+                    customer: finalName.trim().toUpperCase(),
+                    balance: totalBalance,
+                    total: totalGeneral,
+                    items: allItems,
+                    status: totalBalance <= 0 ? 'pagado' : 'pendiente',
+                    lastUpdated: new Date().toLocaleString()
+                });
+
+                // Borrar las otras seleccionadas
+                for(let i = 1; i < creditsToMerge.length; i++) {
+                    batch.delete(db.collection('creditos').doc(creditsToMerge[i].id.toString()));
+                }
+
+                await batch.commit();
+                alert("¡Cuentas unificadas exitosamente!");
+                setIsMergeMode(false);
+                setSelectedCreditsForMerge([]);
+            };
+
+            const toggleMergeSelection = (id) => {
+                if (selectedCreditsForMerge.includes(id)) {
+                    setSelectedCreditsForMerge(selectedCreditsForMerge.filter(x => x !== id));
+                } else {
+                    setSelectedCreditsForMerge([...selectedCreditsForMerge, id]);
+                }
+            };
+
 
             // --- CANJEAR CAJA (ADMIN) ---
             const handleCashAdjust = async () => {
@@ -1067,14 +1129,34 @@
                     }
                 });
 
-                // Si es Crédito, guardar en tabla 'creditos'. 
+                // Si es Crédito, guardar en tabla 'creditos' (ACUMULANDO SI EL CLIENTE YA EXISTE)
                 if (method === 'credito') {
-                    const newCredit = { 
-                        id: Date.now(), customer: finalCustomerName, total, balance: total, items: cart, 
-                        date: currentDate.toLocaleString(), isoDate: currentDate.toISOString().split('T')[0], 
-                        employee: currentShiftEmployee, status: 'pendiente' 
-                    };
-                    batch.set(db.collection('creditos').doc(newCredit.id.toString()), newCredit);
+                    const existingCredit = credits.find(c => c.customer.trim().toLowerCase() === finalCustomerName.toLowerCase());
+
+                    if (existingCredit) {
+                        // Si ya existe, le sumamos la deuda y le agregamos los productos
+                        const newBalance = (existingCredit.balance || 0) + total;
+                        const newTotal = (existingCredit.total || 0) + total;
+                        const newItems = cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()}));
+                        const updatedItems = [...(existingCredit.items || []), ...newItems];
+
+                        batch.update(db.collection('creditos').doc(existingCredit.id.toString()), {
+                            balance: newBalance,
+                            total: newTotal,
+                            items: updatedItems,
+                            status: newBalance <= 0 ? 'pagado' : 'pendiente',
+                            lastUpdated: currentDate.toLocaleString()
+                        });
+                    } else {
+                        // Si es nuevo, creamos la cuenta
+                        const newCredit = { 
+                            id: Date.now(), customer: finalCustomerName, total, balance: total, 
+                            items: cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()})), 
+                            date: currentDate.toLocaleString(), isoDate: currentDate.toISOString().split('T')[0], 
+                            employee: currentShiftEmployee, status: 'pendiente' 
+                        };
+                        batch.set(db.collection('creditos').doc(newCredit.id.toString()), newCredit);
+                    }
                 }
 
                 // Registrar Orden (Se registra incluso si es crédito para control de inventario/historial)
@@ -1600,20 +1682,43 @@ return (
 
                                 {adminTab === 'credits' && (
                                     <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
-                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100">
-                                            <h3 className="font-bold text-purple-800 mb-4 flex items-center gap-2"><Shield size={18}/> Búsqueda de Créditos y Fiados</h3>
-                                            <div className="grid grid-cols-1">
+                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                            <div className="flex-1 w-full">
+                                                <h3 className="font-bold text-purple-800 mb-4 flex items-center gap-2"><Shield size={18}/> Búsqueda de Cuentas (Créditos)</h3>
                                                 <input className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-purple-300" placeholder="Buscar por Nombre de Cliente..." value={creditFilter} onChange={e => setCreditFilter(e.target.value)}/>
                                             </div>
+                                            
+                                            {!isMergeMode ? (
+                                                <button onClick={() => { setIsMergeMode(true); setSelectedCreditsForMerge([]); }} className="w-full md:w-auto mt-2 md:mt-8 bg-purple-100 text-purple-700 font-bold px-4 py-3 rounded-xl text-xs shadow-sm hover:bg-purple-200 active:scale-95 transition">
+                                                    MODO UNIFICAR CUENTAS
+                                                </button>
+                                            ) : (
+                                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-8">
+                                                    <button onClick={() => setIsMergeMode(false)} className="bg-gray-100 text-gray-600 font-bold px-4 py-3 rounded-xl text-xs shadow-sm hover:bg-gray-200 active:scale-95 transition">CANCELAR</button>
+                                                    <button onClick={handleManualMerge} className="bg-purple-600 text-white font-bold px-4 py-3 rounded-xl text-xs shadow-sm hover:bg-purple-700 active:scale-95 transition">
+                                                        CONFIRMAR ({selectedCreditsForMerge.length})
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="space-y-4">
                                             {credits.filter(c => c.customer.toLowerCase().includes(creditFilter.toLowerCase())).map(credit => (
-                                                <div key={credit.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col gap-3">
+                                                <div key={credit.id} className={`bg-white p-5 rounded-2xl shadow-sm border flex flex-col gap-3 transition-all ${selectedCreditsForMerge.includes(credit.id) ? 'border-purple-500 ring-2 ring-purple-200 bg-purple-50/30' : 'border-gray-200'}`}>
                                                     <div className="flex justify-between items-start border-b pb-3">
-                                                        <div>
-                                                            <h4 className="font-bold text-mandre-dark text-lg uppercase tracking-wide">{credit.customer}</h4>
-                                                            <p className="text-xs text-gray-500">Fecha Creado: {credit.date}</p>
+                                                        <div className="flex items-center gap-3">
+                                                            {isMergeMode && (
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    className="w-6 h-6 accent-purple-600 cursor-pointer shadow-sm rounded" 
+                                                                    checked={selectedCreditsForMerge.includes(credit.id)} 
+                                                                    onChange={() => toggleMergeSelection(credit.id)} 
+                                                                />
+                                                            )}
+                                                            <div>
+                                                                <h4 className="font-bold text-mandre-dark text-lg uppercase tracking-wide">{credit.customer}</h4>
+                                                                <p className="text-xs text-gray-500">Última act: {credit.lastUpdated || credit.date}</p>
+                                                            </div>
                                                         </div>
                                                         <div className="text-right">
                                                             <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full ${credit.status === 'pagado' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
@@ -1622,13 +1727,13 @@ return (
                                                         </div>
                                                     </div>
 
-                                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-2">
-                                                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-2">Consumo:</p>
+                                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-2 max-h-48 overflow-y-auto">
+                                                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 sticky top-0 bg-gray-50">Historial de Consumo:</p>
                                                         <div className="space-y-1">
                                                             {credit.items.map((item, idx) => (
-                                                                <div key={idx} className="flex justify-between text-xs text-gray-600">
-                                                                    <span>{item.quantity}x {item.name}</span>
-                                                                    <span>${(item.price * item.quantity).toLocaleString()}</span>
+                                                                <div key={idx} className="flex justify-between text-xs text-gray-600 border-b border-gray-100 pb-1">
+                                                                    <span>{item.quantity}x {item.name} <span className="text-[9px] text-gray-400 ml-1">{item.appendDate}</span></span>
+                                                                    <span className="font-bold">${(item.price * item.quantity).toLocaleString()}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -1637,7 +1742,7 @@ return (
                                                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2">
                                                         <div className="flex gap-6 w-full sm:w-auto">
                                                             <div>
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase">Deuda Inicial</p>
+                                                                <p className="text-[10px] text-gray-400 font-bold uppercase">Consumo Histórico</p>
                                                                 <p className="font-bold text-gray-500">${credit.total.toLocaleString()}</p>
                                                             </div>
                                                             <div>
@@ -1645,7 +1750,7 @@ return (
                                                                 <p className="font-bold text-xl text-purple-900">${credit.balance.toLocaleString()}</p>
                                                             </div>
                                                         </div>
-                                                        {credit.status === 'pendiente' && (
+                                                        {credit.status === 'pendiente' && !isMergeMode && (
                                                             <button onClick={() => openAbonoModal(credit)} className="w-full sm:w-auto bg-purple-800 text-white px-6 py-3 rounded-xl font-bold shadow active:scale-95 transition">
                                                                 REGISTRAR ABONO
                                                             </button>
@@ -2316,13 +2421,48 @@ return (
                                     <div className="text-center mb-8 bg-gray-50 p-6 rounded-2xl border border-gray-100">
                                         <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">Total a Cobrar</span>
                                         <div className="text-4xl font-bold text-mandre-coffee mt-2">${total.toLocaleString()}</div>
-                                        {/* NOMBRE PARA TRANSFERENCIA Y CRÉDITO */}
+                                        
+                                        {/* NOMBRE PARA TRANSFERENCIA Y CRÉDITO (BÚSQUEDA TIPO LISTA) */}
                                         {(paymentStep === 'transfer' || paymentStep === 'credit') && (
-                                            <div className="mt-6 animate-fadeIn">
-                                                <input className="w-full p-4 bg-white border border-purple-200 shadow-sm rounded-xl text-center font-bold outline-none focus:border-purple-600 transition" placeholder="Nombre Completo del Cliente" value={customerName} onChange={e => setCustomerName(e.target.value)} autoFocus/>
+                                            <div className="mt-6 animate-fadeIn relative">
+                                                <input 
+                                                    className="w-full p-4 bg-white border border-purple-200 shadow-sm rounded-xl text-center font-bold outline-none focus:border-purple-600 transition relative z-20" 
+                                                    placeholder="Nombre Completo del Cliente" 
+                                                    value={customerName} 
+                                                    onChange={e => {
+                                                        setCustomerName(e.target.value);
+                                                        setShowCustomerDropdown(true);
+                                                    }} 
+                                                    onFocus={() => setShowCustomerDropdown(true)}
+                                                    onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
+                                                    autoFocus
+                                                />
+                                                {/* MENÚ DESPLEGABLE DE CLIENTES EXISTENTES */}
+                                                {showCustomerDropdown && paymentStep === 'credit' && (
+                                                    <div className="absolute top-[105%] left-0 right-0 bg-white border border-purple-100 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto">
+                                                        {Array.from(new Set(credits.map(c => c.customer)))
+                                                            .filter(name => name.toLowerCase().includes(customerName.toLowerCase()))
+                                                            .map(name => (
+                                                                <div 
+                                                                    key={name} 
+                                                                    onClick={() => { setCustomerName(name); setShowCustomerDropdown(false); }}
+                                                                    className="p-4 text-left border-b border-gray-50 hover:bg-purple-50 cursor-pointer font-bold text-gray-700 transition"
+                                                                >
+                                                                    {name}
+                                                                </div>
+                                                        ))}
+                                                        {Array.from(new Set(credits.map(c => c.customer))).filter(name => name.toLowerCase().includes(customerName.toLowerCase())).length === 0 && (
+                                                            <div className="p-4 text-left text-xs text-gray-400 italic bg-gray-50">
+                                                                Crear cliente nuevo: "{customerName}"
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </div>
+
+                                    {/* PASO 1: SELECCIÓN MÉTODO */}
 
                                     {/* PASO 1: SELECCIÓN MÉTODO */}
                                     {paymentStep === 'method' && (
