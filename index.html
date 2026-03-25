@@ -496,32 +496,41 @@ const alerts = useMemo(() => {
 
             // --- METRICAS EN VIVO POR USUARIO ---
             const liveStats = useMemo(() => {
-                const currentShiftOrders = orders.filter(o => !o.shiftId && o.method !== 'credito'); // Crédito no suma a caja
-                const currentShiftAbonos = abonos.filter(a => !a.shiftId);
-                const stats = { users: {} };
-                
-                // Sumar ventas normales
-                currentShiftOrders.forEach(o => {
-                    const emp = o.employee || 'Desconocido';
-                    if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0 };
-                    
-                    stats.users[emp].total += o.total;
-                    if (o.method === 'efectivo') stats.users[emp].efectivo += o.total;
-                    if (o.method === 'transferencia') stats.users[emp].nequi += o.total;
-                });
+    // Filtramos los datos que pertenecen al turno actual (sin shiftId)
+    const currentShiftOrders = orders.filter(o => !o.shiftId && o.method !== 'credito');
+    const currentShiftAbonos = abonos.filter(a => !a.shiftId);
+    const currentShiftExpenses = expenses.filter(e => !e.shiftId); // NUEVO: Filtro de egresos actuales
+    
+    const stats = { users: {}, totalExpenses: 0 };
+    
+    // 1. Procesar Ventas
+    currentShiftOrders.forEach(o => {
+        const emp = o.employee || 'Desconocido';
+        if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0, egresos: 0 };
+        stats.users[emp].total += o.total;
+        if (o.method === 'efectivo') stats.users[emp].efectivo += o.total;
+        if (o.method === 'transferencia') stats.users[emp].nequi += o.total;
+    });
 
-                // Sumar abonos recibidos
-                currentShiftAbonos.forEach(a => {
-                    const emp = a.employee || 'Desconocido';
-                    if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0 };
-                    
-                    stats.users[emp].total += a.amount;
-                    if(a.method === 'efectivo') stats.users[emp].efectivo += a.amount;
-                    if(a.method === 'transferencia') stats.users[emp].nequi += a.amount;
-                });
+    // 2. Procesar Abonos recibidos
+    currentShiftAbonos.forEach(a => {
+        const emp = a.employee || 'Desconocido';
+        if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0, egresos: 0 };
+        stats.users[emp].total += a.amount;
+        if(a.method === 'efectivo') stats.users[emp].efectivo += a.amount;
+        if(a.method === 'transferencia') stats.users[emp].nequi += a.amount;
+    });
 
-                return stats;
-            }, [orders, abonos]);
+    // 3. NUEVO: Procesar Egresos por usuario
+    currentShiftExpenses.forEach(e => {
+        const emp = e.employee || 'Admin';
+        if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0, egresos: 0 };
+        stats.users[emp].egresos += e.amount;
+        stats.totalExpenses += e.amount;
+    });
+
+    return stats;
+}, [orders, abonos, expenses]); // Se agregó 'expenses' a las dependencias
 
             // --- FUNCIONES LOGIN Y EGRESOS ---
             const handleLogin = (e) => {
@@ -1763,31 +1772,41 @@ return (
                                         )}
 
                                         {/* TOTAL CAJA VIVO */}
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                                                <h3 className="text-xs text-red-500 uppercase font-bold">Total General en Vivo (Caja Abierta)</h3>
-                                            </div>
-                                            <div className="flex justify-between items-end mb-4">
-                                                <p className="text-4xl font-bold text-mandre-coffee">
-                                                    ${(orders.filter(o => !o.shiftId && o.method !== 'credito').reduce((a,b)=>a+b.total,0) + abonos.filter(a => !a.shiftId).reduce((a,b)=>a+b.amount,0)).toLocaleString()}
-                                                </p>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4 border-t pt-4">
-                                                <div>
-                                                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Efectivo Total (+Abonos)</p>
-                                                    <p className="text-xl font-bold text-mandre-dark">
-                                                        ${(orders.filter(o => !o.shiftId && o.method === 'efectivo').reduce((a,b)=>a+b.total,0) + abonos.filter(a => !a.shiftId && a.method === 'efectivo').reduce((a,b)=>a+b.amount,0)).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] text-gray-400 uppercase font-bold mb-1 text-purple-900">Nequi Total (+Abonos)</p>
-                                                    <p className="text-xl font-bold text-purple-900">
-                                                        ${(orders.filter(o => !o.shiftId && o.method === 'transferencia').reduce((a,b)=>a+b.total,0) + abonos.filter(a => !a.shiftId && a.method === 'transferencia').reduce((a,b)=>a+b.amount,0)).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
+<div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="flex items-center gap-2 mb-2">
+        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+        <h3 className="text-xs text-red-500 uppercase font-bold">Total General en Vivo (Caja Abierta)</h3>
+    </div>
+    <div className="flex justify-between items-end mb-4">
+        <p className="text-4xl font-bold text-mandre-coffee">
+            ${((orders.filter(o => !o.shiftId && o.method !== 'credito').reduce((a,b)=>a+b.total,0) + 
+               abonos.filter(a => !a.shiftId).reduce((a,b)=>a+b.amount,0)) - 
+               (liveStats.totalExpenses || 0)).toLocaleString()}
+        </p>
+    </div>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t pt-4">
+        <div>
+            <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Efectivo (+Abonos)</p>
+            <p className="text-xl font-bold text-mandre-dark">
+                ${(orders.filter(o => !o.shiftId && o.method === 'efectivo').reduce((a,b)=>a+b.total,0) + 
+                   abonos.filter(a => !a.shiftId && a.method === 'efectivo').reduce((a,b)=>a+b.amount,0)).toLocaleString()}
+            </p>
+        </div>
+        <div>
+            <p className="text-[10px] text-purple-400 uppercase font-bold mb-1">Nequi (+Abonos)</p>
+            <p className="text-xl font-bold text-purple-900">
+                ${(orders.filter(o => !o.shiftId && o.method === 'transferencia').reduce((a,b)=>a+b.total,0) + 
+                   abonos.filter(a => !a.shiftId && a.method === 'transferencia').reduce((a,b)=>a+b.amount,0)).toLocaleString()}
+            </p>
+        </div>
+        <div className="bg-red-50 p-2 rounded-xl border border-red-100">
+            <p className="text-[10px] text-red-400 uppercase font-bold mb-1">Egresos del Turno</p>
+            <p className="text-xl font-bold text-red-600">
+                -${(liveStats.totalExpenses || 0).toLocaleString()}
+            </p>
+        </div>
+    </div>
+</div>
 
                                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                                             <h3 className="font-bold text-mandre-coffee mb-4">Métricas en Vivo por Usuario (Turno Actual)</h3>
@@ -1801,16 +1820,31 @@ return (
                                                                 <p className="text-[10px] text-gray-500 uppercase font-bold">Total Facturado+Abonos: <span className="text-mandre-sage">${data.total.toLocaleString()}</span></p>
                                                             </div>
                                                         </div>
-                                                        <div className="grid grid-cols-2 gap-4 md:gap-8 bg-white p-2 rounded-lg border border-gray-100 shadow-inner">
-                                                            <div className="text-center px-2 border-r border-gray-100">
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Efectivo</p>
-                                                                <p className="font-bold text-sm text-mandre-dark">${data.efectivo.toLocaleString()}</p>
-                                                            </div>
-                                                            <div className="text-center px-2">
-                                                                <p className="text-[10px] text-purple-400 font-bold uppercase mb-0.5">Nequi</p>
-                                                                <p className="font-bold text-sm text-purple-900">${data.nequi.toLocaleString()}</p>
-                                                            </div>
-                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-2 md:gap-4 bg-white p-2 rounded-lg border border-gray-100 shadow-inner">
+    {/* Columna Efectivo */}
+    <div className="text-center px-1 border-r border-gray-100">
+        <p className="text-[9px] text-gray-400 font-bold uppercase mb-0.5">Efectivo</p>
+        <p className="font-bold text-xs text-mandre-dark">
+            ${(data?.efectivo || 0).toLocaleString()}
+        </p>
+    </div>
+    
+    {/* Columna Nequi */}
+    <div className="text-center px-1 border-r border-gray-100">
+        <p className="text-[9px] text-purple-400 font-bold uppercase mb-0.5">Nequi</p>
+        <p className="font-bold text-xs text-purple-900">
+            ${(data?.nequi || 0).toLocaleString()}
+        </p>
+    </div>
+    
+    {/* NUEVA COLUMNA DE EGRESOS */}
+    <div className="text-center px-1">
+        <p className="text-[9px] text-red-400 font-bold uppercase mb-0.5">Egresos</p>
+        <p className="font-bold text-xs text-red-600">
+            -${(data?.egresos || 0).toLocaleString()}
+        </p>
+    </div>
+</div>
                                                     </div>
                                                 )) : <p className="text-sm text-gray-400 text-center py-4">No hay ventas registradas en el turno actual.</p>}
                                             </div>
@@ -2088,36 +2122,61 @@ return (
                                 )}
 
                                 {adminTab === 'expenses' && (
-                                    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
-                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100">
-                                            <h3 className="font-bold text-red-600 mb-4 flex items-center gap-2"><Banknote size={18}/> Filtros de Egresos</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <input className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-red-300" placeholder="Buscar por gasto o empleado..." value={expenseFilter.query} onChange={e => setExpenseFilter({...expenseFilter, query: e.target.value})}/>
-                                                <input type="date" className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-red-300" value={expenseFilter.date} onChange={e => setExpenseFilter({...expenseFilter, date: e.target.value})}/>
-                                            </div>
-                                        </div>
+    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100">
+            <h3 className="font-bold text-red-600 mb-4 flex items-center gap-2"><Banknote size={18}/> Filtros de Egresos</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-red-300" placeholder="Buscar gasto o empleado..." value={expenseFilter.query} onChange={e => setExpenseFilter({...expenseFilter, query: e.target.value})}/>
+                <input type="date" className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-red-300" value={expenseFilter.date} onChange={e => setExpenseFilter({...expenseFilter, date: e.target.value})}/>
+            </div>
+        </div>
 
-                                        <div className="space-y-4">
-                                            {expenses.filter(e => 
-                                                (expenseFilter.query === '' || e.desc.toLowerCase().includes(expenseFilter.query.toLowerCase()) || (e.employee && e.employee.toLowerCase().includes(expenseFilter.query.toLowerCase()))) &&
-                                                (expenseFilter.date === '' || e.isoDate === expenseFilter.date)
-                                            ).map(exp => (
-                                                <div key={exp.id} className="bg-white p-4 rounded-2xl shadow-sm border border-red-50 hover:border-red-200 transition flex flex-col md:flex-row justify-between md:items-center gap-3">
-                                                    <div>
-                                                        <h4 className="font-bold text-mandre-dark text-lg mb-1">{exp.desc}</h4>
-                                                        <p className="text-xs text-gray-500">Registrado por: <b>{exp.employee || 'Admin'}</b></p>
-                                                    </div>
-                                                    <div className="text-left md:text-right">
-                                                        <p className="text-2xl font-bold text-red-600 mb-1">-${exp.amount.toLocaleString()}</p>
-                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{exp.date}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {expenses.length === 0 && <p className="text-center text-gray-400 py-10">No hay egresos registrados.</p>}
+        <div className="space-y-8">
+            {Object.entries(
+                expenses.filter(e => 
+                    (expenseFilter.query === '' || e.desc.toLowerCase().includes(expenseFilter.query.toLowerCase()) || (e.employee && e.employee.toLowerCase().includes(expenseFilter.query.toLowerCase()))) &&
+                    (expenseFilter.date === '' || e.isoDate === expenseFilter.date)
+                ).reduce((acc, exp) => {
+                    const d = exp.isoDate || exp.date.split(',')[0];
+                    (acc[d] = acc[d] || []).push(exp);
+                    return acc;
+                }, {})
+            ).sort((a, b) => b[0].localeCompare(a[0])) 
+            .map(([date, dayExpenses]) => (
+                <div key={date} className="animate-fadeIn">
+                    <div className="flex items-center gap-3 mb-4 ml-2">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{date}</h4>
+                        <div className="flex-1 h-px bg-gray-200"></div>
+                        <span className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                            TOTAL DÍA: ${dayExpenses.reduce((sum, ex) => sum + ex.amount, 0).toLocaleString()}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {dayExpenses.map(exp => (
+                            <div key={exp.id} className="bg-white p-4 rounded-2xl shadow-sm border border-red-50 hover:border-red-200 transition-all flex flex-col justify-between">
+                                <div className="mb-3">
+                                    <h4 className="font-bold text-mandre-dark text-sm mb-1 leading-tight">{exp.desc}</h4>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
+                                            {exp.employee ? exp.employee[0] : 'A'}
                                         </div>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase">Por: {exp.employee || 'Admin'}</p>
                                     </div>
-                                )}
-
+                                </div>
+                                <div className="flex justify-between items-end border-t pt-3 mt-1">
+                                    <p className="text-[10px] text-gray-300 font-bold">{exp.date.split(',')[1] || ''}</p>
+                                    <p className="text-lg font-bold text-red-600">-${exp.amount.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+            {expenses.length === 0 && <p className="text-center text-gray-400 py-10 italic">No hay egresos registrados aún.</p>}
+        </div>
+    </div>
+)}
                                 {adminTab === 'products' && (
                                     <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
                                         <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
