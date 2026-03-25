@@ -10,12 +10,12 @@
     <meta name="apple-mobile-web-app-title" content="MANDRÉ">
     <meta name="theme-color" content="#3E2723">
     <link rel="apple-touch-icon" href="https://res.cloudinary.com/ddjurj8s7/image/upload/v1774392921/ClubMem_1_hfymij.png">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/manifest.json">
 
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
+          navigator.serviceWorker.register('/sw.js')
             .then(reg => console.log('SW Mandré OK', reg))
             .catch(err => console.log('SW Mandré Error', err));
         });
