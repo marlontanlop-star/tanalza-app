@@ -26,15 +26,6 @@
       }
     </script>
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registrado'))
-                    .catch(err => console.log('Error en SW', err));
-            });
-        }
-    </script>
-
     <title>MANDRÉ | Specialty Coffee & Wellness</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
