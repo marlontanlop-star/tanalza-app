@@ -1245,11 +1245,16 @@ return (
     onClick={() => view === 'admin_panel' ? setView('pos') : setView('admin_login')}
     className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-all active:scale-95 group shrink-0"
 >
+    {/* Icono de la Hoja */}
     <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-mandre-coffee shadow-lg group-hover:rotate-6 transition-transform">
         <IconLeaf className="text-white" size={24} />
     </div>
-    <div className="hidden sm:block truncate">
-        <h1 className="text-lg font-bold tracking-widest text-mandre-coffee leading-none">MANDRÉ</h1>
+
+    {/* Nombres: Ahora visibles en móvil y PC */}
+    <div className="flex flex-col truncate"> 
+        <h1 className="text-lg font-bold tracking-widest text-mandre-coffee leading-none uppercase">
+            MANDRÉ
+        </h1>
         <p className="text-[10px] text-gray-400 font-bold uppercase truncate flex items-center gap-1">
             {currentShiftEmployee || 'Invitado'}
             <span className={`w-1.5 h-1.5 rounded-full inline-block ${isOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
