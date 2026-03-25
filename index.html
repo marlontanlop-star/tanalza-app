@@ -8,15 +8,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#F5F5F0">
-    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Coffee_bean_icon.svg/512px-Coffee_bean_icon.svg.png">
-
+        <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MANDRÉ">
-   <link rel="manifest" href="manifest.json">
-    
+    <meta name="theme-color" content="#3E2723">
+    <link rel="apple-touch-icon" href="https://res.cloudinary.com/ddjurj8s7/image/upload/v1774392921/ClubMem_1_hfymij.png">
+    <link rel="manifest" href="manifest.json">
+
     <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW ok', reg))
+            .catch(err => console.log('SW error', err));
+        });
+      }
+    </script>
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
