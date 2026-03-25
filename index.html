@@ -231,6 +231,35 @@
                 const timer = setTimeout(() => setShowSplash(false), 4000); // 4000 milisegundos = 4 segundos
                 return () => clearTimeout(timer);
             }, []);
+            // NUEVO: Detector de Actualizaciones PWA
+            const [updateAvailable, setUpdateAvailable] = useState(false);
+            
+            useEffect(() => {
+                if ('serviceWorker' in navigator) {
+                    // 1. Detectar si hay una actualización esperando al cargar
+                    navigator.serviceWorker.getRegistration().then(reg => {
+                        if (reg) {
+                            reg.addEventListener('updatefound', () => {
+                                const newWorker = reg.installing;
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        setUpdateAvailable(true); // ¡Hay actualización!
+                                    }
+                                });
+                            });
+                        }
+                    });
+                    
+                    // 2. Revisar silenciosamente en la nube cada 1 hora por si dejan la app abierta todo el día
+                    const checkInterval = setInterval(() => {
+                        navigator.serviceWorker.getRegistration().then(reg => {
+                            if (reg) reg.update();
+                        });
+                    }, 3600000);
+                    
+                    return () => clearInterval(checkInterval);
+                }
+            }, []);
             // --- ESTADOS CONEXIÓN ---
             const [isOnline, setIsOnline] = useState(navigator.onLine);
             const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
@@ -1294,23 +1323,41 @@ return (
 <div className="relative">
     <button 
         onClick={() => setShowNotifications(!showNotifications)}
-        className={`p-2 rounded-full transition-all ${alerts.length > 0 ? 'bg-orange-100 text-orange-600 animate-pulse' : 'text-gray-400 hover:bg-gray-100'}`}
+        className={`p-2 rounded-full transition-all ${(alerts.length > 0 || updateAvailable) ? 'bg-orange-100 text-orange-600 animate-pulse' : 'text-gray-400 hover:bg-gray-100'}`}
     >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
         </svg>
-        {alerts.length > 0 && (
-            <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
-                {alerts.length}
-            </span>
-        )}
+        {/* Sumamos +1 al contador si hay una actualización disponible */}
+{(alerts.length > 0 || updateAvailable) && (
+    <span className="absolute top-0 right-0 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
+        {alerts.length + (updateAvailable ? 1 : 0)}
+    </span>
+)}
     </button>
 
     {/* MENÚ DESPLEGABLE DE NOTIFICACIONES */}
     {showNotifications && (
         <div className="absolute right-0 mt-3 w-72 bg-white rounded-[2rem] shadow-2xl border border-gray-100 z-[100] p-4 animate-slideUp">
             <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-3 ml-2 tracking-widest">Insumos Agotándose</h4>
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {/* NOTIFICACIÓN CRÍTICA DE ACTUALIZACIÓN PARA EL EMPLEADO */}
+    {updateAvailable && (
+        <div className="flex flex-col p-4 bg-blue-50 rounded-2xl border-2 border-blue-200 mb-2 animate-bounce-slight text-left">
+            <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
+                <span className="text-[10px] font-bold text-blue-700 uppercase tracking-widest">SISTEMA MANDRÉ</span>
+            </div>
+            <p className="text-xs font-bold text-blue-900 leading-tight">
+                ¡HAY MEJORAS DISPONIBLES! 🚀
+            </p>
+            <p className="text-[10px] text-blue-700 mt-1 leading-normal">
+                Por favor, dile a tu jefe que actualice la App desde el panel **Admin > Métricas VIVO** para activar las nuevas funciones.
+            </p>
+        </div>
+    )}
+    {/* Separador visual si hay actualizaciones Y alertas de inventario al tiempo */}
+    {updateAvailable && alerts.length > 0 && <div className="border-b border-gray-100 my-2"></div>}
+        
                 {alerts.length > 0 ? alerts.map(g => (
                     <div key={g.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-2xl border border-orange-100">
                         <span className="text-xs font-bold text-mandre-coffee truncate w-32">{g.name}</span>
@@ -1319,7 +1366,7 @@ return (
                 )) : (
                     <p className="text-xs text-gray-400 text-center py-4 italic">Todo el stock está al día ✨</p>
                 )}
-            </div>
+            
         </div>
     )}
 </div>
@@ -1726,29 +1773,31 @@ return (
                                 {adminTab === 'dashboard' && (
                                     <div className="max-w-5xl mx-auto space-y-6">
                                         
-                                        {/* OCUPACION VISUAL DE MESAS EN VIVO */}
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <div className="flex items-center gap-2 mb-4 border-b pb-2">
-                                                <h3 className="font-bold text-mandre-coffee flex-1">Ocupación Actual (Mesas Activas)</h3>
-                                                <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-gray-400">
-                                                    <span className="w-2 h-2 rounded-full bg-mandre-orange"></span> Ocupada
-                                                    <span className="w-2 h-2 rounded-full bg-gray-200 ml-2"></span> Libre
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                                                {tables.map(t => (
-                                                    <button key={t.id} onClick={() => t.status === 'ocupada' && setAdminViewTableOrder(t.id)} className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center transition-all ${t.status === 'ocupada' ? 'border-mandre-orange bg-orange-50 scale-105 shadow-sm cursor-pointer hover:bg-orange-100' : 'border-gray-100 bg-gray-50 opacity-60 cursor-default'}`}>
-                                                        <span className="text-xs font-bold uppercase text-center block mb-1 truncate w-full text-mandre-dark">{t.label || t.id}</span>
-                                                        {t.status === 'ocupada' ? (
-                                                            <span className="text-sm font-bold text-mandre-orange">${t.currentTotal.toLocaleString()}</span>
-                                                        ) : (
-                                                            <span className="text-[10px] text-gray-400">- Libre -</span>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
+                                        {/* OCUPACION VISUAL DE MESAS EN VIVO (SOLO ACTIVAS) */}
+<div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="flex items-center gap-2 mb-4 border-b pb-2">
+        <h3 className="font-bold text-mandre-coffee flex-1">Cuentas Abiertas (En Vivo)</h3>
+        <div className="flex items-center gap-2 text-[10px] uppercase font-bold text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-mandre-orange animate-pulse"></span> Ocupada
+        </div>
+    </div>
+    
+    {tables.filter(t => t.status === 'ocupada').length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            {tables.filter(t => t.status === 'ocupada').map(t => (
+                <button key={t.id} onClick={() => setAdminViewTableOrder(t.id)} className="p-3 rounded-xl border-2 border-mandre-orange bg-orange-50 hover:bg-orange-100 scale-100 hover:scale-105 shadow-sm cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-mandre-orange"></div>
+                    <span className="text-xs font-bold uppercase text-center block mb-1 truncate w-full text-mandre-dark">{t.label || t.id}</span>
+                    <span className="text-sm font-bold text-mandre-orange">${t.currentTotal.toLocaleString()}</span>
+                </button>
+            ))}
+        </div>
+    ) : (
+        <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <p className="text-sm text-gray-400 font-bold">No hay cuentas abiertas en este momento ✨</p>
+        </div>
+    )}
+</div>
                                         {/* MODAL VISUAL DE MESA EN ADMIN */}
                                         {adminViewTableOrder && activeOrders[adminViewTableOrder] && (
                                             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -1851,15 +1900,27 @@ return (
                                             </div>
                                         </div>
 
-                                        {/* HARD RESET BUTTON */}
-                                        <div className="mt-12 pt-8 border-t-2 border-dashed border-red-200 pb-10">
-                                            <div className="bg-red-50 p-6 rounded-2xl border-2 border-red-200 text-center">
-                                                <div className="w-12 h-12 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3"><AlertTriangle/></div>
-                                                <h3 className="font-bold text-red-600 mb-2">Zona de Peligro: Reinicio Completo</h3>
-                                                <p className="text-xs text-red-500 mb-6 max-w-lg mx-auto">Esta acción borrará PERMANENTEMENTE todo el historial de ventas, cierres de caja, egresos, créditos, abonos, items manuales y limpiará las mesas activas de la nube para iniciar en modo producción en limpio. No afecta el inventario ni usuarios.</p>
-                                                <button onClick={performHardReset} className="bg-red-600 text-white px-8 py-4 rounded-xl font-bold uppercase tracking-widest shadow-lg hover:bg-red-700 active:scale-95 transition">BORRAR DATOS DE PRUEBA</button>
-                                            </div>
-                                        </div>
+                                        {/* ACTUALIZADOR DE APP (REEMPLAZO DE HARD RESET) */}
+<div className="mt-12 pt-8 border-t border-gray-100 pb-10 flex flex-col items-center justify-center text-center">
+    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-4">Versión del Sistema</p>
+    
+    <button 
+        onClick={() => {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.update()));
+            }
+            window.location.reload(true);
+        }} 
+        className={`flex items-center gap-3 px-6 py-3 rounded-full font-bold text-xs shadow-sm transition-all active:scale-95 group ${updateAvailable ? 'bg-mandre-sage text-white shadow-lg shadow-mandre-sage/40 animate-pulse border-2 border-transparent scale-105' : 'bg-white border border-gray-200 text-gray-600 hover:border-mandre-sage hover:text-mandre-sage hover:shadow-md'}`}
+    >
+        <RefreshCw size={16} className={`transition-transform duration-700 ${updateAvailable ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+        {updateAvailable ? '¡NUEVA VERSIÓN DETECTADA! CLIC PARA INSTALAR' : 'BUSCAR ACTUALIZACIÓN Y RECARGAR APP'}
+    </button>
+    
+    <p className="text-[10px] text-gray-400 mt-3 max-w-sm">
+         MANDRÉ centro de actualizaciones y parches de seguridad By TanAlza Group.
+    </p>
+</div>
                                     </div>
                                 )}
 
