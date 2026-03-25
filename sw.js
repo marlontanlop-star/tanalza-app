@@ -1,13 +1,14 @@
-const CACHE_NAME = 'mandre-v2'; // Cambiamos v1 por v2
+const CACHE_NAME = 'mandre-v10';
 
 self.addEventListener('install', (event) => {
-    self.skipWaiting();
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+  event.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
-    event.respondWith(fetch(event.request));
+  // Responde directamente con la red para evitar errores de caché
+  event.respondWith(fetch(event.request));
 });
