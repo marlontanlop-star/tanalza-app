@@ -245,7 +245,8 @@
             const [tables, setTables] = useState([]);
             const [orders, setOrders] = useState([]); 
             const [expenses, setExpenses] = useState([]); 
-            const [manualItemsCollection, setManualItemsCollection] = useState([]); 
+            const [manualItemsCollection, setManualItemsCollection] = useState([]);
+            const [selectedTransfer, setSelectedTransfer] = useState(null);
             
             // Estados para Créditos, Abonos y Canjes de Caja
             const [credits, setCredits] = useState([]);
@@ -2080,46 +2081,55 @@ return (
                                 )}
 
                                 {adminTab === 'transfers' && (
-                                    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
-                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100">
-                                            <h3 className="font-bold text-purple-900 mb-4">Filtros de Búsqueda (Nequi)</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <input className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-purple-300" placeholder="Nombre Cliente..." value={transferFilter.name} onChange={e => setTransferFilter({...transferFilter, name: e.target.value})}/>
-                                                <input type="date" className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-purple-300" value={transferFilter.date} onChange={e => setTransferFilter({...transferFilter, date: e.target.value})}/>
-                                            </div>
-                                        </div>
+    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100">
+            <h3 className="font-bold text-purple-900 mb-4">Filtros de Búsqueda (Nequi)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-purple-300" placeholder="Nombre Cliente..." value={transferFilter.name} onChange={e => setTransferFilter({...transferFilter, name: e.target.value})}/>
+                <input type="date" className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-purple-300" value={transferFilter.date} onChange={e => setTransferFilter({...transferFilter, date: e.target.value})}/>
+            </div>
+        </div>
 
-                                        <div className="space-y-6">
-                                            {Object.entries(
-                                                [...orders.filter(o => o.method === 'transferencia'), ...abonos.filter(a => a.method === 'transferencia')]
-                                                .filter(o => 
-                                                (transferFilter.name === '' || o.customer.toLowerCase().includes(transferFilter.name.toLowerCase())) &&
-                                                (transferFilter.date === '' || o.isoDate === transferFilter.date)
-                                            ).reduce((acc, order) => {
-                                                const d = order.fullDate || order.isoDate;
-                                                (acc[d] = acc[d] || []).push(order);
-                                                return acc;
-                                            }, {})).map(([date, dayOrders]) => (
-                                                <div key={date}>
-                                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{date}</h4>
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                        {dayOrders.map(order => (
-                                                            <div key={order.id} className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 hover:border-purple-300 transition">
-                                                                <div className="flex justify-between items-start mb-2">
-                                                                    <span className="bg-[#200020] text-white font-bold text-[10px] px-3 py-1 rounded-full">{order.creditId ? 'ABONO NEQUI' : 'NEQUI'}</span>
-                                                                    <span className="text-xs text-gray-400">{order.date.split(',')[1]}</span>
-                                                                </div>
-                                                                <p className="font-bold text-mandre-dark mb-1 truncate">{order.customer}</p>
-                                                                <p className="text-2xl font-bold text-purple-900 mb-2">${(order.total || order.amount).toLocaleString()}</p>
-                                                                <p className="text-[10px] text-gray-400">Atendido por: {order.employee}</p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+        <div className="space-y-6">
+            {Object.entries(
+                [...orders.filter(o => o.method === 'transferencia'), ...abonos.filter(a => a.method === 'transferencia')]
+                .filter(o => 
+                    (transferFilter.name === '' || o.customer.toLowerCase().includes(transferFilter.name.toLowerCase())) &&
+                    (transferFilter.date === '' || o.isoDate === transferFilter.date)
+                ).reduce((acc, order) => {
+                    const d = order.fullDate || order.isoDate;
+                    (acc[d] = acc[d] || []).push(order);
+                    return acc;
+                }, {})
+            ).sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([date, dayOrders]) => (
+                <div key={date}>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2">{date}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {dayOrders.map(order => (
+                            <div 
+                                key={order.id} 
+                                onClick={() => setSelectedTransfer(order)}
+                                className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 hover:border-purple-400 hover:shadow-md transition-all cursor-pointer active:scale-95 group"
+                            >
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="bg-[#200020] text-white font-bold text-[10px] px-3 py-1 rounded-full">{order.creditId ? 'ABONO NEQUI' : 'NEQUI'}</span>
+                                    <span className="text-xs text-gray-400">{order.date.split(',')[1]}</span>
+                                </div>
+                                <p className="font-bold text-mandre-dark mb-1 truncate">{order.customer}</p>
+                                <p className="text-2xl font-bold text-purple-900 mb-2">${(order.total || order.amount).toLocaleString()}</p>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">Por: {order.employee}</p>
+                                    <span className="text-[10px] text-purple-500 font-bold opacity-0 group-hover:opacity-100 transition-opacity">VER FACTURA →</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+)}
 
                                 {adminTab === 'expenses' && (
     <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
@@ -2874,6 +2884,79 @@ return (
                             </form>
                         </div>
                     )}
+                    {/* MODAL DETALLE ESTILO FACTURA - MANDRÉ */}
+{selectedTransfer && (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden animate-slideUp flex flex-col rounded-3xl">
+            
+            <div className="bg-white p-8 text-center text-mandre-dark relative">
+                {/* Botón Cerrar */}
+                <button onClick={() => setSelectedTransfer(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <X size={20}/>
+                </button>
+
+                {/* Encabezado Estilo Ticket */}
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold tracking-[0.2em] text-mandre-coffee">MANDRÉ</h2>
+                    <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Specialty Coffee & Wellness</p>
+                    <div className="border-b border-dashed border-gray-300 my-4"></div>
+                    <p className="text-[10px] font-bold uppercase text-gray-500">Comprobante de Pago</p>
+                    <p className="text-xs font-medium">{selectedTransfer.fullDate || selectedTransfer.date}</p>
+                </div>
+
+                {/* Datos de Venta */}
+                <div className="text-left mb-6">
+                    <p className="text-[9px] uppercase font-bold text-gray-400">Cliente:</p>
+                    <p className="font-bold text-sm uppercase">{selectedTransfer.customer}</p>
+                    <p className="text-[9px] uppercase font-bold text-gray-400 mt-2">Método:</p>
+                    <p className="font-bold text-sm uppercase text-purple-700">Nequi / Transferencia</p>
+                </div>
+
+                {/* Lista de Productos Consumidos */}
+                <div className="mb-6">
+                    <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase mb-2 border-b pb-1">
+                        <span>Cant / Descripción</span>
+                        <span>Total</span>
+                    </div>
+                    <div className="space-y-2">
+                        {selectedTransfer.items ? selectedTransfer.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-xs items-start">
+                                <span className="text-left flex-1 pr-4">
+                                    <span className="font-bold">{item.quantity}x</span> {item.name}
+                                </span>
+                                <span className="font-bold">${(item.price * item.quantity).toLocaleString()}</span>
+                            </div>
+                        )) : (
+                            <p className="text-xs italic text-center text-gray-500 py-2">Pago de abono / Crédito pendiente</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Total Final con Línea de Corte */}
+                <div className="border-t border-dashed border-gray-300 pt-4 mb-6">
+                    <div className="flex justify-between items-center text-lg font-bold">
+                        <span>TOTAL</span>
+                        <span>${(selectedTransfer.total || selectedTransfer.amount).toLocaleString()}</span>
+                    </div>
+                </div>
+
+                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                    <p>Atendido por: {selectedTransfer.employee}</p>
+                    <p className="mt-4">¡Gracias por tu visita!</p>
+                </div>
+            </div>
+
+            <div className="bg-gray-50 p-4">
+                <button 
+                    onClick={() => setSelectedTransfer(null)}
+                    className="w-full py-4 bg-mandre-coffee text-white font-bold rounded-xl text-sm active:scale-95 transition shadow-lg"
+                >
+                    CERRAR FACTURA
+                </button>
+            </div>
+        </div>
+    </div>
+)}
 
                 </div>
             );
