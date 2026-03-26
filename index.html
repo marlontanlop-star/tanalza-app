@@ -364,7 +364,42 @@ const alerts = useMemo(() => {
             const [showPayrollReceipt, setShowPayrollReceipt] = useState(false);
             const [payrollData, setPayrollData] = useState(null);
             const payrollReceiptRef = useRef(null);
+// --- PASO 1: SINCRONIZACIÓN DE MESA EN ESPEJO (VIVO) ---
+useEffect(() => {
+    // Si tienes una mesa abierta y esa mesa tiene datos nuevos en la nube...
+    if (activeTableId && activeOrders[activeTableId]) {
+        const cloudItems = activeOrders[activeTableId].items || [];
+        const cloudCustomer = activeOrders[activeTableId].customer || '';
 
+        // Comparamos lo que tienes en tu pantalla vs lo que hay en la base de datos global
+        if (JSON.stringify(cart) !== JSON.stringify(cloudItems)) {
+            setCart(cloudItems); // Se actualiza tu lista de productos al instante
+        }
+        if (customerName !== cloudCustomer) {
+            setCustomerName(cloudCustomer); // Se actualiza el nombre del cliente
+        }
+    }
+}, [activeOrders, activeTableId]);
+// --- PASO 2: EL DESPERTADOR DE DATOS (VIVO TOTAL) ---
+useEffect(() => {
+    const sincronizarAhora = () => {
+        // Si la app se vuelve a ver (estaba minimizada o bloqueada)
+        if (document.visibilityState === 'visible') {
+            console.log("MANDRÉ: Despertando sincronización con la nube...");
+            // Forzamos a Firebase a reconectar y traer lo más nuevo inmediatamente
+            db.enableNetwork().catch(() => {});
+        }
+    };
+
+    // Detecta cuando entras a la pestaña o desbloqueas el celular
+    document.addEventListener("visibilitychange", sincronizarAhora);
+    window.addEventListener("focus", sincronizarAhora);
+
+    return () => {
+        document.removeEventListener("visibilitychange", sincronizarAhora);
+        window.removeEventListener("focus", sincronizarAhora);
+    };
+}, []);
             // --- AUTO LOGIN EFECTO ---
             useEffect(() => {
                 if (users.length > 0 && view === 'start') {
@@ -436,14 +471,16 @@ const alerts = useMemo(() => {
                 });
 
                 // Carga de Históricos y Nuevas Colecciones
-                const unsubOrders = db.collection('orders').orderBy('id', 'desc').onSnapshot(snap => setOrders(snap.docs.map(d => d.data())));
-                const unsubShifts = db.collection('shifts').orderBy('id', 'desc').onSnapshot(snap => setShifts(snap.docs.map(d => d.data())));
-                const unsubExpenses = db.collection('expenses').orderBy('id', 'desc').onSnapshot(snap => setExpenses(snap.docs.map(d => d.data())));
-                const unsubManualItems = db.collection('manualItems').orderBy('id', 'desc').onSnapshot(snap => setManualItemsCollection(snap.docs.map(d => d.data())));
-                const unsubCredits = db.collection('creditos').orderBy('id', 'desc').onSnapshot(snap => setCredits(snap.docs.map(d => d.data())));
-                const unsubAbonos = db.collection('abonos').orderBy('id', 'desc').onSnapshot(snap => setAbonos(snap.docs.map(d => d.data())));
-                const unsubAdjustments = db.collection('cashAdjustments').orderBy('id', 'desc').onSnapshot(snap => setCashAdjustments(snap.docs.map(d => d.data())));
-                const unsubInsumos = db.collection('inventoryGroups').onSnapshot(snap => {
+                // --- PASO 3: CAJA Y MÉTRICAS EN VIVO (REEMPLAZAR LÍNEAS 474-482) ---
+
+const unsubOrders = db.collection('orders').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setOrders(snap.docs.map(d => d.data())));
+const unsubShifts = db.collection('shifts').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setShifts(snap.docs.map(d => d.data())));
+const unsubExpenses = db.collection('expenses').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setExpenses(snap.docs.map(d => d.data())));
+const unsubManualItems = db.collection('manualItems').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setManualItemsCollection(snap.docs.map(d => d.data())));
+const unsubCredits = db.collection('creditos').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setCredits(snap.docs.map(d => d.data())));
+const unsubAbonos = db.collection('abonos').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setAbonos(snap.docs.map(d => d.data())));
+const unsubAdjustments = db.collection('cashAdjustments').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setCashAdjustments(snap.docs.map(d => d.data())));
+const unsubInsumos = db.collection('inventoryGroups').onSnapshot({ includeMetadataChanges: true }, snap => {
     setInventoryGroups(snap.docs.map(doc => doc.data()));
 });
                 // NUEVO: Escuchar el estado de conexión de otros usuarios para el Radar Admin
