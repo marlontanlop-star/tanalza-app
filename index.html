@@ -207,21 +207,22 @@
             { id: 1, name: 'Admin', surname: 'Principal', username: 'admin', password: '123', email: 'admin@mandre.com' }
         ];
 
-        // --- FUNCIÓN HELPER FIREBASE ---
-        const syncCollection = (collectionName, initialData, stateSetter) => {
-            return db.collection(collectionName).onSnapshot(snap => {
-                if (snap.empty && initialData) {
-                    const batch = db.batch();
-                    initialData.forEach(item => {
-                        const ref = db.collection(collectionName).doc(item.id.toString());
-                        batch.set(ref, item);
-                    });
-                    batch.commit();
-                } else {
-                    stateSetter(snap.docs.map(doc => doc.data()));
-                }
+        // --- MODIFICACIÓN PASO 1: ESCUCHA ULTRA-SENSIBLE (Línea 210) ---
+const syncCollection = (collectionName, initialData, stateSetter) => {
+    // Agregamos includeMetadataChanges para forzar la actualización inmediata
+    return db.collection(collectionName).onSnapshot({ includeMetadataChanges: true }, snap => {
+        if (snap.empty && initialData) {
+            const batch = db.batch();
+            initialData.forEach(item => {
+                const ref = db.collection(collectionName).doc(item.id.toString());
+                batch.set(ref, item);
             });
-        };
+            batch.commit();
+        } else {
+            stateSetter(snap.docs.map(doc => doc.data()));
+        }
+    });
+};
 
         const App = () => {
             // NUEVO: ESTADO Y TEMPORIZADOR PARA LA PANTALLA DE CARGA (SPLASH SCREEN)
@@ -381,23 +382,26 @@ useEffect(() => {
     }
 }, [activeOrders, activeTableId]);
 
-// --- NUEVO PULSO DE RESURRECCIÓN (Pégalo en la línea 407) ---
+// --- MODIFICACIÓN PASO 2: SINCRONIZACIÓN FORZADA AL VOLVER (Línea 403) ---
 useEffect(() => {
     const refrescarSistemaCompleto = async () => {
-        // Detecta cuando la App vuelve a estar visible en la pantalla
         if (document.visibilityState === 'visible') {
-            console.log("MANDRÉ: App recuperada. Forzando reconexión a la nube...");
+            console.log("MANDRÉ: Despertar agresivo. Forzando lectura del SERVIDOR...");
             try {
-                // Forzamos el reinicio de la red de Firebase para limpiar datos viejos
+                // 1. Reiniciamos la red para limpiar conexiones pegadas
                 await db.disableNetwork();
                 await db.enableNetwork();
+
+                // 2. OBLIGAMOS a leer del servidor (esto ignora el caché viejo del móvil)
+                // Usamos source: 'server' para que no le crea a lo que tiene guardado
+                await Promise.all([
+                    db.collection('tables').get({ source: 'server' }),
+                    db.collection('activeOrders').get({ source: 'server' })
+                ]);
                 
-                // Hacemos una escritura fantasma para despertar el servidor
-                await db.collection('system_status').doc('ping').set({ 
-                    lastPing: Date.now() 
-                }, { merge: true });
+                console.log("MANDRÉ: ¡Datos actualizados desde la nube!");
             } catch (error) {
-                console.error("Error al despertar red:", error);
+                console.error("Error en sincronización forzada:", error);
             }
         }
     };
@@ -478,12 +482,12 @@ const unsubInsumos = db.collection('inventoryGroups').onSnapshot({ includeMetada
 });
                 // NUEVO: Escuchar el estado de conexión de otros usuarios para el Radar Admin
                 const unsubSystemStatus = db.collection('system_status').onSnapshot(snap => setSystemPresence(snap.docs.map(d => d.data())));
-                
-                const unsubActiveOrders = db.collection('activeOrders').onSnapshot(snap => {
-                    const data = {};
-                    snap.docs.forEach(d => data[d.id] = d.data());
-                    setActiveOrders(data);
-                });
+            // --- MODIFICACIÓN PASO 3: ESPEJO SENSIBLE (Línea 485) ---
+const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMetadataChanges: true }, snap => {
+    const data = {};
+    snap.docs.forEach(d => data[d.id] = d.data());
+    setActiveOrders(data);
+});
 
                 const checkMidnightClosure = setInterval(() => {
                     const now = new Date();
