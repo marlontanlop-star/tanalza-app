@@ -400,6 +400,24 @@ useEffect(() => {
         window.removeEventListener("focus", sincronizarAhora);
     };
 }, []);
+// --- PASO 4: PULSO DE RESURRECCIÓN (CADA 3 SEGUNDOS) ---
+useEffect(() => {
+    const pulsoSincro = setInterval(() => {
+        // Si hay internet, forzamos a la app a mirar la nube
+        if (navigator.onLine) {
+            console.log("MANDRÉ: Pulso de 3s - Sincronizando espejos...");
+            
+            // Intentamos una lectura rápida del servidor para "despertar" la conexión
+            db.collection('system_status').limit(1).get({ source: 'server' })
+                .catch(() => {
+                    // Si la conexión está "pegada", la reiniciamos a la fuerza
+                    db.disableNetwork().then(() => db.enableNetwork());
+                });
+        }
+    }, 3000); // Se ejecuta cada 3 segundos
+
+    return () => clearInterval(pulsoSincro); // Limpia el pulso al cerrar
+}, []);
             // --- AUTO LOGIN EFECTO ---
             useEffect(() => {
                 if (users.length > 0 && view === 'start') {
