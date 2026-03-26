@@ -380,61 +380,36 @@ useEffect(() => {
         }
     }
 }, [activeOrders, activeTableId]);
-// --- PASO 2: EL DESPERTADOR DE DATOS (VIVO TOTAL) ---
+
+// --- NUEVO PULSO DE RESURRECCIÓN (Pégalo en la línea 407) ---
 useEffect(() => {
-    const sincronizarAhora = () => {
-        // Si la app se vuelve a ver (estaba minimizada o bloqueada)
+    const refrescarSistemaCompleto = async () => {
+        // Detecta cuando la App vuelve a estar visible en la pantalla
         if (document.visibilityState === 'visible') {
-            console.log("MANDRÉ: Despertando sincronización con la nube...");
-            // Forzamos a Firebase a reconectar y traer lo más nuevo inmediatamente
-            db.enableNetwork().catch(() => {});
+            console.log("MANDRÉ: App recuperada. Forzando reconexión a la nube...");
+            try {
+                // Forzamos el reinicio de la red de Firebase para limpiar datos viejos
+                await db.disableNetwork();
+                await db.enableNetwork();
+                
+                // Hacemos una escritura fantasma para despertar el servidor
+                await db.collection('system_status').doc('ping').set({ 
+                    lastPing: Date.now() 
+                }, { merge: true });
+            } catch (error) {
+                console.error("Error al despertar red:", error);
+            }
         }
     };
 
-    // Detecta cuando entras a la pestaña o desbloqueas el celular
-    document.addEventListener("visibilitychange", sincronizarAhora);
-    window.addEventListener("focus", sincronizarAhora);
+    document.addEventListener("visibilitychange", refrescarSistemaCompleto);
+    window.addEventListener("focus", refrescarSistemaCompleto);
 
     return () => {
-        document.removeEventListener("visibilitychange", sincronizarAhora);
-        window.removeEventListener("focus", sincronizarAhora);
+        document.removeEventListener("visibilitychange", refrescarSistemaCompleto);
+        window.removeEventListener("focus", refrescarSistemaCompleto);
     };
 }, []);
-// --- PASO 4: PULSO DE RESURRECCIÓN (CADA 3 SEGUNDOS) ---
-useEffect(() => {
-    const pulsoSincro = setInterval(() => {
-        // Si hay internet, forzamos a la app a mirar la nube
-        if (navigator.onLine) {
-            console.log("MANDRÉ: Pulso de 3s - Sincronizando espejos...");
-            
-            // Intentamos una lectura rápida del servidor para "despertar" la conexión
-            db.collection('system_status').limit(1).get({ source: 'server' })
-                .catch(() => {
-                    // Si la conexión está "pegada", la reiniciamos a la fuerza
-                    db.disableNetwork().then(() => db.enableNetwork());
-                });
-        }
-    }, 3000); // Se ejecuta cada 3 segundos
-
-    return () => clearInterval(pulsoSincro); // Limpia el pulso al cerrar
-}, []);
-            // --- AUTO LOGIN EFECTO ---
-            useEffect(() => {
-                if (users.length > 0 && view === 'start') {
-                    const savedLogin = localStorage.getItem('mandre_login');
-                    if (savedLogin) {
-                        try {
-                            const { identifier, password, time } = JSON.parse(savedLogin);
-                            const user = users.find(u => (u.username === identifier || u.email === identifier) && u.password === password);
-                            if (user) {
-                                setCurrentShiftEmployee(`${user.name} ${user.surname}`);
-                                setSessionStartTime(time || new Date().toLocaleTimeString());
-                                setView('pos');
-                            }
-                        } catch(e) {}
-                    }
-                }
-            }, [users, view]);
 
             // --- SINCRONIZACIÓN FIREBASE (REALTIME) ---
             useEffect(() => {
