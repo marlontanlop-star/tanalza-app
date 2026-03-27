@@ -783,90 +783,100 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                 }, 0);
             };
 
-            const performClosure = async (isAuto = false) => {
-                // Filtramos datos solo de este turno y excluimos pedidos a 'crédito'
-                const currentShiftOrders = orders.filter(o => !o.shiftId && o.method !== 'credito');
-                const currentShiftExpenses = expenses.filter(e => !e.shiftId);
-                const currentShiftAbonos = abonos.filter(a => !a.shiftId);
-                const currentShiftAdjustments = cashAdjustments.filter(a => !a.shiftId);
-                
-                // Si es automático y no hay nada que cerrar
-                if (isAuto && currentShiftOrders.length === 0 && currentShiftAbonos.length === 0) return;
+           const performClosure = async (isAuto = false, targetEmployee = null) => {
+    // Si targetEmployee es null, usa el usuario actual. Si es "GENERAL", cierra a todos.
+    const employeeToFilter = targetEmployee || currentShiftEmployee;
+    const isGeneralClosure = targetEmployee === "GENERAL";
 
-                // 1. Efectivo de Ventas
-                let rawExpectedCash = currentShiftOrders.filter(o => o.method === 'efectivo').reduce((acc, o) => acc + o.total, 0);
+    // 1. Filtramos datos SOLO del empleado (o todos si es general) que no tengan shiftId
+    const currentShiftOrders = orders.filter(o => 
+        !o.shiftId && o.method !== 'credito' && 
+        (isGeneralClosure ? true : o.employee === employeeToFilter)
+    );
+    const currentShiftExpenses = expenses.filter(e => 
+        !e.shiftId && (isGeneralClosure ? true : e.employee === employeeToFilter)
+    );
+    const currentShiftAbonos = abonos.filter(a => 
+        !a.shiftId && (isGeneralClosure ? true : a.employee === employeeToFilter)
+    );
+    const currentShiftAdjustments = cashAdjustments.filter(a => 
+        !a.shiftId && (isGeneralClosure ? true : a.employee === employeeToFilter)
+    );
+    
+    // Si no es automático y no hay nada que cerrar para este usuario
+    if (!isAuto && currentShiftOrders.length === 0 && currentShiftAbonos.length === 0) {
+        return alert(`El usuario ${employeeToFilter} no tiene ventas para cerrar.`);
+    }
 
-                // 2. Nequi de Ventas
-                let nequiTotal = currentShiftOrders.filter(o => o.method === 'transferencia').reduce((acc, o) => acc + o.total, 0);
+    // 2. Cálculos de Efectivo y Nequi (sobre los datos filtrados)
+    let rawExpectedCash = currentShiftOrders.filter(o => o.method === 'efectivo').reduce((acc, o) => acc + o.total, 0);
+    let nequiTotal = currentShiftOrders.filter(o => o.method === 'transferencia').reduce((acc, o) => acc + o.total, 0);
 
-                // 3. Sumar Abonos
-                const abonosEfectivo = currentShiftAbonos.filter(a => a.method === 'efectivo').reduce((acc, a) => acc + a.amount, 0);
-                const abonosNequi = currentShiftAbonos.filter(a => a.method === 'transferencia').reduce((acc, a) => acc + a.amount, 0);
+    const abonosEfectivo = currentShiftAbonos.filter(a => a.method === 'efectivo').reduce((acc, a) => acc + a.amount, 0);
+    const abonosNequi = currentShiftAbonos.filter(a => a.method === 'transferencia').reduce((acc, a) => acc + a.amount, 0);
 
-                rawExpectedCash += abonosEfectivo;
-                nequiTotal += abonosNequi;
+    rawExpectedCash += abonosEfectivo;
+    nequiTotal += abonosNequi;
 
-                // 4. Restar Egresos (solo afectan efectivo físico esperado)
-                const totalExpensesAmount = currentShiftExpenses.reduce((acc, e) => acc + e.amount, 0);
-                let expectedCash = rawExpectedCash - totalExpensesAmount;
+    const totalExpensesAmount = currentShiftExpenses.reduce((acc, e) => acc + e.amount, 0);
+    const totalAdjustments = currentShiftAdjustments.reduce((acc, a) => acc + a.amount, 0);
+    
+    // Efectivo esperado final
+    let expectedCash = rawExpectedCash - totalExpensesAmount + totalAdjustments;
 
-                // 5. Aplicar Ajustes Internos (Canjear Caja)
-                const totalAdjustments = currentShiftAdjustments.reduce((acc, a) => acc + a.amount, 0);
-                expectedCash += totalAdjustments;
+    const countedCash = isAuto ? 0 : calculateCountedTotal();
+    const diff = countedCash - expectedCash;
+    const finalEmployeeName = isGeneralClosure ? "CIERRE GENERAL" : employeeToFilter;
+    
+    // Registro Items Manuales (solo para el reporte visual)
+    const manualItems = [];
+    currentShiftOrders.forEach(order => {
+        order.items.forEach(item => {
+            if (item.id.toString().startsWith('manual_')) {
+                manualItems.push({ date: order.date, name: item.name, price: item.price, qty: item.quantity });
+            }
+        });
+    });
 
-                // Registro Items Manuales (solo para el recibo visual)
-                const manualItems = [];
-                currentShiftOrders.forEach(order => {
-                    order.items.forEach(item => {
-                        if (item.id.toString().startsWith('manual_')) {
-                            manualItems.push({ date: order.date, name: item.name, price: item.price, qty: item.quantity });
-                        }
-                    });
-                });
+    const result = {
+        id: Date.now(),
+        date: new Date().toLocaleString(),
+        employee: finalEmployeeName,
+        totalVentas: (rawExpectedCash - abonosEfectivo) + (nequiTotal - abonosNequi),
+        expectedCash: expectedCash,
+        countedCash: countedCash,
+        nequiTotal: nequiTotal,
+        abonosEfectivo: abonosEfectivo,
+        abonosNequi: abonosNequi,
+        diff: diff,
+        ordersCount: currentShiftOrders.length,
+        manualItems: manualItems,
+        expensesList: currentShiftExpenses,
+        totalExpensesAmount: totalExpensesAmount,
+        totalAdjustments: totalAdjustments, 
+        isAuto: isAuto
+    };
 
-                const countedCash = isAuto ? 0 : calculateCountedTotal();
-                const diff = countedCash - expectedCash;
-                const employeeName = isAuto ? "Automático Sistema" : (currentShiftEmployee || "Admin");
-                
-                // Total Ventas (Día)
-                const totalVentas = (rawExpectedCash - abonosEfectivo) + (nequiTotal - abonosNequi); 
+    const batch = db.batch();
+    batch.set(db.collection('shifts').doc(result.id.toString()), result);
+    
+    // Marcamos como cerrados solo los documentos que entraron en este reporte
+    currentShiftOrders.forEach(o => batch.update(db.collection('orders').doc(o.id.toString()), { shiftId: result.id }));
+    currentShiftExpenses.forEach(e => batch.update(db.collection('expenses').doc(e.id.toString()), { shiftId: result.id }));
+    currentShiftAbonos.forEach(a => batch.update(db.collection('abonos').doc(a.id.toString()), { shiftId: result.id }));
+    currentShiftAdjustments.forEach(a => batch.update(db.collection('cashAdjustments').doc(a.id.toString()), { shiftId: result.id }));
 
-                const result = {
-                    id: Date.now(),
-                    date: new Date().toLocaleString(),
-                    employee: employeeName,
-                    totalVentas: totalVentas,
-                    expectedCash: expectedCash,
-                    countedCash: countedCash,
-                    nequiTotal: nequiTotal,
-                    abonosEfectivo: abonosEfectivo,
-                    abonosNequi: abonosNequi,
-                    diff: diff,
-                    ordersCount: currentShiftOrders.length,
-                    manualItems: manualItems,
-                    expensesList: currentShiftExpenses,
-                    totalExpensesAmount: totalExpensesAmount,
-                    totalAdjustments: totalAdjustments, 
-                    isAuto: isAuto
-                };
+    // IMPORTANTE: Solo liberamos mesas si es un Cierre General
+    if (isGeneralClosure) {
+        tables.forEach(t => {
+            batch.update(db.collection('tables').doc(t.id.toString()), { status: 'libre', currentTotal: 0 });
+            batch.delete(db.collection('activeOrders').doc(t.id.toString()));
+        });
+    }
 
-                const batch = db.batch();
-                batch.set(db.collection('shifts').doc(result.id.toString()), result);
-                
-                currentShiftOrders.forEach(o => batch.update(db.collection('orders').doc(o.id.toString()), { shiftId: result.id }));
-                currentShiftExpenses.forEach(e => batch.update(db.collection('expenses').doc(e.id.toString()), { shiftId: result.id }));
-                currentShiftAbonos.forEach(a => batch.update(db.collection('abonos').doc(a.id.toString()), { shiftId: result.id }));
-                currentShiftAdjustments.forEach(a => batch.update(db.collection('cashAdjustments').doc(a.id.toString()), { shiftId: result.id }));
-
-                // NUEVO: Reset de TODAS las mesas en Firebase y activeOrders
-                tables.forEach(t => {
-                    batch.update(db.collection('tables').doc(t.id.toString()), { status: 'libre', currentTotal: 0 });
-                    batch.delete(db.collection('activeOrders').doc(t.id.toString()));
-                });
-
-                await batch.commit();
-                if(!isAuto) setClosureResult(result);
-            };
+    await batch.commit();
+    if(!isAuto) setClosureResult(result);
+};
 
             const deleteShift = async (id) => {
                 if(confirm("¿Estás seguro de eliminar este reporte de cierre permanentemente?")) {
@@ -1899,10 +1909,24 @@ return (
                                                     <div key={user} className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-10 h-10 bg-mandre-coffee text-white rounded-full flex items-center justify-center font-bold">{user[0]}</div>
-                                                            <div>
-                                                                <p className="font-bold text-sm text-mandre-coffee">{user}</p>
-                                                                <p className="text-[10px] text-gray-500 uppercase font-bold">Total Facturado+Abonos: <span className="text-mandre-sage">${data.total.toLocaleString()}</span></p>
-                                                            </div>
+                                                            <div className="flex flex-col">
+    <div className="flex items-center gap-2">
+        <p className="font-bold text-sm text-mandre-coffee">{user}</p>
+        {/* BOTÓN PARA CIERRE INDIVIDUAL DESDE EL DASHBOARD */}
+        <button 
+            onClick={() => {
+                if(confirm(`¿Desea cerrar forzosamente la caja de ${user}?`))
+                performClosure(false, user);
+            }}
+            className="text-[9px] bg-red-100 text-red-600 px-2 py-1 rounded-lg font-bold hover:bg-red-200 transition active:scale-95"
+        >
+            CERRAR CAJA
+        </button>
+    </div>
+    <p className="text-[10px] text-gray-500 uppercase font-bold">
+        Total Facturado+Abonos: <span className="text-mandre-sage">${data.total.toLocaleString()}</span>
+    </p>
+</div>
                                                         </div>
                                                         <div className="grid grid-cols-3 gap-2 md:gap-4 bg-white p-2 rounded-lg border border-gray-100 shadow-inner">
     {/* Columna Efectivo */}
@@ -2475,9 +2499,15 @@ return (
                                     <div className="max-w-5xl mx-auto animate-fadeIn">
                                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                                             <h3 className="font-bold text-lg text-mandre-coffee">Historial de Cierres de Caja</h3>
-                                            <button onClick={() => { if(confirm("¿Cerrar todas las cajas abiertas?")) performClosure(false); }} className="w-full sm:w-auto bg-red-500 text-white px-4 py-3 sm:py-2 rounded-xl text-xs font-bold shadow hover:bg-red-600 transition active:scale-95">
-                                                CIERRE GENERAL
-                                            </button>
+                                           <button 
+    onClick={() => { 
+        if(confirm("¿Desea realizar un CIERRE GENERAL? Esto cerrará las cuentas de TODOS los usuarios y liberará las mesas.")) 
+        performClosure(false, "GENERAL"); 
+    }} 
+    className="w-full sm:w-auto bg-red-500 text-white px-4 py-3 sm:py-2 rounded-xl text-xs font-bold shadow hover:bg-red-600 transition active:scale-95"
+>
+    CIERRE GENERAL (TODOS)
+</button>
                                         </div>
                                         <div className="space-y-4">
                                             {shifts.map((shift) => (
