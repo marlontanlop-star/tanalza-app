@@ -33,6 +33,7 @@
     <!-- html2canvas para Capturas de Reportes -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <!-- Firebase SDK Compat -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <!-- Google Fonts -->
@@ -282,7 +283,8 @@ const syncCollection = (collectionName, initialData, stateSetter) => {
             const [credits, setCredits] = useState([]);
             const [abonos, setAbonos] = useState([]);
             const [cashAdjustments, setCashAdjustments] = useState([]);
-
+const [creditViewMode, setCreditViewMode] = useState('pendientes'); 
+const [selectedCreditTicket, setSelectedCreditTicket] = useState(null);
             const [activeOrders, setActiveOrders] = useState({}); 
             const [users, setUsers] = useState([]);
             // Nuevo estado para el control de stock manual y agrupado
@@ -1240,34 +1242,22 @@ if (groupToUpdate) {
                 });
 
                 // Si es Crédito, guardar en tabla 'creditos' (ACUMULANDO SI EL CLIENTE YA EXISTE)
-                if (method === 'credito') {
-                    const existingCredit = credits.find(c => c.customer.trim().toLowerCase() === finalCustomerName.toLowerCase());
-
-                    if (existingCredit) {
-                        // Si ya existe, le sumamos la deuda y le agregamos los productos
-                        const newBalance = (existingCredit.balance || 0) + total;
-                        const newTotal = (existingCredit.total || 0) + total;
-                        const newItems = cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()}));
-                        const updatedItems = [...(existingCredit.items || []), ...newItems];
-
-                        batch.update(db.collection('creditos').doc(existingCredit.id.toString()), {
-                            balance: newBalance,
-                            total: newTotal,
-                            items: updatedItems,
-                            status: newBalance <= 0 ? 'pagado' : 'pendiente',
-                            lastUpdated: currentDate.toLocaleString()
-                        });
-                    } else {
-                        // Si es nuevo, creamos la cuenta
-                        const newCredit = { 
-                            id: Date.now(), customer: finalCustomerName, total, balance: total, 
-                            items: cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()})), 
-                            date: currentDate.toLocaleString(), isoDate: currentDate.toISOString().split('T')[0], 
-                            employee: currentShiftEmployee, status: 'pendiente' 
-                        };
-                        batch.set(db.collection('creditos').doc(newCredit.id.toString()), newCredit);
-                    }
-                }
+                // --- NUEVA LÓGICA: CADA CRÉDITO ES UN REGISTRO ÚNICO POR COMPRA ---
+if (method === 'credito') {
+    const newCredit = { 
+        id: Date.now(), 
+        customer: finalCustomerName.trim().toUpperCase(), 
+        total: total, 
+        balance: total, 
+        items: cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()})), 
+        date: currentDate.toLocaleString(), 
+        isoDate: currentDate.toISOString().split('T')[0], 
+        employee: currentShiftEmployee, 
+        status: 'pendiente' 
+    };
+    // Se guarda como un documento totalmente nuevo en Firebase
+    batch.set(db.collection('creditos').doc(newCredit.id.toString()), newCredit);
+}
 
                 // Registrar Orden (Se registra incluso si es crédito para control de inventario/historial)
                 const newOrder = { 
@@ -2066,87 +2056,118 @@ return (
                                 )}
 
                                 {adminTab === 'credits' && (
-                                    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn">
-                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm sticky top-0 z-10 border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                            <div className="flex-1 w-full">
-                                                <h3 className="font-bold text-purple-800 mb-4 flex items-center gap-2"><Shield size={18}/> Búsqueda de Cuentas (Créditos)</h3>
-                                                <input className="border p-3 rounded-xl text-sm w-full bg-gray-50 focus:bg-white transition-colors outline-none focus:border-purple-300" placeholder="Buscar por Nombre de Cliente..." value={creditFilter} onChange={e => setCreditFilter(e.target.value)}/>
-                                            </div>
-                                            
-                                            {!isMergeMode ? (
-                                                <button onClick={() => { setIsMergeMode(true); setSelectedCreditsForMerge([]); }} className="w-full md:w-auto mt-2 md:mt-8 bg-purple-100 text-purple-700 font-bold px-4 py-3 rounded-xl text-xs shadow-sm hover:bg-purple-200 active:scale-95 transition">
-                                                    MODO UNIFICAR CUENTAS
-                                                </button>
-                                            ) : (
-                                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-8">
-                                                    <button onClick={() => setIsMergeMode(false)} className="bg-gray-100 text-gray-600 font-bold px-4 py-3 rounded-xl text-xs shadow-sm hover:bg-gray-200 active:scale-95 transition">CANCELAR</button>
-                                                    <button onClick={handleManualMerge} className="bg-purple-600 text-white font-bold px-4 py-3 rounded-xl text-xs shadow-sm hover:bg-purple-700 active:scale-95 transition">
-                                                        CONFIRMAR ({selectedCreditsForMerge.length})
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
+    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn relative">
+        {/* CABECERA Y BUSCADOR ESTÁTICO (FIJO AL DESLIZAR) */}
+        <div className="sticky top-[-25px] z-50 bg-gray-50/95 backdrop-blur-sm pt-6 pb-4">
+            <div className="bg-white p-4 md:p-6 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-4">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <h3 className="font-bold text-purple-900 flex items-center gap-2 text-sm md:text-base">
+                        <Shield size={18}/> {creditViewMode === 'pendientes' ? 'Cuentas por Cobrar (Abiertas)' : 'Historial de Cuentas Pagas'}
+                    </h3>
+                    
+                    {/* Selector de Vista: Pendientes vs Pagados */}
+                    <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
+                        <button 
+                            onClick={() => setCreditViewMode('pendientes')} 
+                            className={`flex-1 md:px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${creditViewMode === 'pendientes' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-500'}`}
+                        >
+                            Abiertos
+                        </button>
+                        <button 
+                            onClick={() => setCreditViewMode('historial')} 
+                            className={`flex-1 md:px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${creditViewMode === 'historial' ? 'bg-purple-600 text-white shadow-md' : 'text-gray-500'}`}
+                        >
+                            Pagados
+                        </button>
+                    </div>
+                </div>
 
-                                        <div className="space-y-4">
-                                            {credits.filter(c => c.customer.toLowerCase().includes(creditFilter.toLowerCase())).map(credit => (
-                                                <div key={credit.id} className={`bg-white p-5 rounded-2xl shadow-sm border flex flex-col gap-3 transition-all ${selectedCreditsForMerge.includes(credit.id) ? 'border-purple-500 ring-2 ring-purple-200 bg-purple-50/30' : 'border-gray-200'}`}>
-                                                    <div className="flex justify-between items-start border-b pb-3">
-                                                        <div className="flex items-center gap-3">
-                                                            {isMergeMode && (
-                                                                <input 
-                                                                    type="checkbox" 
-                                                                    className="w-6 h-6 accent-purple-600 cursor-pointer shadow-sm rounded" 
-                                                                    checked={selectedCreditsForMerge.includes(credit.id)} 
-                                                                    onChange={() => toggleMergeSelection(credit.id)} 
-                                                                />
-                                                            )}
-                                                            <div>
-                                                                <h4 className="font-bold text-mandre-dark text-lg uppercase tracking-wide">{credit.customer}</h4>
-                                                                <p className="text-xs text-gray-500">Última act: {credit.lastUpdated || credit.date}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full ${credit.status === 'pagado' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                                                {credit.status}
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <input 
+                        className="border-2 border-gray-100 p-4 rounded-2xl text-sm w-full bg-gray-50 focus:bg-white transition-all outline-none focus:border-purple-300 font-bold" 
+                        placeholder={`🔍 Buscar cliente en ${creditViewMode === 'pendientes' ? 'abiertos' : 'historial'}...`}
+                        value={creditFilter} 
+                        onChange={e => setCreditFilter(e.target.value)}
+                    />
+                </div>
+            </div>
+        </div>
 
-                                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 mb-2 max-h-48 overflow-y-auto">
-                                                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 sticky top-0 bg-gray-50">Historial de Consumo:</p>
-                                                        <div className="space-y-1">
-                                                            {credit.items.map((item, idx) => (
-                                                                <div key={idx} className="flex justify-between text-xs text-gray-600 border-b border-gray-100 pb-1">
-                                                                    <span>{item.quantity}x {item.name} <span className="text-[9px] text-gray-400 ml-1">{item.appendDate}</span></span>
-                                                                    <span className="font-bold">${(item.price * item.quantity).toLocaleString()}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
+        {/* LISTADO DE MINI-ESPACIOS POR CLIENTE */}
+        <div className="space-y-6 pb-24">
+            {credits
+                .filter(c => c.status === (creditViewMode === 'pendientes' ? 'pendiente' : 'pagado'))
+                .filter(c => c.customer.toLowerCase().includes(creditFilter.toLowerCase()))
+                .map(credit => (
+                <div key={credit.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                    
+                    {/* ENCABEZADO DEL CLIENTE */}
+                    <div className="flex justify-between items-start border-b border-dashed pb-4">
+                        <div>
+                            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-1">
+                                {credit.status === 'pendiente' ? 'Deuda Actual' : 'Cuenta Finalizada'}
+                            </span>
+                            <h4 className="font-bold text-mandre-dark text-xl uppercase tracking-tight">{credit.customer}</h4>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">
+                                {credit.status === 'pendiente' ? 'Saldo Pendiente' : 'Total Pagado'}
+                            </p>
+                            <span className={`text-2xl font-bold ${credit.status === 'pendiente' ? 'text-purple-900' : 'text-green-600'}`}>
+                                ${credit.status === 'pendiente' ? credit.balance.toLocaleString() : credit.total.toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
 
-                                                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2">
-                                                        <div className="flex gap-6 w-full sm:w-auto">
-                                                            <div>
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase">Consumo Histórico</p>
-                                                                <p className="font-bold text-gray-500">${credit.total.toLocaleString()}</p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[10px] text-purple-600 font-bold uppercase">Saldo Pendiente</p>
-                                                                <p className="font-bold text-xl text-purple-900">${credit.balance.toLocaleString()}</p>
-                                                            </div>
-                                                        </div>
-                                                        {credit.status === 'pendiente' && !isMergeMode && (
-                                                            <button onClick={() => openAbonoModal(credit)} className="w-full sm:w-auto bg-purple-800 text-white px-6 py-3 rounded-xl font-bold shadow active:scale-95 transition">
-                                                                REGISTRAR ABONO
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {credits.length === 0 && <p className="text-center text-gray-400 py-10">No hay créditos registrados o no coincide con la búsqueda.</p>}
-                                        </div>
+                    {/* DETALLE DE LOS PRODUCTOS DE ESTE CRÉDITO ESPECÍFICO */}
+                    <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                        <div className="flex justify-between items-center mb-3">
+                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Consumos Registrados:</p>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase">{credit.date}</span>
+                        </div>
+                        <div className="space-y-3">
+                            {credit.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-xs border-b border-gray-200/50 pb-2 last:border-0">
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-mandre-dark">{item.quantity}x {item.name}</span>
+                                        <span className="text-[9px] text-gray-400 italic">Fecha: {item.appendDate || credit.date.split(',')[0]}</span>
                                     </div>
-                                )}
+                                    <span className="font-bold text-mandre-sage">${(item.price * item.quantity).toLocaleString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ACCIONES: TICKET HD Y PAGOS */}
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={() => setSelectedCreditTicket(credit)} 
+                            className="flex-1 bg-mandre-coffee text-white py-4 rounded-2xl text-[10px] font-bold uppercase flex items-center justify-center gap-2 active:scale-95 transition shadow-lg"
+                        >
+                            <FileText size={16}/> {credit.status === 'pendiente' ? 'Ver Cobro HD' : 'Ver Recibo HD'}
+                        </button>
+                        
+                        {credit.status === 'pendiente' && (
+                            <button 
+                                onClick={() => openAbonoModal(credit)} 
+                                className="flex-1 bg-purple-600 text-white py-4 rounded-2xl text-[10px] font-bold uppercase shadow-lg active:scale-95 transition"
+                            >
+                                Abonar / Pagar
+                            </button>
+                        )}
+                    </div>
+                </div>
+            ))}
+
+            {/* MENSAJE SI NO HAY RESULTADOS */}
+            {credits.filter(c => c.status === (creditViewMode === 'pendientes' ? 'pendiente' : 'pagado')).length === 0 && (
+                <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
+                    <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">No hay registros en esta sección</p>
+                </div>
+            )}
+        </div>
+    </div>
+)}
 
                                 {adminTab === 'cash_adjust' && (
                                     <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
@@ -3118,7 +3139,101 @@ return (
         </div>
     </div>
 )}
+{/* MODAL TICKET CRÉDITO HD - BY TANALZA */}
+{selectedCreditTicket && (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-sm shadow-2xl overflow-hidden animate-slideUp flex flex-col rounded-[2.5rem]">
+            
+            <div className="flex-1 overflow-y-auto bg-white p-2">
+                {/* ÁREA DE CAPTURA HD (ESTO SE CONVIERTE EN FOTO) */}
+                <div id="ticket-hd-area" className="bg-white p-8 text-center text-mandre-dark relative border-[10px] border-white">
+                    <div className="w-20 h-20 bg-mandre-coffee rounded-full flex items-center justify-center mx-auto mb-4 text-white shadow-xl">
+                        <IconLeaf/>
+                    </div>
+                    <h2 className="text-2xl font-bold tracking-[0.2em] text-mandre-coffee uppercase">MANDRÉ</h2>
+                    <p className="text-[9px] uppercase tracking-widest text-gray-400 font-bold mb-4">Specialty Coffee & Wellness</p>
+                    
+                    <div className="border-y-2 border-dashed border-gray-200 py-3 mb-6 text-left">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Cliente:</p>
+                        <p className="font-bold text-sm uppercase mb-2">{selectedCreditTicket.customer}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase">Tipo de Documento:</p>
+                        <p className={`text-xs font-bold uppercase ${selectedCreditTicket.status === 'pendiente' ? 'text-purple-700' : 'text-green-600'}`}>
+                            {selectedCreditTicket.status === 'pendiente' ? 'Estado de Cuenta de Crédito' : 'Comprobante de Pago Finalizado'}
+                        </p>
+                    </div>
 
+                    <div className="text-left mb-6">
+                        <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase mb-3 border-b pb-1">
+                            <span>Descripción del Consumo</span>
+                            <span>Monto</span>
+                        </div>
+                        <div className="space-y-3">
+                            {selectedCreditTicket.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-xs items-start">
+                                    <span className="flex-1 pr-4 font-medium"><span className="font-bold text-mandre-coffee">{item.quantity}x</span> {item.name}</span>
+                                    <span className="font-bold text-mandre-coffee">${(item.price * item.quantity).toLocaleString()}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className={`p-4 rounded-2xl mb-6 shadow-md text-white ${selectedCreditTicket.status === 'pendiente' ? 'bg-purple-900' : 'bg-green-600'}`}>
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold uppercase opacity-70 tracking-widest">
+                                {selectedCreditTicket.status === 'pendiente' ? 'Saldo por Pagar' : 'Total Cancelado'}
+                            </span>
+                            <span className="text-2xl font-bold">${selectedCreditTicket.status === 'pendiente' ? selectedCreditTicket.balance.toLocaleString() : selectedCreditTicket.total.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    {/* FIRMA DE TANALZA - TU SELLO DE CALIDAD */}
+                    <div className="pt-6 border-t border-gray-100 flex flex-col items-center">
+                        <LogoTanAlza className="w-24 opacity-80" />
+                        <p className="text-[8px] font-bold text-gray-300 uppercase tracking-[0.3em] mt-1">Soporte Digital TanAlza</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* BOTONES DE ACCIÓN */}
+            <div className="bg-gray-50 p-6 grid grid-cols-2 gap-3 border-t">
+                <button 
+                    onClick={async () => {
+                        const area = document.getElementById('ticket-hd-area');
+                        const canvas = await html2canvas(area, { scale: 3, backgroundColor: '#ffffff' }); // CALIDAD HD
+                        const link = document.createElement('a');
+                        link.download = `Mandre_${selectedCreditTicket.customer}_Ticket.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    }}
+                    className="py-4 bg-mandre-coffee text-white font-bold rounded-2xl text-[10px] flex items-center justify-center gap-2 shadow-lg active:scale-95 transition uppercase"
+                >
+                    <Download size={16}/> Descargar HD
+                </button>
+                <button 
+                    onClick={async () => {
+                        const area = document.getElementById('ticket-hd-area');
+                        const canvas = await html2canvas(area, { scale: 3 });
+                        canvas.toBlob(async (blob) => {
+                            const file = new File([blob], `Ticket.png`, { type: 'image/png' });
+                            if (navigator.share) {
+                                await navigator.share({ files: [file], title: 'Ticket Mandré' });
+                            } else { alert("Navegador no compatible con compartir"); }
+                        });
+                    }}
+                    className="py-4 bg-green-600 text-white font-bold rounded-2xl text-[10px] flex items-center justify-center gap-2 shadow-lg active:scale-95 transition uppercase"
+                >
+                    <Share size={16}/> WhatsApp
+                </button>
+                <button 
+                    onClick={() => setSelectedCreditTicket(null)}
+                    className="col-span-2 py-3 text-gray-400 font-bold text-[10px] uppercase hover:text-gray-600 transition"
+                >
+                    Cerrar Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+)}
                 </div>
             );
         };
