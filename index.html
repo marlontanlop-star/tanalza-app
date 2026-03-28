@@ -1537,39 +1537,59 @@ return (
                                         </div>
                                     </div>
                                     
-                                    {/* CARRITO */}
-                                    <div className={`fixed inset-0 z-40 bg-white transform transition-transform duration-300 flex flex-col md:relative md:translate-x-0 md:w-96 md:border-l md:border-gray-100 md:shadow-2xl ${showMobileCart ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
-                                        <div className="md:hidden p-4 flex justify-between items-center border-b bg-gray-50">
-                                            <h2 className="font-bold text-mandre-coffee">Detalle de la Orden</h2>
-                                            <button onClick={() => setShowMobileCart(false)} className="p-2 bg-white rounded-full shadow-sm"><ChevronDown size={20}/></button>
+                                    {/* CARRITO TICKET ESTILO RECIBO */}
+                                    <div className={`fixed inset-0 z-40 bg-[#fdfcf9] font-mono transform transition-transform duration-300 flex flex-col md:relative md:translate-x-0 md:w-96 md:border-l md:border-dashed md:border-gray-300 md:shadow-2xl ${showMobileCart ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
+                                        
+                                        {/* Encabezado Móvil */}
+                                        <div className="md:hidden p-4 flex justify-between items-center border-b border-dashed bg-white">
+                                            <h2 className="font-bold text-mandre-coffee font-sans">Ticket de Orden</h2>
+                                            <button onClick={() => setShowMobileCart(false)} className="p-2 bg-gray-100 rounded-full shadow-sm"><ChevronDown size={20}/></button>
                                         </div>
-                                        <div className="p-6 bg-mandre-coffee text-white">
-                                            <h2 className="font-bold tracking-widest text-xs opacity-60">CUENTA ACTIVA</h2>
-                                            <p className="text-xl font-bold uppercase">{['1','2','3','4'].includes(activeTableId?.toString()) ? `MESA ${activeTableId}` : activeTableId}</p>
+
+                                        {/* Cabecera del Ticket */}
+                                        <div className="p-6 bg-white border-b border-dashed text-center">
+                                            <h2 className="text-2xl font-bold tracking-[0.2em] text-mandre-coffee uppercase font-sans">MANDRÉ</h2>
+                                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4 font-sans">Specialty Coffee</p>
+                                            <div className="bg-gray-50 py-3 rounded-xl border border-gray-200">
+                                                <h2 className="font-bold tracking-widest text-[10px] text-gray-500 font-sans mb-1">CUENTA ACTIVA</h2>
+                                                <p className="text-xl font-bold uppercase text-mandre-dark font-sans">{['1','2','3','4'].includes(activeTableId?.toString()) ? `MESA ${activeTableId}` : activeTableId || 'SIN MESA'}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 p-4 overflow-y-auto space-y-4">
-                                           {cart.map(item => (
-                                                <div key={item.cartId} className="flex justify-between items-center border-b pb-2 group">
+
+                                        {/* Encabezado de la lista */}
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 border-b border-dashed border-gray-300 pb-2 px-6 pt-5 font-sans tracking-widest">
+                                            <span>CANT / ITEM</span>
+                                            <span>TOTAL</span>
+                                        </div>
+
+                                        {/* Lista de Productos */}
+                                        <div className="flex-1 p-6 overflow-y-auto space-y-4">
+                                            {cart.map(item => (
+                                                <div key={item.cartId} className="flex justify-between items-center border-b border-dashed border-gray-200 pb-3 group">
                                                     <div className="flex items-center gap-3">
-                                                        {/* AQUÍ ESTÁ EL CÍRCULO VISUAL DE LA CANTIDAD */}
-                                                        <span className="flex items-center justify-center w-6 h-6 bg-mandre-sage text-white rounded-full text-xs font-bold shadow-sm shrink-0">
+                                                        <span className="flex items-center justify-center w-6 h-6 bg-mandre-sage text-white rounded-full text-xs font-bold shadow-sm shrink-0 font-sans">
                                                             {item.quantity}
                                                         </span>
-                                                        <p className="font-bold text-sm text-mandre-dark leading-tight">{item.name}</p>
+                                                        <p className="font-bold text-sm text-mandre-dark leading-tight font-sans">{item.name}</p>
                                                     </div>
                                                     <div className="text-right flex items-center gap-3">
-                                                        <p className="font-bold text-sm">${calculateItemTotal(item).toLocaleString()}</p>
+                                                        <p className="font-bold text-sm text-mandre-coffee font-sans">${calculateItemTotal(item).toLocaleString()}</p>
                                                         <button onClick={() => removeFromCart(item.cartId)} className="text-red-400 text-xs hover:text-red-600 bg-red-50 p-1.5 rounded-full" title="Eliminar ítem"><Trash2 size={14}/></button>
                                                     </div>
                                                 </div>
                                             ))}
-                                            {cart.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">Agregue productos a la comanda</p>}
+                                            {cart.length === 0 && <p className="text-center text-gray-400 text-sm mt-10 italic font-sans">Ticket en blanco</p>}
                                         </div>
-                                        <div className="p-6 bg-gray-50 border-t">
-                                            <div className="flex justify-between text-xl font-bold mb-4"><span>Total</span><span>${total.toLocaleString()}</span></div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <button onClick={sendToKitchen} className="bg-gray-200 text-gray-700 py-3 rounded-lg font-bold text-xs hover:bg-gray-300 transition active:scale-95 shadow-sm">GUARDAR (PAGAR LUEGO)</button>
-                                                <button onClick={openPaymentModal} className="bg-mandre-coffee text-white py-3 rounded-lg font-bold text-xs hover:bg-gray-800 transition shadow-lg active:scale-95">COBRAR AHORA</button>
+
+                                        {/* Totales y Botones */}
+                                        <div className="p-6 bg-white border-t border-dashed border-gray-300">
+                                            <div className="flex justify-between items-center text-lg font-bold mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-200 shadow-inner">
+                                                <span className="text-gray-500 font-sans text-sm tracking-widest">TOTAL A PAGAR</span>
+                                                <span className="text-2xl text-mandre-coffee font-sans">${total.toLocaleString()}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button onClick={sendToKitchen} className="bg-gray-100 text-gray-600 border border-gray-200 py-4 rounded-xl font-bold text-[10px] uppercase hover:bg-gray-200 transition active:scale-95 shadow-sm font-sans tracking-wider">GUARDAR CUENTA</button>
+                                                <button onClick={openPaymentModal} className="bg-mandre-coffee text-white py-4 rounded-xl font-bold text-[10px] uppercase hover:bg-gray-800 transition shadow-lg active:scale-95 tracking-wider font-sans">COBRAR AHORA</button>
                                             </div>
                                         </div>
                                     </div>
