@@ -611,10 +611,10 @@ currentShiftOrders.forEach(o => {
     
     // RECALCULO INTELIGENTE: Si no hay total, suma los productos
     const valorVenta = o.total || (o.items ? o.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0);
-    
+    const metodo = o.method || 'efectivo';
     stats.users[emp].total += valorVenta;
-    if (o.method === 'efectivo') stats.users[emp].efectivo += valorVenta;
-    if (o.method === 'transferencia') stats.users[emp].nequi += valorVenta;
+    if (metodo === 'efectivo') stats.users[emp].efectivo += valorVenta;
+    if (metodo === 'transferencia') stats.users[emp].nequi += valorVenta;
 });
 
     // 2. Procesar Abonos recibidos
@@ -1334,7 +1334,9 @@ if (method === 'credito') {
     isoDate: currentDate.toLocaleDateString('en-CA'), 
     customer: finalCustomerName, 
     items: cart, 
-    total: total, // <--- AGREGA ESTA LÍNEA AQUÍ
+    // ASEGÚRATE DE QUE ESTAS DOS LÍNEAS QUEDEN ASÍ:
+    method: method, 
+    total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0), 
     employee: currentShiftEmployee 
 };
                 batch.set(db.collection('orders').doc(newOrder.id.toString()), newOrder);
@@ -2746,8 +2748,10 @@ return (
                         {/* Footer: Total */}
                         <div className="p-4 bg-white border-t border-dashed border-gray-200 mt-auto">
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase">Total Ticket</span>
-                                <span className="text-lg font-black text-mandre-sage">${(order.total || 0).toLocaleString()}</span>
+<span className="text-lg font-black text-mandre-sage">
+    ${(order.total || (order.items ? order.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0)).toLocaleString()}
+</span>
+                        
                             </div>
                             <p className="text-[9px] font-bold text-gray-400 uppercase text-right">Atendió: {order.employee}</p>
                         </div>
