@@ -323,7 +323,7 @@ const alerts = useMemo(() => {
 
             // Filtros Admin
             const [adminTab, setAdminTab] = useState('menu');
-            const [transferFilter, setTransferFilter] = useState({ name: '', date: '' });
+            const [transferFilter, setTransferFilter] = useState({ name: '', date: '', employee: '' });
             const [expenseFilter, setExpenseFilter] = useState({ query: '', date: '' });
             const [creditFilter, setCreditFilter] = useState('');
             const [manualItemFilter, setManualItemFilter] = useState({ name: '', price: '', date: '' }); 
@@ -1323,10 +1323,15 @@ if (method === 'credito') {
 
                 // Registrar Orden (Se registra incluso si es crédito para control de inventario/historial)
                 const newOrder = { 
-                    id: Date.now(), date: currentDate.toLocaleTimeString(), fullDate: currentDate.toLocaleDateString(),
-                    isoDate: currentDate.toLocaleDateString('en-CA'), 
-                    customer: finalCustomerName, items: cart, employee: currentShiftEmployee 
-                };
+    id: Date.now(), 
+    date: currentDate.toLocaleTimeString(), 
+    fullDate: currentDate.toLocaleDateString(),
+    isoDate: currentDate.toLocaleDateString('en-CA'), 
+    customer: finalCustomerName, 
+    items: cart, 
+    total: total, // <--- AGREGA ESTA LÍNEA AQUÍ
+    employee: currentShiftEmployee 
+};
                 batch.set(db.collection('orders').doc(newOrder.id.toString()), newOrder);
                 
                 // Limpiar Mesas y Opciones Especiales
@@ -2692,7 +2697,7 @@ return (
                     ${orders.filter(o => 
                         (o.isoDate === (transferFilter.date || new Date().toISOString().split('T')[0])) && 
                         (!transferFilter.employee || o.employee === transferFilter.employee)
-                    ).reduce((acc, curr) => acc + curr.total, 0).toLocaleString()}
+                    ).reduce((acc, curr) => acc + (curr.total || 0), 0).toLocaleString()}
                 </p>
             </div>
         </div>
@@ -2736,7 +2741,7 @@ return (
                         <div className="p-4 bg-white border-t border-dashed border-gray-200 mt-auto">
                             <div className="flex justify-between items-center mb-2">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase">Total Ticket</span>
-                                <span className="text-lg font-black text-mandre-sage">${order.total.toLocaleString()}</span>
+                                <span className="text-lg font-black text-mandre-sage">${(order.total || 0).toLocaleString()}</span>
                             </div>
                             <p className="text-[9px] font-bold text-gray-400 uppercase text-right">Atendió: {order.employee}</p>
                         </div>
