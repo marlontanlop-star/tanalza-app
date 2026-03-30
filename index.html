@@ -604,13 +604,18 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
     const stats = { users: {}, totalExpenses: 0 };
     
     // 1. Procesar Ventas
-    currentShiftOrders.forEach(o => {
-        const emp = o.employee || 'Desconocido';
-        if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0, egresos: 0 };
-        stats.users[emp].total += o.total;
-        if (o.method === 'efectivo') stats.users[emp].efectivo += o.total;
-        if (o.method === 'transferencia') stats.users[emp].nequi += o.total;
-    });
+    // 1. Procesar Ventas
+currentShiftOrders.forEach(o => {
+    const emp = o.employee || 'Desconocido';
+    if (!stats.users[emp]) stats.users[emp] = { total: 0, efectivo: 0, nequi: 0, egresos: 0 };
+    
+    // RECALCULO INTELIGENTE: Si no hay total, suma los productos
+    const valorVenta = o.total || (o.items ? o.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0);
+    
+    stats.users[emp].total += valorVenta;
+    if (o.method === 'efectivo') stats.users[emp].efectivo += valorVenta;
+    if (o.method === 'transferencia') stats.users[emp].nequi += valorVenta;
+});
 
     // 2. Procesar Abonos recibidos
     currentShiftAbonos.forEach(a => {
@@ -1984,6 +1989,7 @@ return (
                                         )}
 
                                         {/* TOTAL CAJA VIVO */}
+{/* TOTAL CAJA VIVO */}
 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
     <div className="flex items-center gap-2 mb-2">
         <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
@@ -1991,8 +1997,8 @@ return (
     </div>
     <div className="flex justify-between items-end mb-4">
         <p className="text-4xl font-bold text-mandre-coffee">
-            ${((orders.filter(o => !o.shiftId && o.method !== 'credito').reduce((a,b)=>a+b.total,0) + 
-               abonos.filter(a => !a.shiftId).reduce((a,b)=>a+b.amount,0)) - 
+            ${((orders.filter(o => !o.shiftId && o.method !== 'credito').reduce((a, b) => a + (b.total || (b.items ? b.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0)), 0) + 
+               abonos.filter(a => !a.shiftId).reduce((a, b) => a + b.amount, 0)) - 
                (liveStats.totalExpenses || 0)).toLocaleString()}
         </p>
     </div>
@@ -2000,15 +2006,15 @@ return (
         <div>
             <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Efectivo (+Abonos)</p>
             <p className="text-xl font-bold text-mandre-dark">
-                ${(orders.filter(o => !o.shiftId && o.method === 'efectivo').reduce((a,b)=>a+b.total,0) + 
-                   abonos.filter(a => !a.shiftId && a.method === 'efectivo').reduce((a,b)=>a+b.amount,0)).toLocaleString()}
+                ${(orders.filter(o => !o.shiftId && o.method === 'efectivo').reduce((a, b) => a + (b.total || (b.items ? b.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0)), 0) + 
+                   abonos.filter(a => !a.shiftId && a.method === 'efectivo').reduce((a, b) => a + b.amount, 0)).toLocaleString()}
             </p>
         </div>
         <div>
             <p className="text-[10px] text-purple-400 uppercase font-bold mb-1">Nequi (+Abonos)</p>
             <p className="text-xl font-bold text-purple-900">
-                ${(orders.filter(o => !o.shiftId && o.method === 'transferencia').reduce((a,b)=>a+b.total,0) + 
-                   abonos.filter(a => !a.shiftId && a.method === 'transferencia').reduce((a,b)=>a+b.amount,0)).toLocaleString()}
+                ${(orders.filter(o => !o.shiftId && o.method === 'transferencia').reduce((a, b) => a + (b.total || (b.items ? b.items.reduce((acc, i) => acc + (i.price * i.quantity), 0) : 0)), 0) + 
+                   abonos.filter(a => !a.shiftId && a.method === 'transferencia').reduce((a, b) => a + b.amount, 0)).toLocaleString()}
             </p>
         </div>
         <div className="bg-red-50 p-2 rounded-xl border border-red-100">
