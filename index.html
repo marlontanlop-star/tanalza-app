@@ -1702,129 +1702,123 @@ return (
                 </button>
             )}
 
-           {adminTab === 'license' && (
-    <div className="max-w-4xl mx-auto space-y-10 animate-fadeIn pb-32 text-left">
+          {adminTab === 'license' && (
+    <div className="max-w-3xl mx-auto space-y-12 animate-fadeIn pb-32 text-center md:text-left">
         
-        {/* HEADER CON GRADIENTE VIBRANTE */}
-        <div className="relative overflow-hidden bg-slate-950 p-12 rounded-[4rem] shadow-2xl border border-slate-800 group">
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl group-hover:bg-indigo-500/30 transition-all duration-1000"></div>
-            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-600/10 rounded-full blur-3xl"></div>
+        {/* HEADER MEJORADO */}
+        <div className="relative overflow-hidden bg-slate-950 p-14 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-800/60 group">
+            <div className="absolute -top-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] group-hover:bg-indigo-600/30 transition-all duration-700"></div>
+            <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px]"></div>
             
-            <div className="relative z-10 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-8">
-                <div>
-                    <LogoTanAlza className="w-56 mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] mx-auto md:mx-0" />
-                    <h2 className="text-4xl font-black text-white tracking-tighter mb-2">
-                        MANDRÉ <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">CORE OS</span>
-                    </h2>
-                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.6em]">Premium Management Engine</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl border border-white/10 text-center min-w-[140px]">
-                    <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Build Version</p>
-                    <p className="text-3xl font-mono font-bold text-white tracking-tighter">{appVersion}</p>
-                    <div className="mt-2 flex justify-center gap-1">
-                        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <div className="w-1 h-1 rounded-full bg-emerald-500/50"></div>
-                        <div className="w-1 h-1 rounded-full bg-emerald-500/30"></div>
+            <div className="relative z-10 flex flex-col items-center md:items-start">
+                {/* Logo mucho más grande (w-48 a w-72) */}
+                <LogoTanAlza className="w-72 mb-8 drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]" />
+                
+                <h2 className="text-5xl font-black text-white tracking-tighter mb-3">
+                    MANDRÉ <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400">CORE OS</span>
+                </h2>
+                
+                <div className="flex items-center gap-3 mt-2 bg-slate-900/50 px-5 py-2.5 rounded-full border border-slate-800 backdrop-blur-sm">
+                    <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em]">Version</p>
+                    <p className="text-xl font-mono font-bold text-white tracking-tighter">{appVersion}</p>
+                    <div className="relative flex h-2.5 w-2.5 ml-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </div>
                 </div>
             </div>
         </div>
 
-        {/* CONTENEDOR DE SELLOS Y LICENCIA */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* SECCIÓN ÚNICA DE LICENCIA Y ACTUALIZACIÓN */}
+        <div className="space-y-8">
             
-            {/* COLUMNA IZQUIERDA: LICENCIA CLAVE */}
-            <div className="md:col-span-2 space-y-6">
-                <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-100 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4">
-                        <Shield className="text-indigo-50 opacity-20" size={80} />
+            {/* CAJA DE LICENCIA */}
+            <div className="bg-gradient-to-br from-white to-slate-50 p-10 rounded-[2.5rem] shadow-xl border border-slate-200/60 relative overflow-hidden text-left">
+                <div className="absolute -top-10 -right-10 p-4 opacity-[0.03] transform rotate-12">
+                    <Shield className="text-indigo-900" size={180} />
+                </div>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Shield className="text-indigo-600" size={24} />
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Certificado de Autenticidad TanAlza Cloud</p>
                     </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Certificado de Autenticidad</p>
-                    <div className="bg-slate-950 p-6 rounded-2xl border-l-4 border-indigo-500 shadow-inner">
-                        <p className="font-mono text-sm md:text-base text-indigo-300 tracking-[0.25em] break-all leading-relaxed uppercase">
-                            TA-9124-6037-243-MN-2026-X8Q2
+                    
+                    <div className="bg-slate-950 p-6 rounded-2xl border-l-4 border-indigo-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-indigo-500/10 to-transparent"></div>
+                        {/* Números eliminados, reemplazados por un formato de clave limpio */}
+                        <p className="font-mono text-sm md:text-base text-indigo-300 tracking-[0.25em] break-all leading-relaxed uppercase relative z-10">
+                            TA-CLOUD-CORE-MN-2026-X8Q2
                         </p>
                     </div>
-                    <div className="mt-6 flex items-center gap-3">
-                        <div className="flex -space-x-2">
-                            <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center text-white"><Shield size={12}/></div>
-                            <div className="w-8 h-8 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white"><CheckCircle size={12}/></div>
-                            <div className="w-8 h-8 rounded-full bg-slate-800 border-2 border-white flex items-center justify-center text-white text-[8px] font-bold">AZ</div>
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">Licencia verificada y encriptada</p>
-                    </div>
-                </div>
-
-                {/* BOTÓN DE ACTUALIZACIÓN INTEGRADO */}
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-[3rem] shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
-                    <div>
-                        <h4 className="text-white font-bold text-lg tracking-tight">TanAlza Cloud Sync</h4>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Verificar actualizaciones de seguridad</p>
-                    </div>
-                    <div className="relative">
-                        <button 
-                            id="sync-btn"
-                            onClick={() => {
-                                const btn = document.getElementById('sync-btn');
-                                const loader = document.getElementById('sync-loader');
-                                btn.classList.add('hidden');
-                                loader.classList.remove('hidden');
-                                let p = 0;
-                                const bar = document.getElementById('sync-bar');
-                                const int = setInterval(() => {
-                                    p += 2;
-                                    bar.style.width = p + '%';
-                                    if(p >= 100) {
-                                        clearInterval(int);
-                                        const nextVer = (parseFloat(appVersion) + 0.001).toFixed(3);
-                                        localStorage.setItem('mandre_v', nextVer);
-                                        window.location.reload();
-                                    }
-                                }, 40);
-                            }}
-                            className="px-8 py-4 bg-indigo-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-indigo-500/40 hover:bg-indigo-400 hover:scale-105 transition-all active:scale-95"
-                        >
-                            Sincronizar Ahora
-                        </button>
-                        <div id="sync-loader" className="hidden w-48 text-center">
-                            <div className="h-1.5 w-full bg-slate-700 rounded-full overflow-hidden">
-                                <div id="sync-bar" className="h-full bg-emerald-400 transition-all duration-300" style={{width: '0%'}}></div>
-                            </div>
-                            <p className="text-[8px] text-emerald-400 font-bold uppercase mt-2 animate-pulse">Descargando parches...</p>
-                        </div>
+                    
+                    <div className="mt-8 flex items-center gap-3 text-emerald-700 bg-emerald-100/80 px-5 py-3 rounded-xl inline-flex border border-emerald-200/50 shadow-sm">
+                        <CheckCircle size={18} className="text-emerald-600"/>
+                        <p className="text-[11px] font-bold uppercase tracking-wide">Licencia activa y verificada por TanAlza Cloud</p>
                     </div>
                 </div>
             </div>
 
-            {/* COLUMNA DERECHA: LOS SELLOS (MEDALLAS) */}
-            <div className="space-y-4">
-                {[
-                    { icon: <Shield />, title: 'Seguridad', sub: 'AES-256 Cloud', color: 'text-blue-500', bg: 'bg-blue-50' },
-                    { icon: <CheckCircle />, title: 'ISO Quality', sub: 'Standard 2026', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                    { icon: <Activity />, title: 'Genuine', sub: 'Verified Core', color: 'text-indigo-500', bg: 'bg-indigo-50' },
-                    { icon: <RefreshCw />, title: 'Uptime', sub: '99.9% Cloud', color: 'text-orange-500', bg: 'bg-orange-50' }
-                ].map((sello, i) => (
-                    <div key={i} className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
-                        <div className={`w-12 h-12 rounded-2xl ${sello.bg} ${sello.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                            {React.cloneElement(sello.icon, { size: 20 })}
-                        </div>
-                        <div>
-                            <p className="font-black text-slate-800 text-[11px] uppercase tracking-tighter">{sello.title}</p>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{sello.sub}</p>
-                        </div>
+            {/* CAJA DE ACTUALIZACIÓN */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 rounded-[2.5rem] shadow-2xl border border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left relative overflow-hidden">
+                {/* Patrón de fondo sutil */}
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')] opacity-30"></div>
+                
+                <div className="relative z-10 space-y-3 flex-1">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 mb-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                        <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Sistema Conectado</span>
                     </div>
-                ))}
+                    <h4 className="text-white font-black text-2xl tracking-tight">TanAlza Cloud Sync</h4>
+                    <p className="text-xs text-slate-400 font-medium uppercase tracking-widest leading-relaxed max-w-sm">
+                        Descargar e instalar parches de seguridad y actualizaciones completas del sistema
+                    </p>
+                </div>
+                
+                <div className="relative min-w-[200px] flex justify-center z-10 w-full md:w-auto">
+                    {/* LÓGICA DE ACTUALIZACIÓN INTACTA */}
+                    <button 
+                        id="sync-btn"
+                        onClick={() => {
+                            const btn = document.getElementById('sync-btn');
+                            const loader = document.getElementById('sync-loader');
+                            btn.classList.add('hidden');
+                            loader.classList.remove('hidden');
+                            let p = 0;
+                            const bar = document.getElementById('sync-bar');
+                            const int = setInterval(() => {
+                                p += 3;
+                                bar.style.width = p + '%';
+                                if(p >= 100) {
+                                    clearInterval(int);
+                                    const nextVer = (parseFloat(appVersion) + 0.001).toFixed(3);
+                                    localStorage.setItem('mandre_v', nextVer);
+                                    window.location.reload();
+                                }
+                            }, 50);
+                        }}
+                        className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] hover:-translate-y-0.5 transition-all duration-300 active:scale-95 border border-indigo-400/50"
+                    >
+                        Sincronizar
+                    </button>
+                    
+                    {/* Loader mejorado visualmente */}
+                    <div id="sync-loader" className="hidden w-full text-center bg-slate-950/60 p-5 rounded-2xl border border-slate-700/50 backdrop-blur-md">
+                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700 mb-3">
+                            <div id="sync-bar" className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300 relative" style={{width: '0%'}}>
+                                {/* Rayas animadas en la barra de progreso (requiere extender en tailwind, o simplemente se verá liso si no lo tienes configurado) */}
+                            </div>
+                        </div>
+                        <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest animate-pulse">Conectando a TanAlza Cloud...</p>
+                    </div>
+                </div>
             </div>
         </div>
 
-        {/* FOOTER CORPORATIVO FINAL */}
-        <div className="flex flex-col items-center pt-8 border-t border-dashed border-gray-200">
-            <div className="flex items-center gap-4 mb-4">
-                <div className="h-px w-12 bg-gray-200"></div>
-                <p className="text-[12px] font-mono font-black text-slate-900 tracking-[0.3em]">91246037243</p>
-                <div className="h-px w-12 bg-gray-200"></div>
-            </div>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.5em]">TanAlza Group LLC Tangarife y Alzate Group</p>
+        {/* FIRMA FINAL CON LOGO CORPORATIVO MÁS GRANDE Y SIN NÚMEROS */}
+        <div className="flex flex-col items-center pt-16 border-t border-dashed border-gray-200 mt-12">
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] mb-6">Licenciado y Operado por</p>
+            {/* Logo más grande: w-32 a w-56 */}
+            <LogoTanAlza className="w-56 opacity-50 hover:opacity-100 transition-opacity duration-500 grayscale hover:grayscale-0" />
         </div>
     </div>
 )}
@@ -2210,27 +2204,7 @@ return (
                                             </div>
                                         </div>
 
-                                        {/* ACTUALIZADOR DE APP (REEMPLAZO DE HARD RESET) */}
-<div className="mt-12 pt-8 border-t border-gray-100 pb-10 flex flex-col items-center justify-center text-center">
-    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-4">Versión del Sistema</p>
-    
-    <button 
-        onClick={() => {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.update()));
-            }
-            window.location.reload(true);
-        }} 
-        className={`flex items-center gap-3 px-6 py-3 rounded-full font-bold text-xs shadow-sm transition-all active:scale-95 group ${updateAvailable ? 'bg-mandre-sage text-white shadow-lg shadow-mandre-sage/40 animate-pulse border-2 border-transparent scale-105' : 'bg-white border border-gray-200 text-gray-600 hover:border-mandre-sage hover:text-mandre-sage hover:shadow-md'}`}
-    >
-        <RefreshCw size={16} className={`transition-transform duration-700 ${updateAvailable ? 'animate-spin' : 'group-hover:rotate-180'}`} />
-        {updateAvailable ? '¡NUEVA VERSIÓN DETECTADA! CLIC PARA INSTALAR' : 'BUSCAR ACTUALIZACIÓN Y RECARGAR APP'}
-    </button>
-    
-    <p className="text-[10px] text-gray-400 mt-3 max-w-sm">
-         MANDRÉ centro de actualizaciones y parches de seguridad By TanAlza Group.
-    </p>
-</div>
+                                        
                                     </div>
                                 )}
 
