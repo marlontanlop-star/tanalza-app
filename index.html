@@ -795,7 +795,7 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                     amount: finalAmount, 
                     type: cashAdjustForm.type, 
                     date: new Date().toLocaleString(),
-                    isoDate: new Date().toISOString().split('T')[0] 
+                    isoDate: new Date().toLocaleDateString('en-CA') 
                 };
 
                 await db.collection('cashAdjustments').doc(adj.id.toString()).set(adj);
@@ -2676,7 +2676,7 @@ return (
                 <input 
                     type="date" 
                     className="w-full p-3 bg-gray-50 border-2 border-transparent rounded-2xl outline-none focus:border-teal-500 font-bold"
-                    value={transferFilter.date || new Date().toISOString().split('T')[0]} 
+                    value={transferFilter.date || new Date().toLocaleDateString('en-CA')} 
                     onChange={e => setTransferFilter({...transferFilter, date: e.target.value})}
                 />
             </div>
@@ -2695,7 +2695,7 @@ return (
                 <p className="text-[9px] font-bold text-teal-600 uppercase tracking-widest">Total en Filtro</p>
                 <p className="text-xl font-bold text-teal-900">
                     ${orders.filter(o => 
-                        (o.isoDate === (transferFilter.date || new Date().toISOString().split('T')[0])) && 
+                        (o.isoDate === (transferFilter.date || new Date().toLocaleDateString('en-CA'))) && 
                         (!transferFilter.employee || o.employee === transferFilter.employee)
                     ).reduce((acc, curr) => acc + (curr.total || 0), 0).toLocaleString()}
                 </p>
@@ -2706,7 +2706,7 @@ return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {orders
                 .filter(o => {
-                    const selectedDate = transferFilter.date || new Date().toISOString().split('T')[0];
+                    const selectedDate = transferFilter.date || new Date().toLocaleDateString('en-CA');
                     const matchesDate = o.isoDate === selectedDate;
                     const matchesUser = !transferFilter.employee || o.employee === transferFilter.employee;
                     return matchesDate && matchesUser;
@@ -2750,7 +2750,7 @@ return (
         </div>
 
         {/* SI NO HAY VENTAS */}
-        {orders.filter(o => (o.isoDate === (transferFilter.date || new Date().toISOString().split('T')[0])) && (!transferFilter.employee || o.employee === transferFilter.employee)).length === 0 && (
+        {orders.filter(o => (o.isoDate === (transferFilter.date || new Date().toLocaleDateString('en-CA'))) && (!transferFilter.employee || o.employee === transferFilter.employee)).length === 0 && (
             <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
                 <p className="text-sm text-gray-400 font-bold uppercase tracking-widest italic">No se encontraron ventas para este filtro ✨</p>
             </div>
