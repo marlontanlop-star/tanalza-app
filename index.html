@@ -329,19 +329,20 @@ const alerts = useMemo(() => {
             const [manualItemFilter, setManualItemFilter] = useState({ name: '', price: '', date: '' }); 
             const [adminViewTableOrder, setAdminViewTableOrder] = useState(null); // Visual modal para mesas
 // --- CONFIGURACIÓN DE ICONOS DEL MENÚ ADMIN ---
+// --- CONFIGURACIÓN DE ICONOS DEL MENÚ ADMIN (RESTAURADO) ---
 const adminModules = [
     { id: 'insumos', label: 'Insumos', icon: <Box />, color: 'bg-orange-500' },
     { id: 'dashboard', label: 'Métricas', icon: <Activity />, color: 'bg-red-500' },
     { id: 'status', label: 'Sistema', icon: <RefreshCw />, color: 'bg-blue-500' },
     { id: 'payroll', label: 'Nómina', icon: <User />, color: 'bg-mandre-sage' },
     { id: 'credits', label: 'Créditos', icon: <Shield />, color: 'bg-purple-600' },
+    { id: 'transfers', label: 'Transferencias', icon: <CreditCard />, color: 'bg-purple-700' }, // <-- Cambiado de Proveedores a Transferencias
     { id: 'expenses', label: 'Egresos', icon: <Banknote />, color: 'bg-red-600' },
     { id: 'products', label: 'Menú', icon: <Coffee />, color: 'bg-mandre-coffee' },
     { id: 'shifts', label: 'Cierres', icon: <Lock />, color: 'bg-gray-700' },
-    { id: 'users', label: 'Equipo', icon: <Users />, color: 'bg-indigo-600' }, // Ahora funciona
-    { id: 'combos', label: 'Combos', icon: <Layers />, color: 'bg-amber-500' }, // Ahora funciona
-    { id: 'suppliers', label: 'Proveedores', icon: <Truck />, color: 'bg-emerald-600' }, // Ahora funciona
-    { id: 'history', label: 'Historial', icon: <History />, color: 'bg-teal-600' } // Ahora funciona
+    { id: 'users', label: 'Equipo', icon: <Users />, color: 'bg-indigo-600' },
+    { id: 'combos', label: 'Combos', icon: <Layers />, color: 'bg-amber-500' },
+    { id: 'history', label: 'Historial', icon: <History />, color: 'bg-teal-600' }
 ];
             // Login & User Data
             const [loginData, setLoginData] = useState({ identifier: '', password: '' });
