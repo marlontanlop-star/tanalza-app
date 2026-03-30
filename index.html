@@ -306,13 +306,23 @@ const alerts = useMemo(() => {
             const closureReportRef = useRef(null);
 
             // Filtros Admin
-            const [adminTab, setAdminTab] = useState('dashboard');
+            const [adminTab, setAdminTab] = useState('menu');
             const [transferFilter, setTransferFilter] = useState({ name: '', date: '' });
             const [expenseFilter, setExpenseFilter] = useState({ query: '', date: '' });
             const [creditFilter, setCreditFilter] = useState('');
             const [manualItemFilter, setManualItemFilter] = useState({ name: '', price: '', date: '' }); 
             const [adminViewTableOrder, setAdminViewTableOrder] = useState(null); // Visual modal para mesas
-
+// --- CONFIGURACIÓN DE ICONOS DEL MENÚ ADMIN ---
+const adminModules = [
+    { id: 'insumos', label: 'Insumos', icon: <Box />, color: 'bg-orange-500' },
+    { id: 'dashboard', label: 'Métricas', icon: <Activity />, color: 'bg-red-500' },
+    { id: 'status', label: 'Sistema', icon: <RefreshCw />, color: 'bg-blue-500' },
+    { id: 'payroll', label: 'Nómina', icon: <User />, color: 'bg-mandre-sage' },
+    { id: 'credits', label: 'Créditos', icon: <Shield />, color: 'bg-purple-600' },
+    { id: 'expenses', label: 'Egresos', icon: <Banknote />, color: 'bg-red-600' },
+    { id: 'products', label: 'Menú', icon: <Coffee />, color: 'bg-mandre-coffee' },
+    { id: 'shifts', label: 'Cierres', icon: <Lock />, color: 'bg-gray-700' },
+];
             // Login & User Data
             const [loginData, setLoginData] = useState({ identifier: '', password: '' });
             const [currentShiftEmployee, setCurrentShiftEmployee] = useState(null);
@@ -1608,14 +1618,40 @@ return (
                     {/* VISTA ADMIN PANEL */}
                     {view === 'admin_panel' && (
                         <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
-                            {/* Pestañas Admin */}
-                            <div className="bg-white border-b px-4 py-4 flex gap-3 overflow-x-auto scrollbar-hide shrink-0 touch-pan-x">
-                            {[{k:'insumos', l:'Portal de Insumos'}, {k:'dashboard', l:'Métricas VIVO'}, {k:'status', l:'Estado Sistema'}, {k:'payroll', l:'Pagos Equipo'}, {k:'credits', l:'Créditos/Abonos'}, {k:'cash_adjust', l:'Canje Caja'}, {k:'transfers', l:'Transferencias'}, {k:'expenses', l:'Egresos'}, {k:'products', l:'Menú'}, {k:'users', l:'Equipo'}, {k:'combos', l:'Combos'}, {k:'manual_items', l:'Items Manuales'}, {k:'shifts', l:'Cierres'}].map((t) => (
-    <button key={t.k} onClick={() => setAdminTab(t.k)} className={`px-4 py-2 rounded-xl font-bold text-xs uppercase transition whitespace-nowrap shrink-0 shadow-sm border border-transparent ${adminTab === t.k ? 'bg-mandre-sage text-white' : 'bg-gray-50 text-gray-500 hover:border-gray-200'}`}>{t.l}</button>
-))}
-                            </div>
+                            {/* HEADER TIPO APP MODERNA */}
+        
 
-                            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-12 relative">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 relative bg-gray-50/10">
+            
+            {/* GRILLA DE ICONOS (Solo visible en el menú principal) */}
+            {adminTab === 'menu' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 animate-fadeIn">
+                    {adminModules.map(mod => (
+                        <button 
+                            key={mod.id} 
+                            onClick={() => setAdminTab(mod.id)} 
+                            className="flex flex-col items-center bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 active:scale-95 transition-all group"
+                        >
+                            <div className={`${mod.color} w-16 h-16 rounded-2xl shadow-lg flex items-center justify-center text-white mb-3 group-hover:rotate-6 transition-transform`}>
+                                {React.cloneElement(mod.icon, { size: 28 })}
+                            </div>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">{mod.label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* BOTÓN PARA VOLVER (Aparece cuando entras a cualquier sección) */}
+            {adminTab !== 'menu' && (
+                <button 
+                    onClick={() => setAdminTab('menu')}
+                    className="mb-6 flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 text-[10px] font-bold text-mandre-coffee uppercase tracking-widest active:scale-95 transition"
+                >
+                    ← Volver al Menú principal
+                </button>
+            )}
+
+            {/* A partir de aquí tu código sigue igual con {adminTab === 'insumos' && ( ... */}
                                 {adminTab === 'insumos' && (
     <div className="max-w-6xl mx-auto space-y-8 animate-fadeIn pb-24 text-left">
         
