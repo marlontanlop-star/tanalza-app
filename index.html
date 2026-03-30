@@ -150,6 +150,14 @@
         const RefreshCw = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>;
         const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
         const Activity = (props) => <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+        // --- PEGA ESTO DESPUÉS DE ACTIVITY (Línea 153 aprox.) ---
+const Users = (props) => <IconBase {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
+
+const Layers = (props) => <IconBase {...props}><path d="m12 2 8 4-8 4-8-4 8-4z"/><path d="m2 11 10 4 10-4"/><path d="m2 16 10 4 10-4"/></IconBase>;
+
+const Truck = (props) => <IconBase {...props}><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></IconBase>;
+
+const History = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></IconBase>;
 
         const IconLeaf = () => (
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-mandre-sage">
@@ -204,9 +212,17 @@
             { id: 100, name: "Combo Mañana", price: 16000, category: "Combos", stock: 999, items: [2, 12] } 
         ];
 
-        const INITIAL_USERS = [
-            { id: 1, name: 'Admin', surname: 'Principal', username: 'admin', password: '123', email: 'admin@mandre.com' }
-        ];
+      const INITIAL_USERS = [
+    { 
+        id: 1, 
+        name: 'Admin', 
+        surname: 'Principal', 
+        username: 'admin', 
+        password: '123', 
+        email: 'admin@mandre.com',
+        role: 'admin' 
+    }
+];
 
         // --- MODIFICACIÓN PASO 1: ESCUCHA ULTRA-SENSIBLE (Línea 210) ---
 const syncCollection = (collectionName, initialData, stateSetter) => {
@@ -322,6 +338,10 @@ const adminModules = [
     { id: 'expenses', label: 'Egresos', icon: <Banknote />, color: 'bg-red-600' },
     { id: 'products', label: 'Menú', icon: <Coffee />, color: 'bg-mandre-coffee' },
     { id: 'shifts', label: 'Cierres', icon: <Lock />, color: 'bg-gray-700' },
+    { id: 'users', label: 'Equipo', icon: <Users />, color: 'bg-indigo-600' }, // Ahora funciona
+    { id: 'combos', label: 'Combos', icon: <Layers />, color: 'bg-amber-500' }, // Ahora funciona
+    { id: 'suppliers', label: 'Proveedores', icon: <Truck />, color: 'bg-emerald-600' }, // Ahora funciona
+    { id: 'history', label: 'Historial', icon: <History />, color: 'bg-teal-600' } // Ahora funciona
 ];
             // Login & User Data
             const [loginData, setLoginData] = useState({ identifier: '', password: '' });
@@ -332,8 +352,8 @@ const adminModules = [
             const [editItem, setEditItem] = useState(null); 
             const [newCombo, setNewCombo] = useState({ name: '', price: '', items: [] });
             const [newProductForm, setNewProductForm] = useState({ name: '', price: '', category: 'Calientes', icon: '☕' });
-            const [newUserForm, setNewUserForm] = useState({ name: '', surname: '', emailPrefix: '', username: '', password: '' });
-
+            const [newUserForm, setNewUserForm] = useState({ name: '', surname: '', emailPrefix: '', username: '', password: '', role: 'staff' });;
+const [currentUserRole, setCurrentUserRole] = useState(null);
             // POS
             const [serviceSelected, setServiceSelected] = useState(false);
             const [orderType, setOrderType] = useState(''); 
@@ -619,6 +639,7 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                     setCurrentShiftEmployee(`${user.name} ${user.surname}`);
                     setSessionStartTime(time);
                     setLoginData({ identifier: '', password: '' });
+                    setCurrentUserRole(user.role || 'staff');
                     setView('pos');
                 } else {
                     alert("Credenciales incorrectas");
@@ -630,6 +651,7 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                     localStorage.removeItem('mandre_login');
                     setCurrentShiftEmployee(null);
                     setSessionStartTime(null);
+                    setCurrentUserRole(null);
                     setView('start');
                 }
             };
@@ -1025,22 +1047,23 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
 
             // --- GESTION USUARIOS ADMIN ---
             const createNewUser = async () => {
-                const { name, surname, emailPrefix, username, password } = newUserForm;
-                if(!name || !surname || !emailPrefix || !username || !password) return alert("Complete todos los campos del usuario");
-                
-                const newUser = {
-                    id: Date.now(),
-                    name,
-                    surname,
-                    email: `${emailPrefix}@mandre.com`,
-                    username,
-                    password
-                };
-                
-                await db.collection('users').doc(newUser.id.toString()).set(newUser);
-                setNewUserForm({ name: '', surname: '', emailPrefix: '', username: '', password: '' });
-                alert("Usuario Creado Exitosamente en Firebase");
-            };
+    const { name, surname, emailPrefix, username, password, role } = newUserForm;
+    if(!name || !surname || !emailPrefix || !username || !password) return alert("Complete todos los campos");
+    
+    const newUser = {
+        id: Date.now(),
+        name,
+        surname,
+        email: `${emailPrefix}@mandre.com`,
+        username,
+        password,
+        role: role || 'staff' // Guarda el poder elegido ('admin' o 'staff')
+    };
+    
+    await db.collection('users').doc(newUser.id.toString()).set(newUser);
+    setNewUserForm({ name: '', surname: '', emailPrefix: '', username: '', password: '', role: 'staff' });
+    alert("Usuario registrado con éxito");
+};
 
             // --- GESTION PRODUCTOS ADMIN ---
             const createNewProduct = async () => {
@@ -1350,7 +1373,18 @@ return (
                     <header className="bg-white px-4 py-3 flex justify-between items-center shadow-sm relative z-[60] shrink-0">
                         {/* LOGO Y USUARIO: AHORA ES EL BOTÓN AL ADMIN */}
 <div 
-    onClick={() => view === 'admin_panel' ? setView('pos') : setView('admin_login')}
+    onClick={() => {
+        if (view === 'admin_panel') {
+            setView('pos'); // Si ya estás en admin, vuelve al punto de venta
+} else if (currentUserRole === 'admin') {
+            // SI ES ADMIN: Entra directo al nuevo menú de iconos
+            setAdminTab('menu');
+            setView('admin_panel');
+        } else {
+            // SI ES STAFF: Bloqueo de seguridad
+            alert("Acceso denegado: No tienes permisos de administrador.");
+        }
+    }}
     className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-all active:scale-95 group shrink-0"
 >
     {/* Icono de la Hoja */}
@@ -2487,6 +2521,17 @@ return (
                                                 <div>
                                                     <label className="text-xs font-bold text-gray-400">Contraseña</label>
                                                     <input type="password" className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none" placeholder="******" value={newUserForm.password} onChange={e => setNewUserForm({...newUserForm, password: e.target.value})}/>
+                                                    <div>
+    <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Poder de Acceso</label>
+    <select 
+        className="w-full p-3 border-2 border-gray-100 rounded-xl bg-gray-50 outline-none focus:border-mandre-sage focus:bg-white font-bold transition shadow-sm"
+        value={newUserForm.role}
+        onChange={e => setNewUserForm({...newUserForm, role: e.target.value})}
+    >
+        <option value="staff">👤 Personal (Solo POS)</option>
+        <option value="admin">⚡ Administrador (Acceso Total)</option>
+    </select>
+</div>
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <label className="text-xs font-bold text-gray-400">Correo Corporativo</label>
@@ -2508,6 +2553,18 @@ return (
                                                             <div className="w-10 h-10 bg-mandre-sage/20 rounded-full flex items-center justify-center text-mandre-sage font-bold shrink-0">{u.name[0]}</div>
                                                             <div className="overflow-hidden">
                                                                 <p className="font-bold text-sm truncate">{u.name} {u.surname}</p>
+                                                                <button 
+    onClick={async () => {
+        const nuevoRol = u.role === 'admin' ? 'staff' : 'admin';
+        if(confirm(`¿Quieres cambiar el cargo de ${u.name} a ${nuevoRol.toUpperCase()}?`)) {
+            await db.collection('users').doc(u.id.toString()).update({ role: nuevoRol });
+            alert("Cargo actualizado correctamente");
+        }
+    }}
+    className={`mt-1 px-3 py-1 rounded-lg text-[9px] font-bold uppercase transition-all ${u.role === 'admin' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-200 text-gray-500'}`}
+>
+    {u.role === 'admin' ? 'ES ADMIN ⚡' : 'HACER ADMIN'}
+</button>
                                                                 <p className="text-xs text-gray-400 truncate">{u.email}</p>
                                                             </div>
                                                         </div>
