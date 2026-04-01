@@ -284,7 +284,11 @@ const [appVersion, setAppVersion] = useState(localStorage.getItem('mandre_v') ||
             const [connectionLogs, setConnectionLogs] = useState([{status: navigator.onLine ? 'online' : 'offline', time: new Date().toLocaleTimeString()}]);
             // NUEVO: ESTADO PARA RADAR DE USUARIOS
             const [systemPresence, setSystemPresence] = useState([]);
-
+// --- ESTADOS SPOTIFY ---
+const [spotifyToken, setSpotifyToken] = React.useState(localStorage.getItem('spotify_token') || null);
+const [searchResults, setSearchResults] = React.useState([]);
+const [currentTrack, setCurrentTrack] = React.useState(null);
+const [isSearching, setIsSearching] = React.useState(false);
             // --- ESTADOS GLOBALES ---
             const [view, setView] = useState('start'); 
             const [inventory, setInventory] = useState([]);
@@ -309,7 +313,68 @@ const [inventoryGroups, setInventoryGroups] = useState([]);
 const [editingGroup, setEditingGroup] = useState(null);
 const [showNotifications, setShowNotifications] = useState(false);
 const [insumoSearch, setInsumoSearch] = useState('');
+// --- LÓGICA MAESTRA SPOTIFY ---
 
+// 1. Iniciar Sesión (Redirige para autorizar la cuenta de Mandré)
+const loginSpotify = () => {
+    const clientId = "9eaf7f3727a84ec99bda0dae458694dc";
+    // URL FIJA para que coincida 100% con tu Dashboard de Spotify
+    const redirectUri = "https://html.onlineviewer.net/"; 
+    const scopes = "user-read-playback-state user-modify-playback-state user-read-currently-playing streaming";
+    
+    // Cambiamos el orden de los parámetros para que Spotify lo lea mejor
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+    
+    window.top.location.href = authUrl;
+};
+
+// 2. Capturar Token (Vigilante que atrapa la "llave" cuando vuelves de Spotify)
+React.useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+        const tokenMatch = hash.substring(1).split('&').find(elem => elem.startsWith('access_token'));
+        if (tokenMatch) {
+            const token = tokenMatch.split('=')[1];
+            setSpotifyToken(token);
+            localStorage.setItem('spotify_token', token);
+            window.location.hash = ""; 
+        }
+    }
+}, []);
+
+// 3. Buscador (Consulta a la API de Spotify)
+const buscarSpotify = async (query) => {
+    if (!query || !spotifyToken) return;
+    setIsSearching(true);
+    try {
+        const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+            headers: { 'Authorization': `Bearer ${spotifyToken}` }
+        });
+        const data = await response.json();
+        if (data.tracks) setSearchResults(data.tracks.items);
+    } catch (error) {
+        console.error("Error en búsqueda:", error);
+    } finally {
+        setIsSearching(false);
+    }
+};
+
+// 4. Reproductor (Manda la orden al celular para que suene en la bocina)
+const reproducirSpotify = async (trackUri) => {
+    if (!spotifyToken) return alert("Vincula la cuenta de Spotify primero.");
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/play`, {
+            method: 'PUT',
+            body: JSON.stringify({ uris: [trackUri] }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${spotifyToken}`
+            }
+        });
+    } catch (error) {
+        alert("Asegúrate de tener Spotify abierto en el celular conectado a la bocina.");
+    }
+};
 // Este vigilante cuenta cuántos insumos están en nivel crítico (rojo)
 const alerts = useMemo(() => {
     return (inventoryGroups || []).filter(g => g.currentStock <= g.minAlert);
@@ -342,6 +407,7 @@ const adminModules = [
     { id: 'products', label: 'Menú', icon: <Coffee />, color: 'bg-mandre-coffee' },
     { id: 'shifts', label: 'Cierres', icon: <Lock />, color: 'bg-gray-700' },
     { id: 'users', label: 'Equipo', icon: <Users />, color: 'bg-indigo-600' },
+    { id: 'music', label: 'Ambiente', icon: <Coffee />, color: 'bg-green-600' },
     { id: 'license', label: 'Licencia', icon: <Shield />, color: 'bg-slate-800' },
     { id: 'combos', label: 'Combos', icon: <Layers />, color: 'bg-amber-500' },
     { id: 'cash_adjust', label: 'Canje Caja', icon: <RefreshCw />, color: 'bg-blue-600' }, // <-- Puerta recuperada
@@ -1691,6 +1757,75 @@ return (
                     ))}
                 </div>
             )}
+            {adminTab === 'music' && (
+    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn pb-24 text-left">
+        <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-100">
+            <h3 className="font-bold text-lg text-mandre-coffee mb-6 flex items-center gap-2">
+                🎵 Ambiente Mandré
+            </h3>
+            
+            {/* Buscador Conectado */}
+            <div className="relative mb-8">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20}/>
+                <input 
+                    type="text" 
+                    placeholder="Buscar canción o playlist..." 
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-mandre-sage rounded-2xl outline-none font-bold transition-all shadow-inner"
+                    onChange={(e) => buscarSpotify(e.target.value)} // <--- Conexión de búsqueda
+                />
+            </div>
+
+            {/* Lista de Resultados Reales */}
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-hide">
+                {!spotifyToken ? (
+                    <div className="text-center py-10">
+                        <p className="text-sm text-gray-400 font-bold mb-4">Primero vincula la cuenta maestra</p>
+                        <button onClick={loginSpotify} className="px-8 py-4 bg-green-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
+                            VINCULAR SPOTIFY MANDRÉ
+                        </button>
+                    </div>
+                ) : (
+                    searchResults.map(track => (
+                        <div key={track.id} 
+                             onClick={() => reproducirSpotify(track.uri)} // <--- Conexión de reproducción
+                             className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-mandre-sage/30 cursor-pointer group transition-all">
+                            <div className="flex items-center gap-4">
+                                <img src={track.album.images[0].url} className="w-12 h-12 rounded-xl shadow-lg" />
+                                <div className="text-left">
+                                    <p className="font-bold text-sm text-mandre-dark truncate w-40">{track.name}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{track.artists[0].name}</p>
+                                </div>
+                            </div>
+                            <div className="text-mandre-sage group-hover:scale-125 transition">
+                                <Plus size={18}/>
+                            </div>
+                        </div>
+                    ))
+                )}
+                {spotifyToken && searchResults.length === 0 && (
+                    <p className="text-center text-gray-400 text-xs italic py-10">Escribe algo para buscar música...</p>
+                )}
+            </div>
+        </div>
+
+        {/* Reproductor con estado de conexión */}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-mandre-dark p-4 rounded-3xl shadow-2xl flex items-center justify-between border border-white/10 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${spotifyToken ? 'bg-mandre-sage animate-pulse' : 'bg-gray-700'}`}>
+                    <Coffee size={20} className="text-white"/>
+                </div>
+                <div className="text-left overflow-hidden">
+                    <p className={`text-[10px] font-bold uppercase ${spotifyToken ? 'text-mandre-sage' : 'text-red-400'}`}>
+                        {spotifyToken ? 'En línea - Bluetooth' : 'Desconectado'}
+                    </p>
+                    <p className="text-xs text-white font-bold truncate w-32">
+                        {spotifyToken ? 'Listo para sonar' : 'Sin cuenta vinculada'}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
 
             {/* BOTÓN PARA VOLVER (Aparece cuando entras a cualquier sección) */}
             {adminTab !== 'menu' && (
