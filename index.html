@@ -403,35 +403,32 @@ const buscarSpotify = async (query) => {
 };
 
 // 4. Reproductor (Manda la orden al celular para que suene en la bocina)
-const reproducirSpotify = async (trackUri) => {
-    if (!spotifyToken) return alert("Vincula la cuenta de Spotify primero.");
+const reproducirSpotify = async (uri) => {
+    if (!spotifyToken) return alert("⚠️ Vincula la cuenta primero.");
+
+    // Spotify pide 'uris' para canciones y 'context_uri' para álbumes/playlists
+    const isTrack = uri.includes(':track:');
+    const body = isTrack ? { uris: [uri] } : { context_uri: uri };
+
     try {
-        await fetch(`https://api.spotify.com/v1/me/player/play`, {
+        const res = await fetch('https://api.spotify.com/v1/me/player/play', {
             method: 'PUT',
-            body: JSON.stringify({ uris: [trackUri] }),
+            body: JSON.stringify(body),
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${spotifyToken}`
             }
         });
-    } catch (error) {
-        alert("Asegúrate de tener Spotify abierto en el celular conectado a la bocina.");
-    }
-};
-// --- FUNCIONES PARA GESTIONAR PLAYLISTS EN FIREBASE ---
-const savePlaylist = async (playlistData) => {
-    const id = playlistData.id || Date.now().toString();
-    await db.collection('music_playlists').doc(id).set({
-        id,
-        ...playlistData,
-        lastUpdate: new Date().toLocaleString()
-    }, { merge: true });
-    alert("¡Playlist autorizada y sincronizada! 🎶");
-};
 
-const deletePlaylist = async (id) => {
-    if(confirm("¿Seguro que quieres quitar esta playlist de las listas autorizadas?")) {
-        await db.collection('music_playlists').doc(id).delete();
+        if (res.status === 404) {
+            alert("⚠️ No detecto tu celular/parlante. Abre Spotify en tu dispositivo, pon una canción y dale pausa. Luego intenta de nuevo aquí.");
+        } else if (res.status === 403) {
+            alert("🚫 Error 403: Spotify requiere que la cuenta sea PREMIUM para controlarla desde el POS.");
+        } else if (res.status === 401) {
+            alert("🔑 La sesión expiró. Dale clic al logo de Spotify para renovar la conexión.");
+        }
+    } catch (error) {
+        console.error("Error de reproducción:", error);
     }
 };
 // Este vigilante cuenta cuántos insumos están en nivel crítico (rojo)
