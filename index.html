@@ -150,6 +150,10 @@
         const RefreshCw = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></IconBase>;
         const CheckCircle = (props) => <IconBase {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconBase>;
         const Activity = (props) => <IconBase {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconBase>;
+        const Play = (props) => <IconBase {...props}><polygon points="5 3 19 12 5 21 5 3"/></IconBase>;
+const Pause = (props) => <IconBase {...props}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></IconBase>;
+const SkipForward = (props) => <IconBase {...props}><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></IconBase>;
+const SkipBack = (props) => <IconBase {...props}><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></IconBase>;
         // --- PEGA ESTO DESPUÉS DE ACTIVITY (Línea 153 aprox.) ---
 const Users = (props) => <IconBase {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconBase>;
 
@@ -419,6 +423,49 @@ const reproducirSpotify = async (uri) => {
                 'Authorization': `Bearer ${spotifyToken}`
             }
         });
+        // --- CEREBRO MUSICAL MANDRÉ (PASO 2) ---
+
+// 1. Actualizar info de lo que suena ahora
+const updateCurrentTrack = async () => {
+    if (!spotifyToken) return;
+    try {
+        const res = await fetch('https://api.spotify.com/v1/me/player', {
+            headers: { 'Authorization': `Bearer ${spotifyToken}` }
+        });
+        if (res.status === 200) {
+            const data = await res.json();
+            setCurrentTrack(data); // Guardamos todo el estado (is_playing, item, etc)
+        } else if (res.status === 401) {
+            setSpotifyToken(null);
+            localStorage.removeItem('spotify_token');
+        }
+    } catch (e) { console.error("Error sync", e); }
+};
+
+// 2. Vigilante que refresca el panel cada 5 segundos
+useEffect(() => {
+    if (spotifyToken) {
+        const interval = setInterval(updateCurrentTrack, 5000);
+        updateCurrentTrack();
+        return () => clearInterval(interval);
+    }
+}, [spotifyToken]);
+
+// 3. Función Maestra de Control (Play, Pausa, Next, Prev)
+const controlSpotify = async (action) => {
+    if (!spotifyToken) return;
+    const method = (action === 'next' || action === 'previous') ? 'POST' : 'PUT';
+    const endpoint = action === 'play' ? 'play' : action === 'pause' ? 'pause' : action === 'next' ? 'next' : 'previous';
+    
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+            method: method,
+            headers: { 'Authorization': `Bearer ${spotifyToken}` }
+        });
+        // Forzamos actualización visual inmediata
+        setTimeout(updateCurrentTrack, 600);
+    } catch (e) { alert("⚠️ Abre Spotify en tu celular primero."); }
+};
 if (res.status === 401) {
     // Si la sesión expiró, borramos el token para que aparezca el botón de "Reconectar"
     setSpotifyToken(null);
@@ -3806,47 +3853,79 @@ return (
     </div>
 )}
 {/* PANEL DE AMBIENTE MUSICAL (FLOTANTE) */}
+{/* PORTAL DE MÚSICA PROFESIONAL MANDRÉ */}
 {showMusicPanel && (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
-        <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-slideUp border-4 border-mandre-sage/20">
-            <div className="p-8 text-center">
-                <div className="flex justify-between items-center mb-6">
-                    <span className="text-[10px] font-black text-mandre-sage uppercase tracking-widest">Ambiente Mandré</span>
-                    <button onClick={() => setShowMusicPanel(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[200] flex items-center justify-center p-4 animate-fadeIn">
+        <div className="bg-white w-full max-w-sm rounded-[3.5rem] shadow-2xl overflow-hidden animate-slideUp border-[6px] border-mandre-sage/10">
+            <div className="p-8">
+                {/* Cabecera del Panel */}
+                <div className="flex justify-between items-center mb-8">
+                    <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${currentTrack?.is_playing ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
+                        <span className="text-[10px] font-black text-mandre-sage uppercase tracking-[0.3em]">MANDRÉ LIVE</span>
+                    </div>
+                    <button onClick={() => setShowMusicPanel(false)} className="bg-gray-100 p-2 rounded-full text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"><X size={20}/></button>
                 </div>
 
-                {/* Canción sonando ahora o botón de reconexión */}
-{spotifyToken ? (
-    currentTrack ? (
-        <div className="mb-8 animate-fadeIn text-center">
-            <img src={currentTrack.album.images[0].url} className="w-40 h-40 mx-auto rounded-3xl shadow-2xl mb-4 rotate-2" />
-            <h4 className="font-bold text-lg text-mandre-dark truncate">{currentTrack.name}</h4>
-            <p className="text-[10px] text-mandre-sage font-bold uppercase tracking-wider">{currentTrack.artists[0].name}</p>
-        </div>
-    ) : (
-        <div className="py-10 text-gray-300 font-bold italic">Selecciona una lista para empezar...</div>
-    )
-) : (
-    <div className="py-8 text-center bg-red-50 rounded-3xl border border-red-100 mb-6">
-        <p className="text-xs font-bold text-red-600 mb-4 uppercase tracking-widest">Sesión Expirada</p>
-        <button 
-            onClick={loginSpotify}
-            className="px-6 py-3 bg-mandre-coffee text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition"
-        >
-            🔄 Reconectar Spotify
-        </button>
-    </div>
-)}
+                {/* Carátula Dinámica */}
+                <div className="relative mb-10 group">
+                    {currentTrack?.item ? (
+                        <div className="relative">
+                            <div className="absolute -inset-4 bg-mandre-sage/20 rounded-[3rem] blur-2xl group-hover:bg-mandre-sage/30 transition-all duration-700"></div>
+                            <img 
+                                src={currentTrack.item.album.images[0].url} 
+                                className={`w-56 h-56 mx-auto rounded-[2.5rem] shadow-2xl relative z-10 transition-all duration-700 ${currentTrack.is_playing ? 'rotate-2 scale-105' : 'grayscale opacity-80'}`} 
+                            />
+                            {currentTrack.is_playing && (
+                                <div className="absolute -bottom-2 -right-2 z-20 bg-white p-3 rounded-full shadow-xl animate-bounce-slight">
+                                    <Activity size={20} className="text-green-500"/>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="w-56 h-56 mx-auto bg-gray-100 rounded-[2.5rem] flex items-center justify-center border-4 border-dashed border-gray-200">
+                            <Coffee size={48} className="text-gray-200 animate-pulse"/>
+                        </div>
+                    )}
+                </div>
 
-                {/* Listas que tú creaste en el Admin */}
+                {/* Información de la Canción */}
+                <div className="text-center mb-10">
+                    <h4 className="font-black text-xl text-mandre-dark truncate px-4">
+                        {currentTrack?.item?.name || "Silencio en Mandré"}
+                    </h4>
+                    <p className="text-xs font-bold text-mandre-sage uppercase tracking-widest mt-1">
+                        {currentTrack?.item?.artists[0].name || "Conecta tu dispositivo"}
+                    </p>
+                </div>
+
+                {/* Controles de Reproducción Táctiles */}
+                <div className="flex justify-center items-center gap-8 mb-10">
+                    <button onClick={() => controlSpotify('previous')} className="text-gray-300 hover:text-mandre-coffee transition-colors active:scale-90"><SkipBack size={32}/></button>
+                    
+                    <button 
+                        onClick={() => controlSpotify(currentTrack?.is_playing ? 'pause' : 'play')}
+                        className="w-20 h-20 bg-mandre-coffee text-white rounded-full flex items-center justify-center shadow-[0_15px_30px_rgba(62,39,35,0.3)] hover:scale-105 active:scale-95 transition-all"
+                    >
+                        {currentTrack?.is_playing ? <Pause size={36} fill="currentColor"/> : <Play size={36} fill="currentColor" className="ml-1"/>}
+                    </button>
+
+                    <button onClick={() => controlSpotify('next')} className="text-gray-300 hover:text-mandre-coffee transition-colors active:scale-90"><SkipForward size={32}/></button>
+                </div>
+
+                {/* Listas Autorizadas */}
                 <div className="text-left">
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4 ml-2">Selección de hoy</p>
-                    <div className="space-y-2 max-h-56 overflow-y-auto pr-2 scrollbar-hide">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 ml-4">Playlists del Ambiente</p>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2 scrollbar-hide">
                         {(musicPlaylists || []).map(pl => (
-                            <button key={pl.id} onClick={() => reproducirSpotify(pl.uri)} className="w-full flex items-center gap-4 p-3 bg-gray-50 rounded-2xl hover:bg-mandre-sage/10 transition border border-transparent hover:border-mandre-sage/30 group">
-                                <span className="text-2xl">{pl.icon}</span>
-                                <div className="text-left">
-                                    <p className="font-bold text-sm text-gray-700 group-hover:text-mandre-sage">{pl.name}</p>
+                            <button 
+                                key={pl.id} 
+                                onClick={() => reproducirSpotify(pl.uri)}
+                                className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-3xl hover:bg-mandre-sage/10 transition-all border-2 border-transparent hover:border-mandre-sage/20 group"
+                            >
+                                <span className="text-2xl group-hover:scale-125 transition-transform">{pl.icon}</span>
+                                <div className="text-left flex-1">
+                                    <p className="font-bold text-sm text-gray-700 group-hover:text-mandre-coffee">{pl.name}</p>
                                     <p className="text-[9px] text-gray-400 font-bold uppercase">{pl.desc}</p>
                                 </div>
                             </button>
@@ -3854,7 +3933,12 @@ return (
                     </div>
                 </div>
             </div>
-            <button onClick={() => setShowMusicPanel(false)} className="w-full py-4 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cerrar</button>
+            <button 
+                onClick={() => setShowMusicPanel(false)} 
+                className="w-full py-6 bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] hover:bg-gray-100 transition-colors"
+            >
+                Regresar al POS
+            </button>
         </div>
     </div>
 )}
