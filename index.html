@@ -428,20 +428,19 @@ const reproducirSpotify = async (playlist) => {
         });
 
         if (res.status === 401) {
-            // El token de Spotify dura solo 1 hora
-            alert("🔒 Sesión de Spotify expirada. Por favor, vuelve a loguear desde el Admin.");
+            // SOLUCIÓN TOKEN: Destruir el token expirado para que reaparezca el botón
+            setSpotifyToken(null);
+            localStorage.removeItem('spotify_token');
+            alert("🔒 Sesión de Spotify expirada. El token ha sido borrado. Por favor, toca el botón para volver a vincular la cuenta.");
         } else if (res.status === 404) {
-            // No hay un dispositivo "despierto"
             alert("⚠️ No hay reproductor activo. Abre Spotify en tu celular, dale 'Play' a cualquier canción y luego intenta cambiarla desde aquí.");
         } else if (res.status === 204 || res.status === 200) {
-            // ÉXITO: Guardamos en Firebase para sincronizar todos los POS de Mandré
             await db.collection('settings').doc('musicState').set({
                 name: playlist.name,
                 icon: playlist.icon,
                 timestamp: new Date().getTime()
             });
-            // Forzamos actualización visual inmediata
-            updateCurrentTrack();
+            // El vigilante checkSong actualizará la interfaz en un par de segundos
         }
     } catch (e) { 
         console.error("Error en reproducción:", e);
@@ -508,7 +507,45 @@ useEffect(() => {
         unsubMusic();
     };
 }, []);
+// --- VIGILANTE DISCRETO DE CANCIÓN ACTUAL ---
+React.useEffect(() => {
+    const checkSong = async () => {
+        if (!spotifyToken || !showMusicPanel) return;
+        try {
+            // Nota: Usa la URL oficial de Spotify
+            const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                headers: { 'Authorization': `Bearer ${spotifyToken}` }
+            });
+            
+            if (res.status === 200) {
+                const data = await res.json();
+                if (data && data.item) {
+                    // SOLUCIÓN: Guardar como OBJETO para que el HTML lo pueda leer
+                    setNowPlaying({
+                        name: data.item.name,
+                        artist: data.item.artists[0].name
+                    });
+                }
+            } else if (res.status === 204) {
+                // 204 significa que no hay nada sonando
+                setNowPlaying(null);
+            } else if (res.status === 401) {
+                // SOLUCIÓN TOKEN: Si el token caducó, lo borramos automáticamente
+                setSpotifyToken(null);
+                localStorage.removeItem('spotify_token');
+                setNowPlaying(null);
+            }
+        } catch (e) { 
+            console.log("Fallo silencioso al verificar canción"); 
+        }
+    };
 
+    if (showMusicPanel) {
+        checkSong();
+        const interval = setInterval(checkSong, 5000); // 5 segundos es ideal para un "espejo"
+        return () => clearInterval(interval);
+    }
+}, [showMusicPanel, spotifyToken]);
             // Filtros Admin
             const [adminTab, setAdminTab] = useState('menu');
             const [transferFilter, setTransferFilter] = useState({ name: '', date: '', employee: '' });
@@ -3869,8 +3906,8 @@ return (
 {nowPlaying && (
     <div className="bg-mandre-sage/10 py-2 px-4 border-b border-mandre-sage/10">
         <p className="text-[9px] font-bold text-mandre-sage uppercase tracking-[0.2em] text-center animate-pulse">
-            📻 Sonando ahora: {nowPlaying}
-        </p>
+    📻 Sonando ahora: {nowPlaying.name} - {nowPlaying.artist}
+</p>
     </div>
 )}
             <div className="p-8">
