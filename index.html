@@ -3883,6 +3883,21 @@ return (
                 {/* ESTADO COMPARTIDO - PRIORIDAD CANCIÓN EN VIVO */}
 <div className="bg-gray-50 p-6 rounded-[2.5rem] mb-8 border-2 border-mandre-sage/20 text-center shadow-inner relative overflow-hidden">
     <p className="text-[9px] font-bold text-gray-400 uppercase mb-4 tracking-widest">Sonando en el Local</p>
+    {/* BOTÓN DE EMERGENCIA: VINCULAR SPOTIFY SI NO HAY TOKEN */}
+{!spotifyToken && (
+    <div className="mb-6 p-6 bg-orange-50 border-2 border-orange-200 rounded-[2rem] text-center animate-pulse">
+        <p className="text-[10px] font-black text-orange-700 uppercase mb-3 tracking-widest">Acceso Requerido</p>
+        <button 
+            onClick={loginSpotify}
+            className="w-full py-4 bg-mandre-coffee text-white rounded-2xl font-bold text-xs uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+        >
+            Vincular Spotify Ahora
+        </button>
+        <p className="text-[9px] text-orange-600 mt-3 font-medium px-4">
+            El trabajador debe tocar aquí para autorizar la música del día.
+        </p>
+    </div>
+)}
     
     {nowPlaying ? (
         <div className="flex flex-col items-center animate-fadeIn py-2">
