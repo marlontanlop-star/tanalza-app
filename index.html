@@ -423,55 +423,63 @@ const reproducirSpotify = async (uri) => {
                 'Authorization': `Bearer ${spotifyToken}`
             }
         });
-        // --- CEREBRO MUSICAL MANDRÉ (PASO 2) ---
+    // --- CEREBRO MUSICAL REFORZADO (PASO 2) ---
 
-// 1. Actualizar info de lo que suena ahora
 const updateCurrentTrack = async () => {
     if (!spotifyToken) return;
     try {
+        // Pedimos el estado actual a Spotify
         const res = await fetch('https://api.spotify.com/v1/me/player', {
             headers: { 'Authorization': `Bearer ${spotifyToken}` }
         });
+
         if (res.status === 200) {
             const data = await res.json();
-            setCurrentTrack(data); // Guardamos todo el estado (is_playing, item, etc)
+            // Solo actualizamos si hay un 'item' (una canción) cargada
+            if (data && data.item) {
+                setCurrentTrack(data);
+            }
+        } else if (res.status === 204) {
+            // 204 significa "No hay nada sonando"
+            setCurrentTrack(null);
         } else if (res.status === 401) {
             setSpotifyToken(null);
             localStorage.removeItem('spotify_token');
         }
-    } catch (e) { console.error("Error sync", e); }
+    } catch (e) { console.error("Error de sincronización:", e); }
 };
 
-// 2. Vigilante que refresca el panel cada 5 segundos
-useEffect(() => {
+// Vigilante de refresco automático
+React.useEffect(() => {
     if (spotifyToken) {
-        const interval = setInterval(updateCurrentTrack, 5000);
-        updateCurrentTrack();
+        updateCurrentTrack(); // Carga inicial
+        const interval = setInterval(updateCurrentTrack, 5000); // Refresca cada 5 seg
         return () => clearInterval(interval);
     }
 }, [spotifyToken]);
 
-// 3. Función Maestra de Control (Play, Pausa, Next, Prev)
+// Función de Control de Reproducción
 const controlSpotify = async (action) => {
     if (!spotifyToken) return;
-    const method = (action === 'next' || action === 'previous') ? 'POST' : 'PUT';
-    const endpoint = action === 'play' ? 'play' : action === 'pause' ? 'pause' : action === 'next' ? 'next' : 'previous';
+    
+    // Spotify usa PUT para play/pause y POST para saltar canciones
+    const isSkip = (action === 'next' || action === 'previous');
+    const method = isSkip ? 'POST' : 'PUT';
     
     try {
-        await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+        const res = await fetch(`https://api.spotify.com/v1/me/player/${action}`, {
             method: method,
             headers: { 'Authorization': `Bearer ${spotifyToken}` }
         });
-        // Forzamos actualización visual inmediata
-        setTimeout(updateCurrentTrack, 600);
-    } catch (e) { alert("⚠️ Abre Spotify en tu celular primero."); }
+
+        if (res.status === 404) {
+            alert("⚠️ No hay reproductor activo. Abre Spotify en tu celular y dale 'Play' a cualquier canción primero.");
+        } else {
+            // Si la orden funcionó, actualizamos la carátula rápido
+            setTimeout(updateCurrentTrack, 500);
+        }
+    } catch (e) { console.error("Error de control:", e); }
 };
-if (res.status === 401) {
-    // Si la sesión expiró, borramos el token para que aparezca el botón de "Reconectar"
-    setSpotifyToken(null);
-    localStorage.removeItem('spotify_token');
-    alert("🔑 La sesión ha caducado. Por favor, pulsa 'Reconectar' en el panel de música.");
-}
         if (res.status === 404) {
             alert("⚠️ No detecto tu celular/parlante. Abre Spotify en tu dispositivo, pon una canción y dale pausa. Luego intenta de nuevo aquí.");
         } else if (res.status === 403) {
