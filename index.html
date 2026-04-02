@@ -428,25 +428,24 @@ const reproducirSpotify = async (uri) => {
 const updateCurrentTrack = async () => {
     if (!spotifyToken) return;
     try {
-        // Pedimos el estado actual a Spotify
+        // Pedimos a Spotify la info de lo que suena AHORA
         const res = await fetch('https://api.spotify.com/v1/me/player', {
             headers: { 'Authorization': `Bearer ${spotifyToken}` }
         });
 
         if (res.status === 200) {
             const data = await res.json();
-            // Solo actualizamos si hay un 'item' (una canción) cargada
+            // Si hay una canción (item), la guardamos en el estado
             if (data && data.item) {
-                setCurrentTrack(data);
+                setCurrentTrack(data); 
             }
         } else if (res.status === 204) {
-            // 204 significa "No hay nada sonando"
-            setCurrentTrack(null);
-        } else if (res.status === 401) {
-            setSpotifyToken(null);
-            localStorage.removeItem('spotify_token');
+            // 204 significa que Spotify no detecta actividad
+            console.log("MANDRÉ: Esperando actividad en el celular...");
         }
-    } catch (e) { console.error("Error de sincronización:", e); }
+    } catch (e) { 
+        console.error("Error sincronizando carátula:", e); 
+    }
 };
 
 // Vigilante de refresco automático
