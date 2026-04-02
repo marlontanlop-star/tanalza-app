@@ -315,30 +315,72 @@ const [showNotifications, setShowNotifications] = useState(false);
 const [insumoSearch, setInsumoSearch] = useState('');
 // --- LÓGICA MAESTRA SPOTIFY ---
 
-// 1. Iniciar Sesión (Redirige para autorizar la cuenta de Mandré)
-const loginSpotify = () => {
-    const clientId = "9eaf7f3727a84ec99bda0dae458694dc";
-    // URL FIJA para que coincida 100% con tu Dashboard de Spotify
-    const redirectUri = "https://html.onlineviewer.net/"; 
+// 1. Iniciar Sesión con PKCE (Bloque Completo Corregido)
+const loginSpotify = async () => {
+    const clientId = "1fbda3da9ebd415597ec57f265fbb451";
+    const redirectUri = "https://tanalza-app-dguk.vercel.app/";
+
+    const generateRandomString = (length) => {
+        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        return Array.from(crypto.getRandomValues(new Uint8Array(length)))
+            .map((x) => possible[x % possible.length]).join('');
+    };
+
+    const codeVerifier = generateRandomString(64);
+    const sha256 = async (plain) => {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(plain);
+        return window.crypto.subtle.digest('SHA-256', data);
+    };
+
+    const base64encode = (input) => {
+        return btoa(String.fromCharCode(...new Uint8Array(input)))
+            .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    };
+
+    const hashed = await sha256(codeVerifier);
+    const codeChallenge = base64encode(hashed);
+
+    window.localStorage.setItem('code_verifier', codeVerifier);
+
     const scopes = "user-read-playback-state user-modify-playback-state user-read-currently-playing streaming";
     
-    // Cambiamos el orden de los parámetros para que Spotify lo lea mejor
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&show_dialog=true`;
+    // --- LÍNEA CLAVE CORREGIDA CON BACKTICKS ---
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&code_challenge_method=S256&code_challenge=${codeChallenge}`;
     
-    window.top.location.href = authUrl;
+    window.top.location.href = authUrl; // Cambié a window.top por seguridad en Vercel
 };
 
-// 2. Capturar Token (Vigilante que atrapa la "llave" cuando vuelves de Spotify)
+// 2. Capturar Token (Vigilante de la llave)
 React.useEffect(() => {
-    const hash = window.location.hash;
-    if (hash) {
-        const tokenMatch = hash.substring(1).split('&').find(elem => elem.startsWith('access_token'));
-        if (tokenMatch) {
-            const token = tokenMatch.split('=')[1];
-            setSpotifyToken(token);
-            localStorage.setItem('spotify_token', token);
-            window.location.hash = ""; 
-        }
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code) {
+        const clientId = "1fbda3da9ebd415597ec57f265fbb451";
+        const redirectUri = "https://tanalza-app-dguk.vercel.app/";
+        const codeVerifier = window.localStorage.getItem('code_verifier');
+
+        fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: clientId,
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: redirectUri,
+                code_verifier: codeVerifier,
+            }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.access_token) {
+                setSpotifyToken(data.access_token);
+                localStorage.setItem('spotify_token', data.access_token);
+                window.history.replaceState({}, document.title, "/"); 
+            }
+        })
+        .catch(err => console.error("Error canjeando código:", err));
     }
 }, []);
 
