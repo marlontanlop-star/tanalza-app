@@ -419,7 +419,12 @@ const reproducirSpotify = async (uri) => {
                 'Authorization': `Bearer ${spotifyToken}`
             }
         });
-
+if (res.status === 401) {
+    // Si la sesión expiró, borramos el token para que aparezca el botón de "Reconectar"
+    setSpotifyToken(null);
+    localStorage.removeItem('spotify_token');
+    alert("🔑 La sesión ha caducado. Por favor, pulsa 'Reconectar' en el panel de música.");
+}
         if (res.status === 404) {
             alert("⚠️ No detecto tu celular/parlante. Abre Spotify en tu dispositivo, pon una canción y dale pausa. Luego intenta de nuevo aquí.");
         } else if (res.status === 403) {
@@ -3810,16 +3815,28 @@ return (
                     <button onClick={() => setShowMusicPanel(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
                 </div>
 
-                {/* Canción sonando ahora en vivo */}
-                {currentTrack ? (
-                    <div className="mb-8 animate-fadeIn text-center">
-                        <img src={currentTrack.album.images[0].url} className="w-40 h-40 mx-auto rounded-3xl shadow-2xl mb-4 rotate-2" />
-                        <h4 className="font-bold text-lg text-mandre-dark truncate">{currentTrack.name}</h4>
-                        <p className="text-[10px] text-mandre-sage font-bold uppercase tracking-wider">{currentTrack.artists[0].name}</p>
-                    </div>
-                ) : (
-                    <div className="py-10 text-gray-300 font-bold italic">Selecciona una lista...</div>
-                )}
+                {/* Canción sonando ahora o botón de reconexión */}
+{spotifyToken ? (
+    currentTrack ? (
+        <div className="mb-8 animate-fadeIn text-center">
+            <img src={currentTrack.album.images[0].url} className="w-40 h-40 mx-auto rounded-3xl shadow-2xl mb-4 rotate-2" />
+            <h4 className="font-bold text-lg text-mandre-dark truncate">{currentTrack.name}</h4>
+            <p className="text-[10px] text-mandre-sage font-bold uppercase tracking-wider">{currentTrack.artists[0].name}</p>
+        </div>
+    ) : (
+        <div className="py-10 text-gray-300 font-bold italic">Selecciona una lista para empezar...</div>
+    )
+) : (
+    <div className="py-8 text-center bg-red-50 rounded-3xl border border-red-100 mb-6">
+        <p className="text-xs font-bold text-red-600 mb-4 uppercase tracking-widest">Sesión Expirada</p>
+        <button 
+            onClick={loginSpotify}
+            className="px-6 py-3 bg-mandre-coffee text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition"
+        >
+            🔄 Reconectar Spotify
+        </button>
+    </div>
+)}
 
                 {/* Listas que tú creaste en el Admin */}
                 <div className="text-left">
