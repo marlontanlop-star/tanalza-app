@@ -1477,6 +1477,7 @@ currentShiftOrders.forEach(o => {
                 if ((method === 'transferencia' || method === 'credito') && !customerName.trim()) {
                     alert(`Para pagos por ${detail}, el Nombre del Cliente es obligatorio.`);
                     return;
+                    
                 }
 
                 if (navigator.vibrate) {
@@ -1488,6 +1489,7 @@ currentShiftOrders.forEach(o => {
                 const finalCustomerName = customerName.trim() || "Cliente General";
                 const batch = db.batch();
                 const currentDate = new Date();
+                
                 
         // --- INICIO: Deducir Inventario y Guardar Manuales ---
                 
@@ -1591,6 +1593,18 @@ if (method === 'credito') {
                     setIsProcessingPayment(false); 
                 }
             };
+            // --- FUNCIONES DE AMBIENTE MUSICAL (ADMIN) ---
+const savePlaylist = async (data) => {
+    const id = Date.now().toString();
+    await db.collection('music_playlists').doc(id).set({ id, ...data });
+    alert("¡Lista guardada exitosamente!");
+};
+
+const deletePlaylist = async (id) => {
+    if (confirm("¿Seguro que deseas eliminar esta lista del sistema?")) {
+        await db.collection('music_playlists').doc(id.toString()).delete();
+    }
+};
 return (
                 <div className="h-[100dvh] flex flex-col bg-mandre-bone font-sans text-mandre-dark overflow-hidden">
                     
