@@ -289,6 +289,7 @@ const [spotifyToken, setSpotifyToken] = React.useState(localStorage.getItem('spo
 const [searchResults, setSearchResults] = React.useState([]);
 const [currentTrack, setCurrentTrack] = React.useState(null);
 const [isSearching, setIsSearching] = React.useState(false);
+const [showMusicPanel, setShowMusicPanel] = React.useState(false);
             // --- ESTADOS GLOBALES ---
             const [view, setView] = useState('start'); 
             const [inventory, setInventory] = useState([]);
@@ -417,6 +418,22 @@ const reproducirSpotify = async (trackUri) => {
         alert("Asegúrate de tener Spotify abierto en el celular conectado a la bocina.");
     }
 };
+// --- FUNCIONES PARA GESTIONAR PLAYLISTS EN FIREBASE ---
+const savePlaylist = async (playlistData) => {
+    const id = playlistData.id || Date.now().toString();
+    await db.collection('music_playlists').doc(id).set({
+        id,
+        ...playlistData,
+        lastUpdate: new Date().toLocaleString()
+    }, { merge: true });
+    alert("¡Playlist autorizada y sincronizada! 🎶");
+};
+
+const deletePlaylist = async (id) => {
+    if(confirm("¿Seguro que quieres quitar esta playlist de las listas autorizadas?")) {
+        await db.collection('music_playlists').doc(id).delete();
+    }
+};
 // Este vigilante cuenta cuántos insumos están en nivel crítico (rojo)
 const alerts = useMemo(() => {
     return (inventoryGroups || []).filter(g => g.currentStock <= g.minAlert);
@@ -427,6 +444,21 @@ const alerts = useMemo(() => {
             const [cashCountDetails, setCashCountDetails] = useState({}); 
             const [closureResult, setClosureResult] = useState(null); 
             const closureReportRef = useRef(null);
+            // 1. Agrega el estado global
+const [musicPlaylists, setMusicPlaylists] = useState([]);
+
+// 2. Dentro del useEffect principal, añade la sincronización:
+useEffect(() => {
+    // ... otros unsubscribes
+    const unsubMusic = syncCollection('music_playlists', [
+        { id: '1', name: "Mandré Bohemio", uri: "spotify:playlist:37i9dQZF1DX3j969KlsfS4", icon: "🎸", desc: "Cepeda y Santiago Cruz" }
+    ], setMusicPlaylists);
+
+    return () => {
+        // ... otros
+        unsubMusic();
+    };
+}, []);
 
             // Filtros Admin
             const [adminTab, setAdminTab] = useState('menu');
@@ -1547,6 +1579,13 @@ return (
                                     </button>
                                 </>
                             )}
+                            {/* BOTÓN MÚSICA ACCESO RÁPIDO PARA EL STAFF */}
+<button 
+    onClick={() => setShowMusicPanel(true)}
+    className={`p-2 rounded-full transition-all ${spotifyToken ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}
+>
+    <Coffee size={20} className={spotifyToken ? "animate-bounce-slight" : ""} />
+</button>
                             {/* BOTÓN DE NOTIFICACIONES (CAMPANITA) */}
 <div className="relative">
     <button 
@@ -1800,70 +1839,72 @@ return (
                 </div>
             )}
             {adminTab === 'music' && (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn pb-24 text-left">
+    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn pb-24 text-left">
+        {/* 1. BUSCADOR DE SPOTIFY PARA EXPLORAR */}
         <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-gray-100">
-            <h3 className="font-bold text-lg text-mandre-coffee mb-6 flex items-center gap-2">
-                🎵 Ambiente Mandré
-            </h3>
-            
-            {/* Buscador Conectado */}
-            <div className="relative mb-8">
+            <h3 className="font-bold text-lg text-mandre-coffee mb-6 flex items-center gap-2">🔍 Explorar en Spotify</h3>
+            <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20}/>
                 <input 
                     type="text" 
-                    placeholder="Buscar canción o playlist..." 
+                    placeholder="Busca canciones para Mandré..." 
                     className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-mandre-sage rounded-2xl outline-none font-bold transition-all shadow-inner"
-                    onChange={(e) => buscarSpotify(e.target.value)} // <--- Conexión de búsqueda
+                    onChange={(e) => buscarSpotify(e.target.value)}
                 />
-            </div>
-
-            {/* Lista de Resultados Reales */}
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-2 scrollbar-hide">
-                {!spotifyToken ? (
-                    <div className="text-center py-10">
-                        <p className="text-sm text-gray-400 font-bold mb-4">Primero vincula la cuenta maestra</p>
-                        <button onClick={loginSpotify} className="px-8 py-4 bg-green-600 text-white font-bold rounded-2xl shadow-lg active:scale-95 transition">
-                            VINCULAR SPOTIFY MANDRÉ
-                        </button>
-                    </div>
-                ) : (
-                    searchResults.map(track => (
-                        <div key={track.id} 
-                             onClick={() => reproducirSpotify(track.uri)} // <--- Conexión de reproducción
-                             className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-transparent hover:border-mandre-sage/30 cursor-pointer group transition-all">
-                            <div className="flex items-center gap-4">
-                                <img src={track.album.images[0].url} className="w-12 h-12 rounded-xl shadow-lg" />
-                                <div className="text-left">
-                                    <p className="font-bold text-sm text-mandre-dark truncate w-40">{track.name}</p>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{track.artists[0].name}</p>
-                                </div>
-                            </div>
-                            <div className="text-mandre-sage group-hover:scale-125 transition">
-                                <Plus size={18}/>
-                            </div>
-                        </div>
-                    ))
-                )}
-                {spotifyToken && searchResults.length === 0 && (
-                    <p className="text-center text-gray-400 text-xs italic py-10">Escribe algo para buscar música...</p>
-                )}
             </div>
         </div>
 
-        {/* Reproductor con estado de conexión */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-mandre-dark p-4 rounded-3xl shadow-2xl flex items-center justify-between border border-white/10 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${spotifyToken ? 'bg-mandre-sage animate-pulse' : 'bg-gray-700'}`}>
-                    <Coffee size={20} className="text-white"/>
+        {/* 2. GESTOR DE LISTAS AUTORIZADAS (FIREBASE) */}
+        <div className="bg-white p-8 rounded-[3rem] shadow-xl border-2 border-mandre-sage/20">
+            <h3 className="font-bold text-lg text-mandre-coffee mb-6">📋 Listas Autorizadas para el Equipo</h3>
+            
+            {/* Formulario para añadir nueva lista */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <div className="space-y-3">
+                    <input id="pl-name" className="w-full p-3 rounded-xl border-none font-bold text-sm" placeholder="Nombre (Ej: Mañana Relajada)"/>
+                    <input id="pl-uri" className="w-full p-3 rounded-xl border-none text-xs font-mono" placeholder="Pega el enlace de la Playlist aquí"/>
                 </div>
-                <div className="text-left overflow-hidden">
-                    <p className={`text-[10px] font-bold uppercase ${spotifyToken ? 'text-mandre-sage' : 'text-red-400'}`}>
-                        {spotifyToken ? 'En línea - Bluetooth' : 'Desconectado'}
-                    </p>
-                    <p className="text-xs text-white font-bold truncate w-32">
-                        {spotifyToken ? 'Listo para sonar' : 'Sin cuenta vinculada'}
-                    </p>
+                <div className="space-y-3">
+                    <div className="flex gap-2">
+                        <select id="pl-icon" className="p-3 rounded-xl border-none font-bold bg-white outline-none">
+                            <option>☕</option><option>🎸</option><option>🌿</option><option>⚡</option><option>🎹</option>
+                        </select>
+                        <input id="pl-desc" className="flex-1 p-3 rounded-xl border-none text-sm" placeholder="Descripción (Cepeda, Cuarteto...)"/>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            const name = document.getElementById('pl-name').value;
+                            const uriInput = document.getElementById('pl-uri').value;
+                            if(!name || !uriInput) return alert("Completa nombre y enlace");
+                            
+                            let finalUri = uriInput;
+                            if(uriInput.includes('playlist/')) {
+                                finalUri = `spotify:playlist:${uriInput.split('playlist/')[1].split('?')[0]}`;
+                            }
+                            savePlaylist({ name, uri: finalUri, icon: document.getElementById('pl-icon').value, desc: document.getElementById('pl-desc').value });
+                            document.getElementById('pl-name').value = ''; document.getElementById('pl-uri').value = '';
+                        }}
+                        className="w-full py-3 bg-mandre-coffee text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg active:scale-95 transition"
+                    >
+                        AGREGAR A LA APP
+                    </button>
                 </div>
+            </div>
+
+            {/* Lista de Playlists que vas guardando */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {musicPlaylists.map(pl => (
+                    <div key={pl.id} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">{pl.icon}</span>
+                            <div className="text-left">
+                                <p className="font-bold text-sm text-mandre-dark">{pl.name}</p>
+                                <p className="text-[9px] text-gray-400 font-bold uppercase">{pl.desc}</p>
+                            </div>
+                        </div>
+                        <button onClick={() => deletePlaylist(pl.id)} className="text-red-200 hover:text-red-500 transition p-2"><Trash2 size={16}/></button>
+                    </div>
+                ))}
             </div>
         </div>
     </div>
@@ -3759,6 +3800,47 @@ return (
                     Cerrar Ticket
                 </button>
             </div>
+        </div>
+    </div>
+)}
+{/* PANEL DE AMBIENTE MUSICAL (FLOTANTE) */}
+{showMusicPanel && (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-slideUp border-4 border-mandre-sage/20">
+            <div className="p-8 text-center">
+                <div className="flex justify-between items-center mb-6">
+                    <span className="text-[10px] font-black text-mandre-sage uppercase tracking-widest">Ambiente Mandré</span>
+                    <button onClick={() => setShowMusicPanel(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+                </div>
+
+                {/* Canción sonando ahora en vivo */}
+                {currentTrack ? (
+                    <div className="mb-8 animate-fadeIn text-center">
+                        <img src={currentTrack.album.images[0].url} className="w-40 h-40 mx-auto rounded-3xl shadow-2xl mb-4 rotate-2" />
+                        <h4 className="font-bold text-lg text-mandre-dark truncate">{currentTrack.name}</h4>
+                        <p className="text-[10px] text-mandre-sage font-bold uppercase tracking-wider">{currentTrack.artists[0].name}</p>
+                    </div>
+                ) : (
+                    <div className="py-10 text-gray-300 font-bold italic">Selecciona una lista...</div>
+                )}
+
+                {/* Listas que tú creaste en el Admin */}
+                <div className="text-left">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-4 ml-2">Selección de hoy</p>
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-2 scrollbar-hide">
+                        {(musicPlaylists || []).map(pl => (
+                            <button key={pl.id} onClick={() => reproducirSpotify(pl.uri)} className="w-full flex items-center gap-4 p-3 bg-gray-50 rounded-2xl hover:bg-mandre-sage/10 transition border border-transparent hover:border-mandre-sage/30 group">
+                                <span className="text-2xl">{pl.icon}</span>
+                                <div className="text-left">
+                                    <p className="font-bold text-sm text-gray-700 group-hover:text-mandre-sage">{pl.name}</p>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase">{pl.desc}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            <button onClick={() => setShowMusicPanel(false)} className="w-full py-4 bg-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cerrar</button>
         </div>
     </div>
 )}
