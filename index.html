@@ -923,56 +923,67 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
             };
 
             // --- FUNCIONES CRÉDITOS Y ABONOS (ADMIN) ---
-            const handleAbono = async () => {
-                const amount = parseFloat(abonoForm.amount);
-                if(!amount || amount <= 0 || !abonoForm.assignedUser) return alert("Ingrese un monto válido y seleccione un usuario");
-                if(amount > activeCredit.balance) return alert("El abono no puede superar la deuda actual.");
+           const handleAbono = async () => {
+    const amount = parseFloat(abonoForm.amount);
+    if(!amount || amount <= 0 || !abonoForm.assignedUser) {
+        return alert("Ingrese un monto válido y asegúrese de que haya un usuario asignado.");
+    }
+    if(amount > activeCredit.balance) return alert("El abono no puede superar la deuda actual.");
 
-                setIsProcessingPayment(true);
-                const batch = db.batch();
+    setIsProcessingPayment(true);
+    const batch = db.batch();
+    const newBalance = activeCredit.balance - amount;
+    
+    // Actualizar el crédito principal
+    batch.update(db.collection('creditos').doc(activeCredit.id.toString()), {
+        balance: newBalance,
+        status: newBalance <= 0 ? 'pagado' : 'pendiente',
+        lastUpdated: new Date().toLocaleString()
+    });
 
-                const newBalance = activeCredit.balance - amount;
-                
-                batch.update(db.collection('creditos').doc(activeCredit.id.toString()), {
-                    balance: newBalance,
-                    status: newBalance <= 0 ? 'pagado' : 'pendiente'
-                });
+    // Crear el registro del abono que leerá el Dashboard y el Cierre
+    const abonoId = Date.now();
+    const abono = { 
+        id: abonoId, 
+        creditId: activeCredit.id, 
+        customer: activeCredit.customer, 
+        amount: amount, 
+        method: abonoForm.method, // 'efectivo' o 'transferencia'
+        employee: abonoForm.assignedUser, // El usuario que recibe el dinero
+        date: new Date().toLocaleString(), 
+        isoDate: new Date().toLocaleDateString('en-CA') 
+    };
+    
+    batch.set(db.collection('abonos').doc(abonoId.toString()), abono);
 
-                const abono = { 
-                    id: Date.now(), 
-                    creditId: activeCredit.id, 
-                    customer: activeCredit.customer, 
-                    amount: amount, 
-                    method: abonoForm.method, 
-                    employee: abonoForm.assignedUser, 
-                    date: new Date().toLocaleString(), 
-                    isoDate: new Date().toLocaleDateString('en-CA') 
-                };
-                
-                batch.set(db.collection('abonos').doc(abono.id.toString()), abono);
+    try {
+        await batch.commit();
+        setIsAbonoModalOpen(false);
+        setAbonoForm({ amount: '', method: 'efectivo', assignedUser: '' });
+        setActiveCredit(null);
+        setIsProcessingPayment(false);
+        alert("Abono registrado con éxito en la caja de " + abono.employee);
+    } catch(e) {
+        console.error(e);
+        alert("Error registrando abono.");
+        setIsProcessingPayment(false);
+    }
+};
 
-                try {
-                    await batch.commit();
-                    setIsAbonoModalOpen(false);
-                    setAbonoForm({ amount: '', method: 'efectivo', assignedUser: '' });
-                    setActiveCredit(null);
-                    setIsProcessingPayment(false);
-                    alert(navigator.onLine ? "Abono registrado con éxito y sumado a la caja del usuario." : "Abono guardado localmente, se sincronizará al haber internet.");
-                } catch(e) {
-                    alert("Error registrando abono.");
-                    setIsProcessingPayment(false);
-                }
-            };
-
-           const openAbonoModal = (credit) => {
+ 
+const openAbonoModal = (credit) => {
     setActiveCredit(credit);
-    setAbonoForm({ amount: credit.balance, method: 'efectivo', assignedUser: currentShiftEmployee });
+    setAbonoForm({ 
+        amount: credit.balance, 
+        method: 'efectivo', 
+        assignedUser: currentShiftEmployee 
+    });
     setIsAbonoModalOpen(true);
 };
-            const openAbonoModalPos = (credit) => {
-    setActiveCredit(credit);
-    setAbonoForm({ amount: credit.balance, method: 'efectivo', assignedUser: currentShiftEmployee });
-    setIsAbonoModalOpen(true);
+
+const openAbonoModalPos = (credit) => {
+    // Ahora hacen lo mismo para evitar discrepancias
+    openAbonoModal(credit);
 };
 
             // --- NUEVO: UNIFICAR CRÉDITOS MANUALMENTE ---
@@ -3369,46 +3380,87 @@ return (
                     )}
 
                     {/* MODAL ABONAR CREDITO */}
-                    {isAbonoModalOpen && activeCredit && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                            <div className="bg-white p-6 rounded-3xl w-full max-w-sm animate-slideUp shadow-2xl border-4 border-purple-50">
-                                <div className="flex justify-between items-center mb-6 border-b pb-3">
-                                    <div className="flex items-center gap-2 text-purple-800">
-                                        <Shield size={20}/>
-                                        <h3 className="font-bold text-lg">Abonar a Crédito</h3>
-                                    </div>
-                                    <button onClick={() => setIsAbonoModalOpen(false)} className="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200"><X size={18}/></button>
-                                </div>
-                                <div className="space-y-4 mb-6">
-                                    <div className="text-center bg-gray-50 py-3 rounded-xl">
-                                        <p className="text-xs text-gray-500 uppercase font-bold">Cliente</p>
-                                        <p className="font-bold text-lg text-mandre-dark">{activeCredit.customer}</p>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">¿Cuánto va a abonar?</label>
-                                        <input type="number" className="w-full border border-gray-200 p-4 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-purple-400 font-bold text-xl text-purple-800" value={abonoForm.amount} onChange={e => setAbonoForm({...abonoForm, amount: e.target.value})} placeholder="0"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Método de Pago</label>
-                                        <select className="w-full border border-gray-200 p-3 rounded-xl bg-gray-50 outline-none font-medium" value={abonoForm.method} onChange={e => setAbonoForm({...abonoForm, method: e.target.value})}>
-                                            <option value="efectivo">Efectivo</option>
-                                            <option value="transferencia">Nequi</option>
-                                        </select>
-                                    </div>
-                                   <div>
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Empleado que recibe el dinero</label>
-                                        <div className="w-full border border-gray-200 p-3 rounded-xl bg-gray-100 text-gray-500 font-bold flex items-center gap-2 cursor-not-allowed shadow-inner opacity-80">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                                            {currentShiftEmployee || 'Sin Usuario Activo'}
-                                        </div>
-                                    </div>
-                                </div>
-                                <button disabled={isProcessingPayment} onClick={handleAbono} className="w-full py-4 bg-purple-800 hover:bg-purple-900 text-white font-bold rounded-xl shadow-lg active:scale-95 transition disabled:opacity-50">
-                                    REGISTRAR ABONO EN CAJA
-                                </button>
-                            </div>
+                   {/* MODAL ABONAR CREDITO - VERSION MEJORADA */}
+{isAbonoModalOpen && activeCredit && (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+        <div className="bg-white p-6 rounded-[2.5rem] w-full max-w-sm animate-slideUp shadow-2xl border-4 border-purple-50">
+            <div className="flex justify-between items-center mb-6 border-b pb-3">
+                <div className="flex items-center gap-2 text-purple-800">
+                    <Shield size={20}/>
+                    <h3 className="font-bold text-lg">Recibir Pago</h3>
+                </div>
+                <button onClick={() => setIsAbonoModalOpen(false)} className="bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200"><X size={18}/></button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+                <div className="text-center bg-purple-50 py-3 rounded-2xl border border-purple-100">
+                    <p className="text-[10px] text-purple-400 uppercase font-bold">Cliente</p>
+                    <p className="font-bold text-lg text-purple-900 uppercase">{activeCredit.customer}</p>
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block ml-2">¿Cuánto paga el cliente?</label>
+                    <input 
+                        type="number" 
+                        className="w-full border-2 border-gray-100 p-4 rounded-2xl bg-gray-50 outline-none focus:bg-white focus:border-purple-400 font-bold text-2xl text-purple-800 text-center" 
+                        value={abonoForm.amount} 
+                        onChange={e => setAbonoForm({...abonoForm, amount: e.target.value})}
+                    />
+                </div>
+
+                {/* SELECTOR DE MÉTODO MEJORADO */}
+                <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase mb-2 block ml-2">Método de Ingreso</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button 
+                            onClick={() => setAbonoForm({...abonoForm, method: 'efectivo'})}
+                            className={`py-3 rounded-xl font-bold text-xs transition-all ${abonoForm.method === 'efectivo' ? 'bg-green-600 text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}
+                        >
+                            💵 EFECTIVO
+                        </button>
+                        <button 
+                            onClick={() => setAbonoForm({...abonoForm, method: 'transferencia'})}
+                            className={`py-3 rounded-xl font-bold text-xs transition-all ${abonoForm.method === 'transferencia' ? 'bg-[#200020] text-white shadow-lg' : 'bg-gray-100 text-gray-400'}`}
+                        >
+                            📱 NEQUI
+                        </button>
+                    </div>
+                </div>
+
+                {/* SELECTOR DE EMPLEADO: DINÁMICO SEGÚN ROL */}
+                <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block ml-2">Asignar Dinero a:</label>
+                    {currentUserRole === 'admin' ? (
+                        <select 
+                            className="w-full border-2 border-purple-100 p-3 rounded-xl bg-white outline-none font-bold text-gray-700"
+                            value={abonoForm.assignedUser}
+                            onChange={e => setAbonoForm({...abonoForm, assignedUser: e.target.value})}
+                        >
+                            {users.map(u => (
+                                <option key={u.id} value={`${u.name} ${u.surname}`}>
+                                    {u.name} {u.surname}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div className="w-full border-2 border-gray-100 p-3 rounded-xl bg-gray-100 text-gray-500 font-bold flex items-center gap-2">
+                            <User size={16}/>
+                            {currentShiftEmployee}
                         </div>
                     )}
+                </div>
+            </div>
+
+            <button 
+                disabled={isProcessingPayment} 
+                onClick={handleAbono} 
+                className="w-full py-5 bg-purple-800 hover:bg-purple-900 text-white font-bold rounded-2xl shadow-xl active:scale-95 transition disabled:opacity-50 uppercase tracking-widest text-xs"
+            >
+                {isProcessingPayment ? 'Procesando...' : 'Confirmar Ingreso a Caja'}
+            </button>
+        </div>
+    </div>
+)}
 
                     {/* MODAL EDICION INVENTARIO RAPIDA */}
                     {editItem && (
