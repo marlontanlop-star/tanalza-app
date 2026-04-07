@@ -618,6 +618,34 @@ const [currentUserRole, setCurrentUserRole] = useState(null);
             const [isAbonoModalOpen, setIsAbonoModalOpen] = useState(false);
             const [activeCredit, setActiveCredit] = useState(null);
             const [abonoForm, setAbonoForm] = useState({ amount: '', method: 'efectivo', assignedUser: '' });
+            // --- NUEVO: EDICIÓN Y ELIMINACIÓN DE CRÉDITOS (ADMIN) ---
+            const [editingAdminCredit, setEditingAdminCredit] = useState(null);
+
+            const deleteAdminCredit = async (id) => {
+                if (confirm("⚠️ ¿Estás seguro de ELIMINAR este registro de crédito permanentemente? Esto no se puede deshacer.")) {
+                    await db.collection('creditos').doc(id.toString()).delete();
+                    alert("Crédito eliminado exitosamente de la base de datos.");
+                }
+            };
+
+            const saveAdminCreditEdit = async () => {
+                if (!editingAdminCredit.customer.trim()) return alert("El nombre del cliente no puede quedar vacío.");
+                
+                try {
+                    await db.collection('creditos').doc(editingAdminCredit.id.toString()).update({
+                        customer: editingAdminCredit.customer.toUpperCase(),
+                        phone: editingAdminCredit.phone || '', // Guarda el teléfono si lo pusieron
+                        balance: parseFloat(editingAdminCredit.balance) || 0,
+                        total: parseFloat(editingAdminCredit.total) || 0,
+                        lastUpdated: new Date().toLocaleString()
+                    });
+                    setEditingAdminCredit(null);
+                    alert("¡Los datos del crédito fueron actualizados!");
+                } catch (error) {
+                    console.error("Error al actualizar crédito:", error);
+                    alert("Hubo un error al guardar los cambios.");
+                }
+            };
             // NUEVOS ESTADOS PARA UNIFICAR Y POS
             const [isMergeMode, setIsMergeMode] = useState(false);
             const [selectedCreditsForMerge, setSelectedCreditsForMerge] = useState([]);
@@ -2681,9 +2709,9 @@ return (
                                     </div>
                                 )}
 
-                                {adminTab === 'credits' && (
+   {adminTab === 'credits' && (
     <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn relative">
-        {/* CABECERA Y BUSCADOR ESTÁTICO (FIJO AL DESLIZAR) */}
+        {/* CABECERA Y BUSCADOR ESTÁTICO */}
         <div className="sticky top-[-25px] z-50 bg-gray-50/95 backdrop-blur-sm pt-6 pb-4">
             <div className="bg-white p-4 md:p-6 rounded-[2.5rem] shadow-xl border border-gray-100 space-y-4">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -2691,7 +2719,7 @@ return (
                         <Shield size={18}/> {creditViewMode === 'pendientes' ? 'Cuentas por Cobrar (Abiertas)' : 'Historial de Cuentas Pagas'}
                     </h3>
                     
-                    {/* Selector de Vista: Pendientes vs Pagados */}
+                    {/* Selector de Vista */}
                     <div className="flex bg-gray-100 p-1 rounded-xl w-full md:w-auto">
                         <button 
                             onClick={() => setCreditViewMode('pendientes')} 
@@ -2725,15 +2753,40 @@ return (
                 .filter(c => c.status === (creditViewMode === 'pendientes' ? 'pendiente' : 'pagado'))
                 .filter(c => c.customer.toLowerCase().includes(creditFilter.toLowerCase()))
                 .map(credit => (
-                <div key={credit.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                <div key={credit.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition-shadow relative overflow-hidden group">
                     
+                    {/* --- NUEVO: BOTONES FLOTANTES ADMIN (EDITAR / BORRAR) --- */}
+                    <div className="absolute top-4 right-4 flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity z-10">
+                        <button 
+                            onClick={() => setEditingAdminCredit({...credit})}
+                            className="w-10 h-10 bg-blue-50 text-blue-500 border border-blue-100 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-sm"
+                            title="Editar Cliente y Montos"
+                        >
+                            <Edit3 size={16}/>
+                        </button>
+                        <button 
+                            onClick={() => deleteAdminCredit(credit.id)}
+                            className="w-10 h-10 bg-red-50 text-red-500 border border-red-100 rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors shadow-sm"
+                            title="Eliminar este Crédito"
+                        >
+                            <Trash2 size={16}/>
+                        </button>
+                    </div>
+
                     {/* ENCABEZADO DEL CLIENTE */}
-                    <div className="flex justify-between items-start border-b border-dashed pb-4">
+                    <div className="flex justify-between items-start border-b border-dashed pb-4 pr-24">
                         <div>
                             <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest block mb-1">
                                 {credit.status === 'pendiente' ? 'Deuda Actual' : 'Cuenta Finalizada'}
                             </span>
                             <h4 className="font-bold text-mandre-dark text-xl uppercase tracking-tight">{credit.customer}</h4>
+                            
+                            {/* --- NUEVO: MOSTRAR TELÉFONO SI LO TIENE --- */}
+                            {credit.phone && (
+                                <p className="text-[11px] font-bold text-gray-500 mt-1 flex items-center gap-1.5 bg-gray-50 inline-flex px-2 py-1 rounded-md">
+                                    <Phone size={12}/> {credit.phone}
+                                </p>
+                            )}
                         </div>
                         <div className="text-right">
                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">
@@ -2745,13 +2798,13 @@ return (
                         </div>
                     </div>
 
-                    {/* DETALLE DE LOS PRODUCTOS DE ESTE CRÉDITO ESPECÍFICO */}
+                    {/* DETALLE DE LOS PRODUCTOS */}
                     <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
                         <div className="flex justify-between items-center mb-3">
                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Consumos Registrados:</p>
-                            <span className="text-[9px] font-bold text-gray-400 uppercase">{credit.date}</span>
+                            <span className="text-[9px] font-bold text-gray-400 uppercase">{credit.date.split(',')[0]}</span>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-3 max-h-40 overflow-y-auto pr-2">
                             {credit.items.map((item, idx) => (
                                 <div key={idx} className="flex justify-between text-xs border-b border-gray-200/50 pb-2 last:border-0">
                                     <div className="flex flex-col">
@@ -2785,13 +2838,79 @@ return (
                 </div>
             ))}
 
-            {/* MENSAJE SI NO HAY RESULTADOS */}
             {credits.filter(c => c.status === (creditViewMode === 'pendientes' ? 'pendiente' : 'pagado')).length === 0 && (
                 <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
                     <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">No hay registros en esta sección</p>
                 </div>
             )}
         </div>
+
+        {/* --- NUEVO: MODAL PARA EDITAR CLIENTE --- */}
+        {editingAdminCredit && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4 animate-fadeIn">
+                <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-slideUp border-4 border-blue-50">
+                    <div className="flex justify-between items-center mb-6 border-b pb-3">
+                        <div className="flex items-center gap-2 text-blue-600">
+                            <Edit3 size={24}/>
+                            <h3 className="font-bold text-lg text-mandre-dark">Editar Fiado</h3>
+                        </div>
+                        <button onClick={() => setEditingAdminCredit(null)} className="text-gray-400 hover:bg-gray-100 p-2 rounded-full transition"><X size={18}/></button>
+                    </div>
+
+                    <div className="space-y-4 mb-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block ml-2">Nombre del Cliente</label>
+                            <input 
+                                className="w-full bg-gray-50 border-2 border-gray-100 focus:border-blue-400 focus:bg-white rounded-xl p-4 outline-none font-bold text-sm transition-all text-mandre-dark"
+                                value={editingAdminCredit.customer}
+                                onChange={e => setEditingAdminCredit({...editingAdminCredit, customer: e.target.value})}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block ml-2">Teléfono de Contacto (Opcional)</label>
+                            <input 
+                                type="tel"
+                                className="w-full bg-gray-50 border-2 border-gray-100 focus:border-blue-400 focus:bg-white rounded-xl p-4 outline-none font-bold text-sm transition-all"
+                                placeholder="Ej: 300 123 4567"
+                                value={editingAdminCredit.phone || ''}
+                                onChange={e => setEditingAdminCredit({...editingAdminCredit, phone: e.target.value})}
+                            />
+                        </div>
+                        
+                        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 mt-4">
+                            <p className="text-[10px] text-blue-600 font-bold uppercase mb-3 border-b border-blue-100 pb-2">Modificar Montos Manualmente</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[9px] font-bold text-purple-400 uppercase mb-1 block">Deuda Actual</label>
+                                    <input 
+                                        type="number"
+                                        className="w-full bg-white border-2 border-purple-100 focus:border-purple-400 rounded-xl p-3 outline-none font-black text-sm text-purple-700 shadow-inner"
+                                        value={editingAdminCredit.balance}
+                                        onChange={e => setEditingAdminCredit({...editingAdminCredit, balance: e.target.value})}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-green-400 uppercase mb-1 block">Factura Total</label>
+                                    <input 
+                                        type="number"
+                                        className="w-full bg-white border-2 border-green-100 focus:border-green-400 rounded-xl p-3 outline-none font-black text-sm text-green-700 shadow-inner"
+                                        value={editingAdminCredit.total}
+                                        onChange={e => setEditingAdminCredit({...editingAdminCredit, total: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={saveAdminCreditEdit}
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl active:scale-95 transition shadow-lg uppercase tracking-wider text-xs"
+                    >
+                        GUARDAR CAMBIOS
+                    </button>
+                </div>
+            </div>
+        )}
     </div>
 )}
 
@@ -3969,7 +4088,16 @@ return (
                     <div className="border-y-2 border-dashed border-gray-200 py-3 mb-6 text-left">
                         <p className="text-[10px] font-bold text-gray-400 uppercase">Cliente:</p>
                         <p className="font-bold text-sm uppercase mb-2">{selectedCreditTicket.customer}</p>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase">Tipo de Documento:</p>
+                        
+                        {/* --- NUEVO: SE MUESTRA EL TELÉFONO EN EL TICKET --- */}
+                        {selectedCreditTicket.phone && (
+                            <>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-2">Teléfono de Contacto:</p>
+                                <p className="font-bold text-xs uppercase mb-2">{selectedCreditTicket.phone}</p>
+                            </>
+                        )}
+
+                        <p className="text-[10px] font-bold text-gray-400 uppercase mt-2">Tipo de Documento:</p>
                         <p className={`text-xs font-bold uppercase ${selectedCreditTicket.status === 'pendiente' ? 'text-purple-700' : 'text-green-600'}`}>
                             {selectedCreditTicket.status === 'pendiente' ? 'Estado de Cuenta de Crédito' : 'Comprobante de Pago Finalizado'}
                         </p>
