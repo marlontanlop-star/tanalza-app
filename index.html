@@ -682,26 +682,19 @@ useEffect(() => {
     }
 }, [activeOrders, activeTableId]);
 
-// --- MODIFICACIÓN PASO 2: SINCRONIZACIÓN FORZADA AL VOLVER (Línea 403) ---
+// --- MODIFICACIÓN PASO 2: SINCRONIZACIÓN FORZADA AL VOLVER (CORREGIDA) ---
 useEffect(() => {
     const refrescarSistemaCompleto = async () => {
         if (document.visibilityState === 'visible') {
-            console.log("MANDRÉ: Despertar agresivo. Forzando lectura del SERVIDOR...");
+            console.log("MANDRÉ: Actualizando vistas desde el servidor...");
             try {
-                // 1. Reiniciamos la red para limpiar conexiones pegadas
-                await db.disableNetwork();
-                await db.enableNetwork();
-
-                // 2. OBLIGAMOS a leer del servidor (esto ignora el caché viejo del móvil)
-                // Usamos source: 'server' para que no le crea a lo que tiene guardado
+                // Pedimos a Firebase que traiga la última versión de la nube sin apagar la red
                 await Promise.all([
                     db.collection('tables').get({ source: 'server' }),
                     db.collection('activeOrders').get({ source: 'server' })
                 ]);
-                
-                console.log("MANDRÉ: ¡Datos actualizados desde la nube!");
             } catch (error) {
-                console.error("Error en sincronización forzada:", error);
+                console.error("Error en actualización de foco:", error);
             }
         }
     };
@@ -737,7 +730,7 @@ useEffect(() => {
                 const unsubUsers = syncCollection('users', INITIAL_USERS, setUsers);
                 
                 // Lógica Robusta y Respaldo para Tablas (Asegura que siempre existan las requeridas)
-                const unsubTables = db.collection('tables').onSnapshot(snap => {
+                const unsubTables = db.collection('tables').onSnapshot({ includeMetadataChanges: true }, snap => {
                     let data = snap.docs.map(doc => doc.data());
                     
                     const requiredTables = [
