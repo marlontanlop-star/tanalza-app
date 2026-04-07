@@ -301,6 +301,10 @@ const [nowPlaying, setNowPlaying] = React.useState(null);
             const [inventory, setInventory] = useState([]);
             const [showPosCreditPanel, setShowPosCreditPanel] = useState(false);
 const [posCreditSearch, setPosCreditSearch] = useState('');
+// Estados para modales estéticos de Cartera
+            const [customPrompt, setCustomPrompt] = useState({ isOpen: false });
+            const [promptInput, setPromptInput] = useState('');
+            const [customConfirm, setCustomConfirm] = useState({ isOpen: false, message: '', customerName: '' });
             const [combos, setCombos] = useState([]);
             const [tables, setTables] = useState([]);
             const [orders, setOrders] = useState([]); 
@@ -4167,7 +4171,7 @@ return (
         </div>
 
         {/* Cuerpo del Portal */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
             
             {/* Alerta Interactiva: Si entra con un carrito activo listo para fiar */}
             {cart.length > 0 && (
@@ -4180,8 +4184,8 @@ return (
                     </div>
                     <button 
                         onClick={() => {
-                            const name = prompt("Escribe el nombre completo del NUEVO cliente:");
-                            if(name && name.trim()) handleFinalizePayment('credito', 'Crédito', name);
+                            setCustomPrompt({ isOpen: true });
+                            setPromptInput('');
                         }}
                         className="w-full md:w-auto bg-purple-700 hover:bg-purple-800 text-white px-8 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg active:scale-95 transition-all whitespace-nowrap"
                     >
@@ -4219,7 +4223,6 @@ return (
                         </div>
                         
                         <div className="flex flex-col gap-3 mt-auto">
-                            {/* Botón 1: Siempre visible, para pagar */}
                             <button 
                                 onClick={() => {
                                     setShowPosCreditPanel(false);
@@ -4230,13 +4233,14 @@ return (
                                 Recibir Abono / Pagar
                             </button>
 
-                            {/* Botón 2: Visible SÓLO si hay un pedido en el carrito listo para facturar */}
                             {cart.length > 0 && (
                                 <button 
                                     onClick={() => {
-                                        if(confirm(`¿Sumar el pedido actual de $${total.toLocaleString()} a la cuenta existente de ${credit.customer}?`)) {
-                                            handleFinalizePayment('credito', 'Crédito', credit.customer);
-                                        }
+                                        setCustomConfirm({
+                                            isOpen: true,
+                                            message: `¿Sumar el pedido actual de $${total.toLocaleString()} a la cuenta existente de ${credit.customer}?`,
+                                            customerName: credit.customer
+                                        });
                                     }}
                                     className="w-full py-4 bg-mandre-dark text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-black transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 border border-black"
                                 >
@@ -4247,7 +4251,6 @@ return (
                     </div>
                 ))}
 
-                {/* Empty State */}
                 {credits.filter(c => c.status === 'pendiente').length === 0 && (
                     <div className="col-span-full text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
                         <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-sm border border-green-100">🎉</div>
@@ -4256,6 +4259,82 @@ return (
                     </div>
                 )}
             </div>
+            
+            {/* --- MODAL ESTÉTICO: NUEVO CLIENTE --- */}
+            {customPrompt?.isOpen && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-slideUp border-4 border-purple-50">
+                        <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                            <User size={32}/>
+                        </div>
+                        <h3 className="font-bold text-2xl text-center text-mandre-dark mb-2 tracking-tight">Nuevo Cliente</h3>
+                        <p className="text-xs text-center text-gray-500 mb-6 font-medium">Ingresa el nombre completo para abrir su cuenta de fiado.</p>
+                        
+                        <input 
+                            type="text" 
+                            className="w-full bg-gray-50 border-2 border-gray-100 focus:border-purple-400 focus:bg-white rounded-2xl p-4 outline-none font-black text-center mb-6 transition-all text-mandre-dark"
+                            placeholder="Ej: Juan Pérez"
+                            value={promptInput}
+                            onChange={(e) => setPromptInput(e.target.value)}
+                            autoFocus
+                        />
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setCustomPrompt({ isOpen: false })}
+                                className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold rounded-xl active:scale-95 transition uppercase tracking-wider text-xs"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    if(promptInput.trim()) {
+                                        handleFinalizePayment('credito', 'Crédito', promptInput);
+                                        setCustomPrompt({ isOpen: false });
+                                    } else {
+                                        alert("Por favor escribe un nombre.");
+                                    }
+                                }}
+                                className="flex-1 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl active:scale-95 transition shadow-lg uppercase tracking-wider text-xs"
+                            >
+                                Crear Cuenta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL ESTÉTICO: CONFIRMAR SUMA --- */}
+            {customConfirm?.isOpen && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl animate-slideUp text-center border-4 border-orange-50">
+                        <div className="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+                            <AlertTriangle size={32}/>
+                        </div>
+                        <h3 className="font-bold text-2xl text-mandre-dark mb-2 tracking-tight">Confirmar Acción</h3>
+                        <p className="text-sm text-gray-600 mb-8 font-medium">{customConfirm.message}</p>
+                        
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setCustomConfirm({ isOpen: false, message: '', customerName: '' })}
+                                className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold rounded-xl active:scale-95 transition uppercase tracking-wider text-xs"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    handleFinalizePayment('credito', 'Crédito', customConfirm.customerName);
+                                    setCustomConfirm({ isOpen: false, message: '', customerName: '' });
+                                }}
+                                className="flex-1 py-4 bg-mandre-dark hover:bg-black text-white font-bold rounded-xl active:scale-95 transition shadow-lg uppercase tracking-wider text-xs border border-black"
+                            >
+                                Sí, Sumar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     </div>
 )}
