@@ -2399,79 +2399,193 @@ return (
         </div>
     </div>
 )}
-                                {adminTab === 'status' && (
-                                    <div className="max-w-3xl mx-auto space-y-6 animate-fadeIn">
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-mandre-coffee mb-4 border-b pb-2">Estado Actual del Sistema</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Usuario en Turno</p>
-                                                    <p className="font-bold text-lg text-mandre-dark">{currentShiftEmployee || 'Sin Iniciar Sesión'}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Hora de Ingreso</p>
-                                                    <p className="font-bold text-lg text-mandre-dark">{sessionStartTime || 'N/A'}</p>
-                                                </div>
-                                            </div>
-                                            <div className="mt-6 flex flex-col gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-bold text-gray-600">Red (Internet)</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-bold">{isOnline ? 'Online' : 'Offline'}</span>
-                                                        <div className={`w-3 h-3 rounded-full shadow-sm ${isOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-bold text-gray-600">Conexión a Firebase</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-bold">{isFirebaseConnected ? 'Sincronizado' : 'Sin Nube (Modo Local)'}</span>
-                                                        <div className={`w-3 h-3 rounded-full shadow-sm ${isFirebaseConnected ? 'bg-blue-500' : 'bg-orange-500 animate-pulse'}`}></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+   {adminTab === 'status' && (
+    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn pb-24">
+        
+        {/* CABECERA TIPO SERVIDOR */}
+        <div className="bg-slate-900 p-6 md:p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden border border-slate-800">
+            {/* Efectos de fondo */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-600/20 rounded-full blur-[80px]"></div>
+            <div className="absolute bottom-0 left-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-[60px]"></div>
+            
+            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-700 shadow-inner">
+                        <Activity size={32} className="text-blue-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black text-white tracking-tight">MANDRÉ OS <span className="text-blue-400 font-mono">v{appVersion}</span></h2>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1">Centro de Control y Estado de Red</p>
+                    </div>
+                </div>
 
-                                        {/* NUEVO: RADAR DE USUARIOS */}
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-purple-100">
-                                            <h3 className="font-bold text-purple-900 mb-2 flex items-center gap-2"><Activity size={18}/> Radar de Usuarios Conectados</h3>
-                                            <p className="text-xs text-gray-500 mb-4 pb-2 border-b">Verifica si el internet de los otros usuarios y celulares está funcionando en este instante.</p>
-                                            {systemPresence.length === 0 ? <p className="text-sm text-gray-400 text-center py-4">No hay datos de conexión aún. El personal no ha iniciado sesión hoy.</p> : (
-                                                <div className="space-y-3">
-                                                    {systemPresence.map(p => {
-                                                        // Si lastSeen fue hace menos de 45 segundos, se considera Online.
-                                                        const isUserOnline = (Date.now() - p.lastSeen) < 45000; 
-                                                        return (
-                                                            <div key={p.employee} className={`flex justify-between items-center p-4 rounded-xl border ${isUserOnline ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
-                                                                <span className="font-bold text-sm text-gray-800">{p.employee}</span>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className={`text-xs font-bold ${isUserOnline ? 'text-green-700' : 'text-red-700'}`}>{isUserOnline ? 'Conectado a la nube' : 'Aislado / Sin Red'}</span>
-                                                                    <div className={`w-3 h-3 rounded-full shadow-sm ${isUserOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
+                {/* BOTÓN DE MANTENIMIENTO: FORZAR RECARGA (LIMPIAR CACHÉ) */}
+                <button 
+                    onClick={() => {
+                        if(confirm("¿Deseas forzar la recarga del sistema? Esto limpiará la memoria temporal y descargará los últimos datos de la nube.")) {
+                            window.location.reload(true);
+                        }
+                    }}
+                    className="w-full md:w-auto bg-slate-800 hover:bg-slate-700 text-white px-6 py-4 rounded-xl border border-slate-600 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest"
+                >
+                    <RefreshCw size={16} className={!isOnline ? "text-red-400" : "text-blue-400"} /> 
+                    Sincronización Forzada
+                </button>
+            </div>
+        </div>
 
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-mandre-coffee mb-4 border-b pb-2">Registro de Conexión y Caídas Local</h3>
-                                            <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-                                                {connectionLogs.map((log, i) => (
-                                                    <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${log.status === 'online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                                            <span className={`font-bold ${log.status === 'online' ? 'text-green-700' : 'text-red-700'}`}>
-                                                                {log.status === 'online' ? 'Conexión Restablecida' : 'Se Perdió la Conexión'}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-xs text-gray-500 font-bold">{log.time}</span>
-                                                    </div>
-                                                ))}
+        {/* INDICADORES DE SALUD DEL SISTEMA */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Tarjeta 1: Conexión a Internet */}
+            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+                <div className={`absolute top-0 w-full h-1 ${isOnline ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isOnline ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-500'}`}>
+                    <Activity size={24}/>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Red Global</p>
+                <h4 className={`text-xl font-black ${isOnline ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {isOnline ? 'ONLINE' : 'OFFLINE'}
+                </h4>
+                <p className="text-xs text-gray-500 mt-2 font-medium">
+                    {isOnline ? 'Conexión a internet estable.' : 'Esperando retorno de señal...'}
+                </p>
+            </div>
+
+            {/* Tarjeta 2: Conexión Firebase (Base de datos) */}
+            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+                <div className={`absolute top-0 w-full h-1 ${isFirebaseConnected ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${isFirebaseConnected ? 'bg-blue-50 text-blue-500' : 'bg-orange-50 text-orange-500'}`}>
+                    <Box size={24}/>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Base de Datos</p>
+                <h4 className={`text-xl font-black ${isFirebaseConnected ? 'text-blue-600' : 'text-orange-600'}`}>
+                    {isFirebaseConnected ? 'SINCRONIZADA' : 'MODO LOCAL'}
+                </h4>
+                <p className="text-xs text-gray-500 mt-2 font-medium">
+                    {isFirebaseConnected ? 'Escribiendo en vivo en TanAlza Cloud.' : 'Guardando en caché del dispositivo.'}
+                </p>
+            </div>
+
+            {/* Tarjeta 3: Usuario Activo */}
+            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center text-center relative overflow-hidden">
+                <div className="absolute top-0 w-full h-1 bg-purple-500"></div>
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3 bg-purple-50 text-purple-500">
+                    <User size={24}/>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Usuario en Consola</p>
+                <h4 className="text-xl font-black text-purple-700 truncate w-full px-2" title={currentShiftEmployee}>
+                    {currentShiftEmployee || 'Desconectado'}
+                </h4>
+                <p className="text-xs text-gray-500 mt-2 font-medium">
+                    Log: {sessionStartTime || 'N/A'}
+                </p>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* COLUMNA IZQUIERDA: MÉTRICAS Y RADAR */}
+            <div className="space-y-6">
+                {/* MÉTRICAS DE LA BASE DE DATOS */}
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                    <h3 className="font-bold text-mandre-dark mb-4 flex items-center gap-2">
+                        <Layers size={18} className="text-mandre-sage"/> Volumen de Datos (Nube)
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Productos</span>
+                            <span className="text-lg font-black text-mandre-dark">{inventory.length}</span>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Usuarios</span>
+                            <span className="text-lg font-black text-mandre-dark">{users.length}</span>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Mesas Vivas</span>
+                            <span className="text-lg font-black text-orange-500">{activeOrders ? Object.keys(activeOrders).length : 0}</span>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Cierres</span>
+                            <span className="text-lg font-black text-mandre-sage">{shifts.length}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* RADAR DE USUARIOS (BLINDADO ANTICHOQUES) */}
+                <div className="bg-white p-6 rounded-3xl border border-purple-100 shadow-sm">
+                    <h3 className="font-bold text-purple-900 mb-1 flex items-center gap-2"><Activity size={18}/> Radar de Terminales</h3>
+                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-4">Dispositivos conectados ahora</p>
+                    
+                    {(!systemPresence || systemPresence.length === 0) ? (
+                        <p className="text-sm text-gray-400 text-center py-6 bg-purple-50/50 rounded-2xl border border-dashed border-purple-100">
+                            Nadie más ha iniciado sesión hoy.
+                        </p>
+                    ) : (
+                        <div className="space-y-3">
+                            {systemPresence.map((p, index) => {
+                                const isUserOnline = (Date.now() - (p.lastSeen || 0)) < 45000; 
+                                const empName = p.employee || 'Desconocido';
+                                return (
+                                    <div key={p.employee || index} className={`flex justify-between items-center p-4 rounded-2xl border transition-all ${isUserOnline ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                <span className="font-bold text-xs text-gray-600">{empName.charAt(0).toUpperCase()}</span>
                                             </div>
+                                            <span className="font-bold text-sm text-gray-800">{empName}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${isUserOnline ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                {isUserOnline ? 'En Línea' : 'Caído'}
+                                            </span>
+                                            <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${isUserOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
                                         </div>
                                     </div>
-                                )}
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* COLUMNA DERECHA: CONSOLA DE EVENTOS (LOGS) */}
+            <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-xl overflow-hidden flex flex-col h-full min-h-[400px]">
+                <div className="bg-slate-950 p-4 border-b border-slate-800 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-2">
+                        <div className="flex gap-1.5">
+                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-mono ml-2 uppercase tracking-widest">Terminal de Eventos Locales</span>
+                    </div>
+                </div>
+                
+                <div className="p-4 overflow-y-auto flex-1 space-y-2 font-mono text-xs">
+                    <div className="text-slate-500 mb-4">
+                        <p>&gt; Inicializando Sistema Mandré...</p>
+                        <p>&gt; Cargando módulos TanAlza Cloud...</p>
+                        <p className="text-emerald-400">&gt; Sistema listo y escuchando eventos.</p>
+                        <div className="border-b border-dashed border-slate-700 my-2"></div>
+                    </div>
+                    
+                    {(connectionLogs || []).map((log, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                            <span className="text-slate-500 shrink-0">[{log.time}]</span>
+                            <span className={`${log.status === 'online' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                {log.status === 'online' 
+                                    ? '✓ Conexión a red global establecida. Sincronización reanudada.' 
+                                    : '⚠ ALERTA: Pérdida de red detectada. Cambiando a offline.'}
+                            </span>
+                        </div>
+                    ))}
+                    <div className="flex items-start gap-3 mt-2 animate-pulse">
+                        <span className="text-slate-500">[{new Date().toLocaleTimeString()}]</span>
+                        <span className="text-slate-400">_</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
 
                                 {adminTab === 'dashboard' && (
                                     <div className="max-w-5xl mx-auto space-y-6">
