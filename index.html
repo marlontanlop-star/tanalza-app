@@ -1481,126 +1481,149 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
                 setIsPaymentModalOpen(true);
             };
 
-            const handleFinalizePayment = async (method, detail) => {
+           const handleFinalizePayment = async (method, detail, overrideName = null) => {
                 if (isProcessingPayment) return;
 
-                if ((method === 'transferencia' || method === 'credito') && !customerName.trim()) {
+                const resolvedCustomerName = (overrideName || customerName).trim();
+
+                if ((method === 'transferencia' || method === 'credito') && !resolvedCustomerName) {
                     alert(`Para pagos por ${detail}, el Nombre del Cliente es obligatorio.`);
                     return;
-                    
                 }
 
-                if (navigator.vibrate) {
-                    navigator.vibrate(100);
-                }
+                if (navigator.vibrate) navigator.vibrate(100);
 
                 setIsProcessingPayment(true); 
 
-                const finalCustomerName = customerName.trim() || "Cliente General";
-                const batch = db.batch();
-                const currentDate = new Date();
-                
-                
-        // --- INICIO: Deducir Inventario y Guardar Manuales ---
-                
-                // Función maestra para descontar Insumos sin errores de sobreescritura
-                const discountFromGroups = (productId, qty) => {
-                    const groupToUpdate = inventoryGroups.find(g => g.productIds.includes(productId.toString()));
-                    if (groupToUpdate) {
-                        batch.update(db.collection('inventoryGroups').doc(groupToUpdate.id.toString()), {
-                            // MAGIA AQUÍ: Increment le dice a Firebase que reste, sin importar cuántas veces se repita el producto en el carrito
-                            currentStock: firebase.firestore.FieldValue.increment(-qty)
-                        });
-                    }
-                };
-
-                cart.forEach(item => {
-                    if (item.id.toString().startsWith('manual_')) {
-                        const manualId = item.cartId.toString() + Math.floor(Math.random()*1000);
-                        batch.set(db.collection('manualItems').doc(manualId), {
-                            id: manualId, name: item.name, price: item.price, qty: item.quantity,
-                            isoDate: currentDate.toLocaleDateString('en-CA'),
-                            employee: currentShiftEmployee
-                        });
-                    }
-                    else if (item.category === 'Combos') {
-                        // Si es combo, desarmamos el combo y descontamos cada producto por dentro
-                        item.items.forEach(subItemId => {
-                             const idx = inventory.findIndex(p => p.id === subItemId);
-                             if(idx !== -1) {
-                                 batch.update(db.collection('inventory').doc(subItemId.toString()), { 
-                                     stock: firebase.firestore.FieldValue.increment(-item.quantity) 
-                                 });
-                                 discountFromGroups(subItemId, item.quantity);
-                             }
-                        });
-                    } else if (item.category !== 'Otros') {
-                        // Si es un producto normal (individual)
-                        const idx = inventory.findIndex(p => p.id === item.id);
-                        if(idx !== -1) {
-                            batch.update(db.collection('inventory').doc(item.id.toString()), { 
-                                stock: firebase.firestore.FieldValue.increment(-item.quantity) 
+                // Todo el proceso se mete en un "try" para evitar bloqueos silenciosos
+                try {
+                    const finalCustomerName = resolvedCustomerName || "Cliente General";
+                    const batch = db.batch();
+                    const currentDate = new Date();
+                    
+                    // --- INICIO: Deducir Inventario y Guardar Manuales ---
+                    const discountFromGroups = (productId, qty) => {
+                        // Salvavidas (g.productIds || []) por si hay grupos sin productos vinculados
+                        const groupToUpdate = inventoryGroups.find(g => (g.productIds || []).includes(productId.toString()));
+                        if (groupToUpdate) {
+                            batch.update(db.collection('inventoryGroups').doc(groupToUpdate.id.toString()), {
+                                currentStock: firebase.firestore.FieldValue.increment(-qty)
                             });
-                            discountFromGroups(item.id, item.quantity);
+                        }
+                    };
+
+                    cart.forEach(item => {
+                        if (item.id.toString().startsWith('manual_')) {
+                            const manualId = item.cartId.toString() + Math.floor(Math.random()*1000);
+                            batch.set(db.collection('manualItems').doc(manualId), {
+                                id: manualId, name: item.name, price: item.price, qty: item.quantity,
+                                isoDate: currentDate.toLocaleDateString('en-CA'),
+                                employee: currentShiftEmployee
+                            });
+                        }
+                        else if (item.category === 'Combos') {
+                            // Salvavidas por si un combo se guardó sin items
+                            (item.items || []).forEach(subItemId => {
+                                 const idx = inventory.findIndex(p => p.id === subItemId);
+                                 if(idx !== -1) {
+                                     batch.update(db.collection('inventory').doc(subItemId.toString()), { 
+                                         stock: firebase.firestore.FieldValue.increment(-item.quantity) 
+                                     });
+                                     discountFromGroups(subItemId, item.quantity);
+                                 }
+                            });
+                        } else if (item.category !== 'Otros') {
+                            const idx = inventory.findIndex(p => p.id === item.id);
+                            if(idx !== -1) {
+                                batch.update(db.collection('inventory').doc(item.id.toString()), { 
+                                    stock: firebase.firestore.FieldValue.increment(-item.quantity) 
+                                });
+                                discountFromGroups(item.id, item.quantity);
+                            }
+                        }
+                    });
+                    // --- FIN: Deducir Inventario ---
+
+                    // --- NUEVA LÓGICA DE CRÉDITO: ACUMULACIÓN AUTOMÁTICA ---
+                    if (method === 'credito') {
+                        const customerUpper = finalCustomerName.toUpperCase();
+                        
+                        // Buscar si ya existe la cuenta (protegemos con un string vacío por si alguien no tiene nombre)
+                        const existingCredit = credits.find(c => (c.customer || '').toUpperCase() === customerUpper && c.status === 'pendiente');
+
+                        if (existingCredit) {
+                            // SUMAR A LA CUENTA EXISTENTE (Con protección anticaídas si el viejo no tenía items)
+                            const updatedItems = [
+                                ...(existingCredit.items || []), 
+                                ...cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()}))
+                            ];
+                            // Salvavidas en los balances
+                            const newBalance = (existingCredit.balance || 0) + total;
+                            const newTotal = (existingCredit.total || 0) + total;
+                            
+                            batch.update(db.collection('creditos').doc(existingCredit.id.toString()), {
+                                balance: newBalance,
+                                total: newTotal,
+                                items: updatedItems,
+                                lastUpdated: currentDate.toLocaleString()
+                            });
+                        } else {
+                            // CREAR NUEVA CUENTA
+                            const newCredit = { 
+                                id: Date.now(), 
+                                customer: customerUpper, 
+                                total: total, 
+                                balance: total, 
+                                items: cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()})), 
+                                date: currentDate.toLocaleString(), 
+                                isoDate: currentDate.toLocaleDateString('en-CA'), 
+                                employee: currentShiftEmployee, 
+                                status: 'pendiente' 
+                            };
+                            batch.set(db.collection('creditos').doc(newCredit.id.toString()), newCredit);
                         }
                     }
-                });
-                // --- FIN: Deducir Inventario y Guardar Manuales ---
 
-                // Si es Crédito, guardar en tabla 'creditos' (ACUMULANDO SI EL CLIENTE YA EXISTE)
-                // --- NUEVA LÓGICA: CADA CRÉDITO ES UN REGISTRO ÚNICO POR COMPRA ---
-if (method === 'credito') {
-    const newCredit = { 
-        id: Date.now(), 
-        customer: finalCustomerName.trim().toUpperCase(), 
-        total: total, 
-        balance: total, 
-        items: cart.map(i => ({...i, appendDate: currentDate.toLocaleDateString()})), 
-        date: currentDate.toLocaleString(), 
-        isoDate: currentDate.toLocaleDateString('en-CA'), 
-        employee: currentShiftEmployee, 
-        status: 'pendiente' 
-    };
-    // Se guarda como un documento totalmente nuevo en Firebase
-    batch.set(db.collection('creditos').doc(newCredit.id.toString()), newCredit);
-}
+                    // Registrar Orden Histórica
+                    const newOrder = { 
+                        id: Date.now(), 
+                        date: currentDate.toLocaleTimeString(), 
+                        fullDate: currentDate.toLocaleDateString(),
+                        isoDate: currentDate.toLocaleDateString('en-CA'), 
+                        customer: finalCustomerName, 
+                        items: cart, 
+                        method: method, 
+                        total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0), 
+                        employee: currentShiftEmployee 
+                    };
+                    batch.set(db.collection('orders').doc(newOrder.id.toString()), newOrder);
+                    
+                    // Limpiar Mesas y Activas
+                    if(activeTableId) {
+                        const tableIdStr = activeTableId.toString();
+                        batch.update(db.collection('tables').doc(tableIdStr), { status: 'libre', currentTotal: 0 });
+                        batch.delete(db.collection('activeOrders').doc(tableIdStr));
+                    }
 
-                // Registrar Orden (Se registra incluso si es crédito para control de inventario/historial)
-                const newOrder = { 
-    id: Date.now(), 
-    date: currentDate.toLocaleTimeString(), 
-    fullDate: currentDate.toLocaleDateString(),
-    isoDate: currentDate.toLocaleDateString('en-CA'), 
-    customer: finalCustomerName, 
-    items: cart, 
-    // ASEGÚRATE DE QUE ESTAS DOS LÍNEAS QUEDEN ASÍ:
-    method: method, 
-    total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0), 
-    employee: currentShiftEmployee 
-};
-                batch.set(db.collection('orders').doc(newOrder.id.toString()), newOrder);
-                
-                // Limpiar Mesas y Opciones Especiales
-                if(activeTableId) {
-                    const tableIdStr = activeTableId.toString();
-                    batch.update(db.collection('tables').doc(tableIdStr), { status: 'libre', currentTotal: 0 });
-                    batch.delete(db.collection('activeOrders').doc(tableIdStr));
-                }
-
-                try {
+                    // Confirmar transacción
                     await batch.commit();
+                    
+                    // Limpieza visual
                     setCart([]);
                     setCustomerName('');
                     setIsPaymentModalOpen(false);
+                    setShowPosCreditPanel(false); 
                     setServiceSelected(false);
                     setShowMobileCart(false);
                     setCashGiven('');
-                    setIsProcessingPayment(false);
-                    alert(navigator.onLine ? `¡Venta ${method === 'credito' ? 'a Crédito' : ''} Sincronizada y Cerrada con Éxito!` : "¡Venta Guardada Offline! Se sincronizará automáticamente cuando vuelva el internet.");
+                    setIsProcessingPayment(false); // ¡Importante liberar el botón!
+                    
+                    alert(navigator.onLine ? `¡Cuenta ${method === 'credito' ? 'a Fiado' : ''} Cerrada con Éxito!` : "¡Guardado Offline! Se sincronizará automáticamente.");
+                    
                 } catch (error) {
-                    console.error("Error en transacción:", error);
-                    alert("Error de guardado local o conexión. Intente nuevamente.");
-                    setIsProcessingPayment(false); 
+                    console.error("Error en transacción detectado:", error);
+                    alert("Error interno al procesar. Verifica tu conexión e intenta de nuevo.");
+                    setIsProcessingPayment(false); // Si falla, libera el botón para poder volver a intentar
                 }
             };
             // --- FUNCIONES DE AMBIENTE MUSICAL (ADMIN) ---
@@ -3747,6 +3770,7 @@ return (
                                     {/* PASO 1: SELECCIÓN MÉTODO */}
 
                                     {/* PASO 1: SELECCIÓN MÉTODO */}
+                                    {/* PASO 1: SELECCIÓN MÉTODO */}
                                     {paymentStep === 'method' && (
                                         <div className="space-y-4">
                                             <button onClick={() => setPaymentStep('cash')} className="w-full py-5 bg-mandre-sage/10 border border-mandre-sage text-mandre-coffee font-bold text-lg rounded-2xl hover:bg-mandre-sage/20 transition flex items-center justify-center gap-3 active:scale-95 shadow-sm">
@@ -3755,7 +3779,10 @@ return (
                                             <button onClick={() => setPaymentStep('transfer')} className="w-full py-5 bg-[#200020] text-white font-bold text-lg rounded-2xl hover:bg-[#300030] transition flex items-center justify-center gap-3 shadow-lg active:scale-95">
                                                 <Phone size={24}/> NEQUI
                                             </button>
-                                            <button onClick={() => setPaymentStep('credit')} className="w-full py-4 bg-purple-100 text-purple-900 border border-purple-300 font-bold text-base rounded-2xl hover:bg-purple-200 transition flex items-center justify-center gap-2 active:scale-95 mt-4">
+                                            <button 
+                                                onClick={() => { setIsPaymentModalOpen(false); setShowPosCreditPanel(true); }} 
+                                                className="w-full py-4 bg-purple-100 text-purple-900 border border-purple-300 font-bold text-base rounded-2xl hover:bg-purple-200 transition flex items-center justify-center gap-2 active:scale-95 mt-4"
+                                            >
                                                 <Shield size={20}/> DAR A CRÉDITO
                                             </button>
                                         </div>
@@ -3794,25 +3821,7 @@ return (
                                         </div>
                                     )}
 
-                                    {/* PASO 4: CRÉDITO */}
-                                    {paymentStep === 'credit' && (
-                                        <div className="animate-fadeIn flex flex-col h-full">
-                                            <div className="flex-1 flex flex-col items-center justify-center text-center">
-                                                <div className="bg-purple-50 text-purple-900 p-4 rounded-xl border border-purple-200 mb-6 text-sm">
-                                                    Este monto se enviará al área de administración bajo el nombre proporcionado y <b>no sumará a la caja de hoy</b> hasta que se registre el abono.
-                                                </div>
-                                                 <button 
-                                                    onClick={() => handleFinalizePayment('credito', 'Crédito')}
-                                                    disabled={isProcessingPayment || !customerName.trim()}
-                                                    className="bg-purple-800 text-white h-20 w-full rounded-2xl font-bold text-xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center disabled:opacity-50"
-                                                >
-                                                    CONFIRMAR FIADO
-                                                </button>
-                                                {!customerName.trim() && <p className="text-red-500 text-xs text-center mt-4 font-bold">Ingrese el nombre completo del cliente para fiar</p>}
-                                            </div>
-                                            <button onClick={() => setPaymentStep('method')} className="w-full mt-8 py-3 bg-gray-100 text-gray-500 font-bold rounded-xl active:scale-95 transition text-sm">VOLVER ATRÁS</button>
-                                        </div>
-                                    )}
+                                    
                                 </div>
                             </div>
                         </div>
@@ -4137,70 +4146,115 @@ return (
     </div>
 )}
 
-{/* PORTAL RÁPIDO DE CRÉDITOS PARA EL TRABAJADOR (POS) */}
+{/* PORTAL COMPLETO DE CARTERA PARA EL TRABAJADOR (POS) */}
 {showPosCreditPanel && (
-    <div className="fixed inset-0 bg-mandre-dark/40 backdrop-blur-md z-[150] flex items-center justify-center p-4 animate-fadeIn text-left">
-        <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl overflow-hidden animate-slideUp border-4 border-purple-50 flex flex-col max-h-[85vh]">
-            
-            {/* Cabecera */}
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 text-purple-700 rounded-full shadow-inner">
-                        <Shield size={20}/>
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-lg text-mandre-dark leading-none">Cobro Rápido</h3>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cuentas por cobrar</p>
-                    </div>
+    <div className="fixed inset-0 bg-gray-50 z-[150] flex flex-col animate-slideUp overflow-hidden">
+        
+        {/* Cabecera del Portal */}
+        <div className="bg-white p-6 shadow-sm border-b border-gray-100 flex justify-between items-center shrink-0 z-10">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-100 text-purple-700 rounded-2xl flex items-center justify-center shadow-inner">
+                    <Shield size={24}/>
                 </div>
-                <button onClick={() => setShowPosCreditPanel(false)} className="text-gray-400 hover:text-red-500 transition-all bg-white p-2 rounded-full shadow-sm"><X size={20}/></button>
+                <div>
+                    <h2 className="font-bold text-2xl text-mandre-dark tracking-tight">Portal de Cartera</h2>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gestión de Fiados y Abonos</p>
+                </div>
+            </div>
+            <button onClick={() => setShowPosCreditPanel(false)} className="p-3 bg-gray-100 text-gray-500 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors">
+                <X size={24}/>
+            </button>
+        </div>
+
+        {/* Cuerpo del Portal */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+            
+            {/* Alerta Interactiva: Si entra con un carrito activo listo para fiar */}
+            {cart.length > 0 && (
+                <div className="mb-8 max-w-4xl mx-auto bg-purple-50 border-2 border-purple-200 p-6 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm animate-pulse-slow">
+                    <div>
+                        <h3 className="font-bold text-purple-900 text-lg flex items-center gap-2">
+                            <ShoppingCart size={20}/> Tienes un pedido en curso por <span className="text-3xl ml-1 text-purple-700 font-black">${total.toLocaleString()}</span>
+                        </h3>
+                        <p className="text-sm text-purple-600 mt-1">Selecciona a qué cliente existente le vas a sumar esta cuenta, o crea uno nuevo.</p>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            const name = prompt("Escribe el nombre completo del NUEVO cliente:");
+                            if(name && name.trim()) handleFinalizePayment('credito', 'Crédito', name);
+                        }}
+                        className="w-full md:w-auto bg-purple-700 hover:bg-purple-800 text-white px-8 py-5 rounded-2xl font-bold uppercase tracking-widest text-xs shadow-lg active:scale-95 transition-all whitespace-nowrap"
+                    >
+                        ➕ Fiar a Nuevo Cliente
+                    </button>
+                </div>
+            )}
+
+            {/* Buscador Integrado */}
+            <div className="relative mb-8 max-w-2xl mx-auto">
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400" size={20}/>
+                <input 
+                    type="text"
+                    placeholder="Buscar cliente por nombre..."
+                    className="w-full pl-14 pr-6 py-5 bg-white border-2 border-gray-100 focus:border-purple-300 rounded-[2rem] outline-none font-bold text-lg text-mandre-dark shadow-sm transition-all"
+                    value={posCreditSearch}
+                    onChange={(e) => setPosCreditSearch(e.target.value)}
+                />
             </div>
 
-            {/* Cuerpo y Lista */}
-            <div className="p-6 overflow-y-auto flex-1 bg-white">
-                <div className="relative mb-6">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16}/>
-                    <input 
-                        type="text"
-                        placeholder="Buscar cliente..."
-                        className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:bg-white focus:border-purple-300 rounded-[1.5rem] outline-none font-bold text-sm transition-all shadow-inner"
-                        onChange={(e) => setPosCreditSearch(e.target.value)}
-                    />
-                </div>
-
-                <div className="space-y-3">
-                    {credits.filter(c => c.status === 'pendiente' && c.customer.toLowerCase().includes((posCreditSearch || '').toLowerCase())).map(credit => (
-                        <div key={credit.id} className="p-5 rounded-[2rem] border border-gray-100 shadow-sm hover:border-purple-200 transition-all bg-gray-50 hover:bg-white group">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <p className="font-bold text-mandre-dark uppercase text-sm truncate w-32 sm:w-40 leading-tight">{credit.customer}</p>
-                                    <p className="text-[9px] text-gray-400 font-bold uppercase mt-1">Registrado: {credit.date.split(',')[0]}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Deuda</p>
-                                    <p className="font-bold text-purple-700 text-xl leading-none">${credit.balance.toLocaleString()}</p>
-                                </div>
+            {/* Grilla de Cápsulas (Clientes Activos) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                {credits.filter(c => c.status === 'pendiente' && c.customer.toLowerCase().includes((posCreditSearch || '').toLowerCase())).map(credit => (
+                    <div key={credit.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border-2 border-gray-100 hover:border-purple-200 transition-all group flex flex-col">
+                        
+                        <div className="flex flex-col justify-between items-start mb-6 border-b border-dashed border-gray-200 pb-4 h-full">
+                            <div className="w-full mb-4">
+                                <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1">Cuenta Abierta</p>
+                                <h4 className="font-black text-xl text-mandre-dark uppercase leading-tight truncate w-full" title={credit.customer}>{credit.customer}</h4>
                             </div>
+                            <div className="w-full bg-gray-50 p-3 rounded-xl">
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Deuda Acumulada</p>
+                                <p className="font-black text-3xl text-purple-800 leading-none">${credit.balance.toLocaleString()}</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-3 mt-auto">
+                            {/* Botón 1: Siempre visible, para pagar */}
                             <button 
                                 onClick={() => {
-                                    setShowPosCreditPanel(false); // Cierra este panel
-                                    openAbonoModalPos(credit);    // Abre el modal de abono pre-llenado
+                                    setShowPosCreditPanel(false);
+                                    openAbonoModalPos(credit);
                                 }}
-                                className="w-full py-3.5 bg-purple-100 text-purple-800 font-bold rounded-xl text-[10px] uppercase tracking-widest hover:bg-purple-600 hover:text-white transition-all active:scale-95 shadow-sm"
+                                className="w-full py-4 bg-purple-50 text-purple-700 border border-purple-100 rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-purple-600 hover:text-white transition-all active:scale-95 shadow-sm"
                             >
-                                RECIBIR PAGO / ABONO
+                                Recibir Abono / Pagar
                             </button>
+
+                            {/* Botón 2: Visible SÓLO si hay un pedido en el carrito listo para facturar */}
+                            {cart.length > 0 && (
+                                <button 
+                                    onClick={() => {
+                                        if(confirm(`¿Sumar el pedido actual de $${total.toLocaleString()} a la cuenta existente de ${credit.customer}?`)) {
+                                            handleFinalizePayment('credito', 'Crédito', credit.customer);
+                                        }
+                                    }}
+                                    className="w-full py-4 bg-mandre-dark text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] hover:bg-black transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2 border border-black"
+                                >
+                                    <Plus size={16}/> Sumar este pedido
+                                </button>
+                            )}
                         </div>
-                    ))}
-                    
-                    {credits.filter(c => c.status === 'pendiente').length === 0 && (
-                        <div className="text-center py-10 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
-                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-2xl">🎉</div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Cartera en 0</p>
-                            <p className="text-[10px] text-gray-400 mt-1">No hay créditos pendientes</p>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                ))}
+
+                {/* Empty State */}
+                {credits.filter(c => c.status === 'pendiente').length === 0 && (
+                    <div className="col-span-full text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-gray-200">
+                        <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl shadow-sm border border-green-100">🎉</div>
+                        <h3 className="font-bold text-2xl text-mandre-dark mb-2">Cartera Limpia</h3>
+                        <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">No hay clientes con deudas pendientes</p>
+                    </div>
+                )}
             </div>
         </div>
     </div>
