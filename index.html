@@ -112,6 +112,8 @@
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.firestore();
+       
+
 
         // NUEVO: HABILITAR PERSISTENCIA OFFLINE DE FIREBASE
         db.enablePersistence({ synchronizeTabs: true }).catch(function(err) {
@@ -246,6 +248,154 @@ const syncCollection = (collectionName, initialData, stateSetter) => {
 };
 
         const App = () => {
+            // --- ESTADO PARA EL PORTAL DE ASISTENCIA TANALZA ---
+const [bioModal, setBioModal] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    type: 'error' 
+});
+
+
+// 1. Función para Registrar la Huella (Se hace una sola vez por usuario)
+const registrarHuella = async (username) => {
+    if (!window.PublicKeyCredential) {
+        return setBioModal({ isOpen: true, title: 'NO SOPORTADO', message: 'Tu dispositivo no soporta biometría.', type: 'error' });
+    }
+
+    try {
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+
+        const createCredentialOptions = {
+            publicKey: {
+                challenge,
+                rp: { name: "Mandré POS" },
+                user: {
+                    id: Uint8Array.from(username, c => c.charCodeAt(0)),
+                    name: username,
+                    displayName: username,
+                },
+                pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                authenticatorSelection: { userVerification: "preferred" },
+                timeout: 60000,
+                attestation: "none",
+            },
+        };
+
+        const credential = await navigator.credentials.create(createCredentialOptions);
+        
+        const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+        await db.collection('users_biometrics').doc(username).set({
+            username,
+            credentialId,
+            active: true,
+            device: navigator.userAgent
+        });
+
+        // Modal de éxito simulando el de error pero con mensaje positivo
+        setBioModal({ 
+            isOpen: true, 
+            title: '¡BIOMETRÍA ACTIVADA!', 
+            message: 'Tu huella se registró con éxito. Ya puedes usarla para entrar al sistema.', 
+            type: 'not_registered' // Usa tu ilustración naranja de éxito/info
+        });
+
+    } catch (err) {
+        console.error(err);
+        setBioModal({ 
+            isOpen: true, 
+            title: 'ERROR DE REGISTRO', 
+            message: 'No se pudo guardar la huella. ¿Cancelaste la operación o no estás usando HTTPS?', 
+            type: 'error' 
+        });
+    }
+};
+// 2. Función para Iniciar Sesión con Huella
+const loginConHuella = async (username, onSuccess) => {
+    // 1. Validar soporte del dispositivo
+    if (!window.PublicKeyCredential) {
+        return setBioModal({
+            isOpen: true,
+            title: 'NO SOPORTADO',
+            message: 'Tu dispositivo o navegador no soporta biometría. Usa tu contraseña.',
+            type: 'error'
+        });
+    }
+
+    // 2. Validar que escribió el usuario
+    if (!username) {
+        return setBioModal({
+            isOpen: true,
+            title: 'USUARIO REQUERIDO',
+            message: 'Para ingresar con huella, primero escribe tu usuario o correo en la casilla superior.',
+            type: 'not_registered'
+        });
+    }
+
+    try {
+        // 3. Buscar si tiene huella en Firebase
+        const bioDoc = await db.collection('users_biometrics').doc(username).get();
+
+        if (!bioDoc.exists || !bioDoc.data().active) {
+            return setBioModal({
+                isOpen: true,
+                title: 'HUELLA NO REGISTRADA',
+                message: `El usuario "${username}" no tiene huella en este equipo. Ingresa con contraseña y toca "Activar biometría".`,
+                type: 'not_registered'
+            });
+        }
+
+        const bioData = bioDoc.data();
+
+        // 4. Preparar la petición al lector de huellas
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        const rawId = Uint8Array.from(atob(bioData.credentialId), c => c.charCodeAt(0));
+
+        const getCredentialOptions = {
+            publicKey: {
+                challenge: challenge,
+                allowCredentials: [{
+                    id: rawId,
+                    type: 'public-key',
+                    transports: ['internal', 'hybrid'] 
+                }],
+                timeout: 60000,
+                userVerification: 'preferred'
+            }
+        };
+
+        // 5. Lanzar el lector de huellas del dispositivo
+        const assertion = await navigator.credentials.get(getCredentialOptions);
+
+        if (assertion) {
+            // 6. Huella válida: Buscar al usuario en la base de datos local para dejarlo pasar
+            const user = users.find(u => u.username === username || u.email === username);
+            
+            if (user) {
+                onSuccess(user); // Deja entrar al usuario
+            } else {
+                setBioModal({
+                    isOpen: true,
+                    title: 'ERROR DE SINCRONIZACIÓN',
+                    message: 'Huella correcta, pero el usuario no aparece en la base de datos de MANDRÉ.',
+                    type: 'error'
+                });
+            }
+        }
+
+    } catch (err) {
+        console.error("Error en lectura de huella:", err);
+        // Esto salta si el usuario cancela la lectura o pone mal el dedo muchas veces
+        setBioModal({
+            isOpen: true,
+            title: 'LECTURA FALLIDA',
+            message: 'No pudimos reconocer tu huella o cancelaste la acción. Intenta de nuevo o usa tu contraseña.',
+            type: 'error'
+        });
+    }
+};
             // NUEVO: ESTADO Y TEMPORIZADOR PARA LA PANTALLA DE CARGA (SPLASH SCREEN)
             const [showSplash, setShowSplash] = useState(true);
 const [appVersion, setAppVersion] = useState(localStorage.getItem('mandre_v') || '3.0.1');
@@ -1687,6 +1837,7 @@ return (
                     )}
 
                     {/* TOP HEADER COMPARTIDO (MÁS LIMPIO) */}
+              {view !== 'start' && (    
                     <header className="bg-white px-4 py-3 flex justify-between items-center shadow-sm relative z-[60] shrink-0">
                         {/* LOGO Y USUARIO: AHORA ES EL BOTÓN AL ADMIN */}
 <div 
@@ -1793,6 +1944,7 @@ return (
                             
                         </div>
                     </header>
+                    )}
 
                     {/* VISTA POS */}
                     {view === 'pos' && (
@@ -4059,41 +4211,130 @@ return (
                         </div>
                     )}
 
-                    {/* VISTA LOGIN INICIAL */}
+                    {/* VISTA LOGIN INICIAL (MINIMALISTA PREMIUM & SMART FINGERPRINT) */}
                     {view === 'start' && (
-                        <div className="fixed inset-0 bg-mandre-bone z-50 flex flex-col items-center justify-center p-6">
-                            <div className="bg-white p-8 md:p-10 rounded-[3rem] shadow-2xl max-w-md w-full text-center animate-slideUp relative z-10">
-                                <div className="w-24 h-24 bg-mandre-coffee rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl border-4 border-white"><IconLeaf /></div>
-                                <h1 className="text-3xl font-bold text-mandre-coffee mb-2 tracking-widest">MANDRÉ</h1>
-                                <p className="text-gray-400 mb-10 text-xs font-bold uppercase tracking-wider">Specialty Coffee & Wellness</p>
-                                <form onSubmit={handleLogin} className="space-y-4">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Usuario o Correo" 
-                                        className="w-full p-5 bg-gray-50 border border-gray-200 focus:border-mandre-sage focus:bg-white rounded-2xl outline-none font-bold text-center transition shadow-sm" 
-                                        value={loginData.identifier} 
-                                        onChange={e => setLoginData({...loginData, identifier: e.target.value})} 
-                                        autoFocus
-                                    />
-                                    <input 
-                                        type="password" 
-                                        placeholder="Contraseña" 
-                                        className="w-full p-5 bg-gray-50 border border-gray-200 focus:border-mandre-sage focus:bg-white rounded-2xl outline-none font-bold text-center transition shadow-sm" 
-                                        value={loginData.password} 
-                                        onChange={e => setLoginData({...loginData, password: e.target.value})} 
-                                    />
-                                    <div className="pt-4">
-                                        <button className="w-full py-5 bg-mandre-coffee text-white font-bold text-lg rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition">INICIAR SESIÓN</button>
-                                    </div>
-                                </form>
-                            </div>
-                            
-                            {/* Logo de TanAlza insertado en la parte inferior */}
-                            <div className="mt-8 animate-fadeIn">
-                                <LogoTanAlza className="w-40 md:w-48 opacity-60 hover:opacity-100 transition-opacity duration-300" />
+                        <div className="fixed inset-0 bg-mandre-bone z-50 flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto">
+                            <div className="w-full max-w-sm flex flex-col items-center animate-slideUp my-auto py-8 relative z-10">
+                                
+                                {/* LOGO CIRCULAR CLÁSICO PERO FLOTANTE */}
+                                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-mandre-coffee rounded-full flex items-center justify-center mb-6 shadow-xl border-4 border-white transform hover:scale-105 transition-transform duration-300 relative z-20">
+                                    <IconLeaf className="text-white w-10 h-10 sm:w-12 sm:h-12" />
+                                </div>
+                                
+                                {/* TARJETA BLANCA MINIMALISTA */}
+                                <div className="bg-white p-6 sm:p-8 rounded-[3rem] shadow-2xl w-full text-center border border-gray-100 relative">
+                                    <h1 className="text-3xl font-black text-mandre-coffee mb-1 tracking-widest">MANDRÉ</h1>
+                                    <p className="text-gray-400 mb-8 text-[9px] font-black uppercase tracking-[0.3em]">Specialty Coffee</p>
+                                    
+                                    <form onSubmit={handleLogin} className="space-y-4">
+                                        {/* INPUTS LIMPIOS CON ICONOS */}
+                                        <div className="space-y-3">
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                                    <User size={18} />
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Usuario o Correo" 
+                                                    className="w-full pl-11 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-mandre-sage focus:bg-white rounded-2xl outline-none font-bold text-gray-700 transition-all shadow-sm text-sm" 
+                                                    value={loginData.identifier} 
+                                                    onChange={e => setLoginData({...loginData, identifier: e.target.value})} 
+                                                />
+                                            </div>
+                                            
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                                    <Lock size={18} />
+                                                </div>
+                                                <input 
+                                                    type="password" 
+                                                    placeholder="Contraseña" 
+                                                    className="w-full pl-11 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-mandre-sage focus:bg-white rounded-2xl outline-none font-bold text-gray-700 transition-all shadow-sm text-sm" 
+                                                    value={loginData.password} 
+                                                    onChange={e => setLoginData({...loginData, password: e.target.value})} 
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* BOTÓN PRINCIPAL DE CONTRASEÑA */}
+                                        <div className="pt-2">
+                                            <button className="w-full py-4 bg-mandre-coffee text-white font-black text-[11px] uppercase tracking-widest rounded-2xl shadow-lg hover:scale-[1.02] active:scale-95 transition-all">
+                                                Iniciar Sesión
+                                            </button>
+                                        </div>
+
+                                        {/* SECCIÓN BIOMÉTRICA (BOTÓN INTELIGENTE) */}
+                                        <div className="pt-4">
+                                            <div className="relative flex items-center py-2 mb-4">
+                                                <div className="flex-grow border-t border-gray-100"></div>
+                                                <span className="flex-shrink-0 mx-3 text-gray-400 text-[9px] font-bold uppercase tracking-widest">O ingreso biométrico</span>
+                                                <div className="flex-grow border-t border-gray-100"></div>
+                                            </div>
+
+                                            <div className="flex flex-col justify-center items-center gap-3">
+                                                {/* Botón ÚNICO Inteligente (Gráfico Samsung Minimalista) */}
+                                                <button 
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        // 1. Si no hay usuario, avisa
+                                                        if(!loginData.identifier) {
+                                                            return setBioModal({ isOpen: true, title: 'USUARIO REQUERIDO', message: 'Escribe tu usuario arriba para ingresar o registrar tu huella.', type: 'not_registered' });
+                                                        }
+                                                        
+                                                        try {
+                                                            // 2. El botón revisa la base de datos mágicamente
+                                                            const bioRef = await db.collection('users_biometrics').doc(loginData.identifier).get();
+                                                            
+                                                            if (bioRef.exists && bioRef.data().active) {
+                                                                // 3A. Si ya estabas registrado -> TE DEJA ENTRAR
+                                                                loginConHuella(loginData.identifier, (userData) => {
+                                                                    const time = new Date().toLocaleTimeString();
+                                                                    setCurrentShiftEmployee(`${userData.name} ${userData.surname}`);
+                                                                    setSessionStartTime(time);
+                                                                    setCurrentUserRole(userData.role || 'staff');
+                                                                    setView('pos');
+                                                                });
+                                                            } else {
+                                                                // 3B. Si eres nuevo en este aparato -> TE REGISTRA LA HUELLA
+                                                                registrarHuella(loginData.identifier);
+                                                            }
+                                                        } catch (e) {
+                                                            console.log("Error de verificación:", e);
+                                                        }
+                                                    }}
+                                                    className="w-20 h-20 bg-gray-50 rounded-full border border-gray-100 shadow-md flex items-center justify-center transform hover:scale-105 active:scale-95 transition-all group relative"
+                                                    title="Toca para ingresar o registrar huella"
+                                                >
+                                                    {/* Icono de huella animado en tono Sage */}
+                                                    <svg className="w-10 h-10 text-mandre-sage group-hover:scale-110 transition-transform relative z-10" viewBox="0 0 24 24" fill="none">
+                                                        <path d="M2 12c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30"/>
+                                                        <path d="M5 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-pulse"/>
+                                                        <path d="M8 12c0-1.1.9-2 2-2s2 .9 2 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M10 12v10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                                        <path d="M2 18h20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-30"/>
+                                                    </svg>
+                                                    
+                                                    {/* Onda de escaneo sutil al pasar el mouse */}
+                                                    <div className="absolute inset-0 rounded-full border-2 border-mandre-sage opacity-0 group-hover:opacity-40 group-hover:animate-ping"></div>
+                                                </button>
+                                                
+                                                {/* Texto de soporte súper elegante y sutil */}
+                                                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest text-center px-4 mt-1">
+                                                    Toca para entrar o vincular <br/> este dispositivo
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                {/* Logo TanAlza Bottom */}
+                                <div className="mt-8 opacity-40 hover:opacity-100 transition-opacity duration-500">
+                                    <LogoTanAlza className="w-32" />
+                                </div>
                             </div>
                         </div>
                     )}
+                    
 
                     {/* LOGIN ADMIN */}
                     {view === 'admin_login' && (
@@ -4105,6 +4346,7 @@ return (
                                 <button className="w-full py-4 bg-mandre-coffee text-white font-bold rounded-2xl shadow-lg hover:scale-[1.02] active:scale-95 transition text-lg mb-4">INGRESAR PANEL</button>
                                 <button type="button" onClick={() => setView('pos')} className="w-full py-3 text-sm font-bold text-gray-400 bg-gray-50 rounded-xl hover:bg-gray-100 transition">Volver al POS</button>
                             </form>
+                            
                         </div>
                     )}
                     {/* MODAL DETALLE ESTILO FACTURA - MANDRÉ */}
@@ -4658,6 +4900,56 @@ return (
                 </div>
             )}
 
+        </div>
+    </div>
+)}
+{/* --- MODAL DE ASISTENCIA BIOMÉTRICA TANALZA --- */}
+{bioModal.isOpen && (
+    <div className="fixed inset-0 bg-mandre-dark/80 backdrop-blur-md z-[300] flex items-center justify-center p-4 animate-fadeIn">
+        <div className="bg-white rounded-[3rem] w-full max-w-sm overflow-hidden shadow-2xl border-4 border-mandre-sage/20 animate-slideUp text-center">
+            
+            <div className="p-8">
+                {/* ILUSTRACIÓN DINÁMICA */}
+                <div className="mb-6 flex justify-center">
+                    {bioModal.type === 'not_registered' ? (
+                        <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 animate-pulse">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0-4.4-3.6-8-8-8s-8 3.6-8 8"/><path d="M2 21c0-2 2-3 4-3s4 1 4 3"/><path d="M14 18l2 2 4-4"/></svg>
+                        </div>
+                    ) : (
+                        <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center text-red-500">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        </div>
+                    )}
+                </div>
+
+                <h3 className="text-xl font-black text-mandre-coffee uppercase tracking-tighter mb-2">{bioModal.title}</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-8">
+                    {bioModal.message}
+                </p>
+
+                {/* INSTRUCCIONES VISUALES */}
+                {bioModal.type === 'not_registered' && (
+                    <div className="bg-gray-50 rounded-2xl p-4 mb-8 text-left border border-gray-100">
+                        <p className="text-[9px] font-black text-mandre-sage uppercase tracking-widest mb-3">¿Cómo activarlo?</p>
+                        <div className="space-y-2">
+                            <p className="text-[10px] text-gray-600 flex gap-2"><b>1.</b> Ingresa con tu clave normal.</p>
+                            <p className="text-[10px] text-gray-600 flex gap-2"><b>2.</b> Toca "Activar biometría" abajo.</p>
+                            <p className="text-[10px] text-gray-600 flex gap-2"><b>3.</b> ¡Listo! Tu huella será tu llave.</p>
+                        </div>
+                    </div>
+                )}
+
+                <button 
+                    onClick={() => setBioModal({ ...bioModal, isOpen: false })}
+                    className="w-full py-4 bg-mandre-coffee text-white rounded-2xl font-bold uppercase tracking-widest text-[10px] shadow-lg active:scale-95 transition-all"
+                >
+                    ENTENDIDO, VOLVER
+                </button>
+            </div>
+            
+            <div className="bg-gray-50 py-4 flex justify-center border-t border-gray-100">
+                <LogoTanAlza className="w-24 opacity-40" />
+            </div>
         </div>
     </div>
 )}
