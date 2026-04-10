@@ -832,29 +832,27 @@ useEffect(() => {
     }
 }, [activeOrders, activeTableId]);
 
-// --- MODIFICACIÓN PASO 2: SINCRONIZACIÓN FORZADA AL VOLVER (CORREGIDA) ---
+// --- MODIFICACIÓN PASO 2: RECONEXIÓN FORZADA DEL TÚNEL EN VIVO ---
 useEffect(() => {
-    const refrescarSistemaCompleto = async () => {
+    const reconectarFirebase = async () => {
         if (document.visibilityState === 'visible') {
-            console.log("MANDRÉ: Actualizando vistas desde el servidor...");
+            console.log("MANDRÉ: Reactivando motor en tiempo real...");
             try {
-                // Pedimos a Firebase que traiga la última versión de la nube sin apagar la red
-                await Promise.all([
-                    db.collection('tables').get({ source: 'server' }),
-                    db.collection('activeOrders').get({ source: 'server' })
-                ]);
+                // Apagamos y prendemos la red para matar conexiones zombis
+                await db.disableNetwork();
+                await db.enableNetwork();
             } catch (error) {
-                console.error("Error en actualización de foco:", error);
+                console.error("Error reconectando la red de Firebase:", error);
             }
         }
     };
 
-    document.addEventListener("visibilitychange", refrescarSistemaCompleto);
-    window.addEventListener("focus", refrescarSistemaCompleto);
+    document.addEventListener("visibilitychange", reconectarFirebase);
+    window.addEventListener("focus", reconectarFirebase);
 
     return () => {
-        document.removeEventListener("visibilitychange", refrescarSistemaCompleto);
-        window.removeEventListener("focus", refrescarSistemaCompleto);
+        document.removeEventListener("visibilitychange", reconectarFirebase);
+        window.removeEventListener("focus", reconectarFirebase);
     };
 }, []);
 
@@ -913,13 +911,13 @@ useEffect(() => {
                 // Carga de Históricos y Nuevas Colecciones
                 // --- PASO 3: CAJA Y MÉTRICAS EN VIVO (REEMPLAZAR LÍNEAS 474-482) ---
 
-const unsubOrders = db.collection('orders').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setOrders(snap.docs.map(d => d.data())));
-const unsubShifts = db.collection('shifts').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setShifts(snap.docs.map(d => d.data())));
-const unsubExpenses = db.collection('expenses').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setExpenses(snap.docs.map(d => d.data())));
-const unsubManualItems = db.collection('manualItems').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setManualItemsCollection(snap.docs.map(d => d.data())));
-const unsubCredits = db.collection('creditos').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setCredits(snap.docs.map(d => d.data())));
-const unsubAbonos = db.collection('abonos').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setAbonos(snap.docs.map(d => d.data())));
-const unsubAdjustments = db.collection('cashAdjustments').orderBy('id', 'desc').onSnapshot({ includeMetadataChanges: true }, snap => setCashAdjustments(snap.docs.map(d => d.data())));
+const unsubOrders = db.collection('orders').orderBy('id', 'desc').limit(150).onSnapshot({ includeMetadataChanges: true }, snap => setOrders(snap.docs.map(d => d.data())));
+const unsubShifts = db.collection('shifts').orderBy('id', 'desc').limit(30).onSnapshot({ includeMetadataChanges: true }, snap => setShifts(snap.docs.map(d => d.data())));
+const unsubExpenses = db.collection('expenses').orderBy('id', 'desc').limit(100).onSnapshot({ includeMetadataChanges: true }, snap => setExpenses(snap.docs.map(d => d.data())));
+const unsubManualItems = db.collection('manualItems').orderBy('id', 'desc').limit(100).onSnapshot({ includeMetadataChanges: true }, snap => setManualItemsCollection(snap.docs.map(d => d.data())));
+const unsubCredits = db.collection('creditos').orderBy('id', 'desc').limit(200).onSnapshot({ includeMetadataChanges: true }, snap => setCredits(snap.docs.map(d => d.data())));
+const unsubAbonos = db.collection('abonos').orderBy('id', 'desc').limit(150).onSnapshot({ includeMetadataChanges: true }, snap => setAbonos(snap.docs.map(d => d.data())));
+const unsubAdjustments = db.collection('cashAdjustments').orderBy('id', 'desc').limit(100).onSnapshot({ includeMetadataChanges: true }, snap => setCashAdjustments(snap.docs.map(d => d.data())));
 const unsubInsumos = db.collection('inventoryGroups').onSnapshot({ includeMetadataChanges: true }, snap => {
     setInventoryGroups(snap.docs.map(doc => doc.data()));
 });
