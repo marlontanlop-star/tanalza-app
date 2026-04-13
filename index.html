@@ -1575,7 +1575,7 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
 
             const addToCartDirect = (product) => {
                 // --- SEGURIDAD DE INVENTARIO ---
-                const linkedGroup = inventoryGroups.find(g => g.productIds.includes(product.id.toString()));
+                const linkedGroup = inventoryGroups.find(g => (g.productIds || []).includes(product.id.toString()));
                 if (linkedGroup && linkedGroup.currentStock <= 0) {
                     alert(`❌ ¡PRODUCTO AGOTADO! No queda stock de "${linkedGroup.name}" en el portal de insumos.`);
                     return; 
@@ -1677,47 +1677,51 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
                     const currentDate = new Date();
                     
                     // --- INICIO: Deducir Inventario y Guardar Manuales ---
-                    const discountFromGroups = (productId, qty) => {
-                        // Salvavidas (g.productIds || []) por si hay grupos sin productos vinculados
-                        const groupToUpdate = inventoryGroups.find(g => (g.productIds || []).includes(productId.toString()));
-                        if (groupToUpdate) {
-                            batch.update(db.collection('inventoryGroups').doc(groupToUpdate.id.toString()), {
-                                currentStock: firebase.firestore.FieldValue.increment(-qty)
-                            });
-                        }
-                    };
+const discountFromGroups = (productId, qty) => {
+    // Salvavidas (g.productIds || []) por si hay grupos sin productos vinculados
+    const groupToUpdate = inventoryGroups.find(g => (g.productIds || []).includes(productId.toString()));
+    if (groupToUpdate) {
+        // CAMBIO CLAVE: Usamos set con merge:true en lugar de update. 
+        // Esto evita que Firebase cancele toda la compra si el documento llega a faltar.
+        batch.set(db.collection('inventoryGroups').doc(groupToUpdate.id.toString()), {
+            currentStock: firebase.firestore.FieldValue.increment(-Number(qty))
+        }, { merge: true });
+    }
+};
 
-                    cart.forEach(item => {
-                        if (item.id.toString().startsWith('manual_')) {
-                            const manualId = item.cartId.toString() + Math.floor(Math.random()*1000);
-                            batch.set(db.collection('manualItems').doc(manualId), {
-                                id: manualId, name: item.name, price: item.price, qty: item.quantity,
-                                isoDate: currentDate.toLocaleDateString('en-CA'),
-                                employee: currentShiftEmployee
-                            });
-                        }
-                        else if (item.category === 'Combos') {
-                            // Salvavidas por si un combo se guardó sin items
-                            (item.items || []).forEach(subItemId => {
-                                 const idx = inventory.findIndex(p => p.id === subItemId);
-                                 if(idx !== -1) {
-                                     batch.update(db.collection('inventory').doc(subItemId.toString()), { 
-                                         stock: firebase.firestore.FieldValue.increment(-item.quantity) 
-                                     });
-                                     discountFromGroups(subItemId, item.quantity);
-                                 }
-                            });
-                        } else if (item.category !== 'Otros') {
-                            const idx = inventory.findIndex(p => p.id === item.id);
-                            if(idx !== -1) {
-                                batch.update(db.collection('inventory').doc(item.id.toString()), { 
-                                    stock: firebase.firestore.FieldValue.increment(-item.quantity) 
-                                });
-                                discountFromGroups(item.id, item.quantity);
-                            }
-                        }
-                    });
-                    // --- FIN: Deducir Inventario ---
+cart.forEach(item => {
+    if (item.id.toString().startsWith('manual_')) {
+        const manualId = item.cartId.toString() + Math.floor(Math.random()*1000);
+        batch.set(db.collection('manualItems').doc(manualId), {
+            id: manualId, name: item.name, price: item.price, qty: item.quantity,
+            isoDate: currentDate.toLocaleDateString('en-CA'),
+            employee: currentShiftEmployee
+        });
+    }
+    else if (item.category === 'Combos') {
+        // Salvavidas por si un combo se guardó sin items
+        (item.items || []).forEach(subItemId => {
+             // CAMBIO CLAVE: .toString() en ambos lados asegura que "1" y 1 sean iguales
+             const foundProduct = inventory.find(p => p.id.toString() === subItemId.toString());
+             if(foundProduct) {
+                 batch.set(db.collection('inventory').doc(subItemId.toString()), { 
+                     stock: firebase.firestore.FieldValue.increment(-Number(item.quantity)) 
+                 }, { merge: true });
+                 discountFromGroups(subItemId, item.quantity);
+             }
+        });
+    } else if (item.category !== 'Otros') {
+        // CAMBIO CLAVE: .toString() para blindar la búsqueda
+        const foundProduct = inventory.find(p => p.id.toString() === item.id.toString());
+        if(foundProduct) {
+            batch.set(db.collection('inventory').doc(item.id.toString()), { 
+                stock: firebase.firestore.FieldValue.increment(-Number(item.quantity)) 
+            }, { merge: true });
+            discountFromGroups(item.id, item.quantity);
+        }
+    }
+});
+// --- FIN: Deducir Inventario ---
 
                     // --- NUEVA LÓGICA DE CRÉDITO: ACUMULACIÓN AUTOMÁTICA ---
                     if (method === 'credito') {
