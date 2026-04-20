@@ -447,7 +447,13 @@ const [isSearching, setIsSearching] = React.useState(false);
 const [showMusicPanel, setShowMusicPanel] = React.useState(false);
 const [nowPlaying, setNowPlaying] = React.useState(null);
             // --- ESTADOS GLOBALES ---
-            const [view, setView] = useState('start'); 
+            const [view, setView] = useState('start');
+            const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+            const showNotify = (msg, type = 'success') => {
+                setToast({ show: true, message: msg, type });
+                setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+            };
             const [inventory, setInventory] = useState([]);
             const [showPosCreditPanel, setShowPosCreditPanel] = useState(false);
 const [posCreditSearch, setPosCreditSearch] = useState('');
@@ -747,6 +753,9 @@ const [currentUserRole, setCurrentUserRole] = useState(null);
             const [serviceSelected, setServiceSelected] = useState(false);
             const [orderType, setOrderType] = useState(''); 
             const [activeTableId, setActiveTableId] = useState(null);
+            const [showTerraza, setShowTerraza] = useState(false);
+const [showInterior, setShowInterior] = useState(false);
+            const [showBarra, setShowBarra] = useState(false);
             const [cart, setCart] = useState([]);
             const [selectedCategory, setSelectedCategory] = useState('Calientes');
             const [searchQuery, setSearchQuery] = useState(''); 
@@ -880,15 +889,26 @@ useEffect(() => {
                 // Lógica Robusta y Respaldo para Tablas (Asegura que siempre existan las requeridas)
                 const unsubTables = db.collection('tables').onSnapshot({ includeMetadataChanges: true }, snap => {
                     let data = snap.docs.map(doc => doc.data());
-                    
                     const requiredTables = [
-                        { id: '1', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Mesa 1' },
-                        { id: '2', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Mesa 2' },
-                        { id: '3', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Mesa 3' },
-                        { id: '4', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Mesa 4' },
-                        { id: 'Cafetería', type: 'especial', icon: 'coffee', status: 'libre', currentTotal: 0, label: 'Cafetería' },
-                        { id: 'Domicilio', type: 'especial', icon: 'bike', status: 'libre', currentTotal: 0, label: 'Domicilio' }
-                    ];
+    // TERRAZA (6 mesas: T1 a T6)
+    { id: 'T1', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Terraza 1' },
+    { id: 'T2', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Terraza 2' },
+    { id: 'T3', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Terraza 3' },
+    { id: 'T4', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Terraza 4' },
+    { id: 'T5', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Terraza 5' },
+    { id: 'T6', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Terraza 6' },
+    // INTERIOR (3 mesas: I1 a I3)
+    { id: 'I1', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Interior 1' },
+    { id: 'I2', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Interior 2' },
+    { id: 'I3', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Interior 3' },
+    // BARRA (Tus 4 espacios que ya funcionan)
+    { id: 'B1', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Barra 1' },
+    { id: 'B2', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Barra 2' },
+    { id: 'B3', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Barra 3' },
+    { id: 'B4', type: 'mesa', status: 'libre', currentTotal: 0, label: 'Barra 4' },
+    // ESPECIAL
+    { id: 'Domicilio', type: 'especial', icon: 'bike', status: 'libre', currentTotal: 0, label: 'Domicilio' }
+];
 
                     const batch = db.batch();
                     let needsUpdate = false;
@@ -996,8 +1016,11 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                 });
             }, [displayInventory, searchQuery, selectedCategory]);
 
-            const renderMesas = tables.filter(t => ['1','2','3','4'].includes(t.id?.toString()));
-            const renderEspeciales = tables.filter(t => ['Cafetería', 'Domicilio'].includes(t.id?.toString()));
+           // Filtros estrictos: Solo permiten mostrar los IDs oficiales de Mandré
+const renderTerraza = tables.filter(t => ['T1','T2','T3','T4','T5','T6'].includes(t.id?.toString()));
+const renderInterior = tables.filter(t => ['I1','I2','I3'].includes(t.id?.toString()));
+const renderBarra = tables.filter(t => ['B1','B2','B3','B4'].includes(t.id?.toString()));
+const renderEspeciales = tables.filter(t => t.id === 'Domicilio');
 
             // --- METRICAS EN VIVO POR USUARIO ---
             const liveStats = useMemo(() => {
@@ -1137,7 +1160,7 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
         setAbonoForm({ amount: '', method: 'efectivo', assignedUser: '' });
         setActiveCredit(null);
         setIsProcessingPayment(false);
-        alert("Abono registrado con éxito en la caja de " + abono.employee);
+        showNotify("Abono registrado en caja");
     } catch(e) {
         console.error(e);
         alert("Error registrando abono.");
@@ -1499,7 +1522,7 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
                 };
                 await db.collection('inventory').doc(newItem.id.toString()).set(newItem);
                 setNewProductForm({ name: '', price: '', category: 'Calientes', icon: '☕' });
-                alert("Producto Creado Exitosamente en Firebase");
+                showNotify("Producto creado en el menú");
             };
 
             const deleteInventoryItem = async (type, id) => {
@@ -1637,7 +1660,7 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
                     // Si no lo usáramos, se colgaría esperando conexión.
                     try {
                         await batch.commit();
-                        alert(navigator.onLine ? `Cuenta de ${tableIdStr} Actualizada/Guardada.` : `Sin internet. Cuenta de ${tableIdStr} guardada localmente.`);
+                        showNotify(navigator.onLine ? "Cuenta guardada con éxito" : "Guardado en modo offline");
                         setServiceSelected(false);
                         setShowMobileCart(false);
                     } catch(e) {
@@ -1797,7 +1820,7 @@ cart.forEach(item => {
                     setCashGiven('');
                     setIsProcessingPayment(false); // ¡Importante liberar el botón!
                     
-                    alert(navigator.onLine ? `¡Cuenta ${method === 'credito' ? 'a Fiado' : ''} Cerrada con Éxito!` : "¡Guardado Offline! Se sincronizará automáticamente.");
+                    showNotify("¡Pago registrado correctamente!");
                     
                 } catch (error) {
                     console.error("Error en transacción detectado:", error);
@@ -1816,6 +1839,33 @@ const deletePlaylist = async (id) => {
     if (confirm("¿Seguro que deseas eliminar esta lista del sistema?")) {
         await db.collection('music_playlists').doc(id.toString()).delete();
     }
+};
+const renderMesaButton = (table) => {
+    // Esta línea extrae SOLO el número del ID (ej: de 'B1' saca el '1')
+    const tableNumber = table.id.replace(/[^\d]/g, ''); 
+    
+    // Determinamos qué texto poner abajo según la letra inicial
+    let zoneLabel = 'Mesa';
+    if (table.id.startsWith('T')) zoneLabel = 'Terr';
+    if (table.id.startsWith('I')) zoneLabel = 'Int';
+    if (table.id.startsWith('B')) zoneLabel = 'Bar';
+
+    return (
+        <button 
+            key={table.id} 
+            onClick={() => selectTable(table.id)} 
+            className={`relative aspect-square rounded-[1.5rem] flex flex-col items-center justify-center transition-all active:scale-95 shadow-sm ${table.status === 'libre' ? 'bg-gray-50 text-gray-400 border-2 border-transparent' : 'bg-mandre-orange text-white shadow-lg shadow-orange-200'}`}
+        >
+            <span className="font-black text-2xl mb-0.5">{tableNumber}</span>
+            <span className="text-[9px] font-black uppercase tracking-tighter opacity-60">{zoneLabel}</span>
+            
+            {table.status === 'ocupada' && (
+                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] px-2 py-0.5 rounded-full border-2 border-white shadow-md font-black animate-pulse">
+                    ${table.currentTotal.toLocaleString()}
+                </span>
+            )}
+        </button>
+    );
 };
 return (
                 <div className="h-[100dvh] flex flex-col bg-mandre-bone font-sans text-mandre-dark overflow-hidden">
@@ -1961,35 +2011,105 @@ return (
                                             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-mandre-orange"></div> Ocupada</span>
                                         </div>
 
-                                        {/* SOLO 4 MESAS */}
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 border-b border-gray-100 pb-8">
-                                            {renderMesas.map(table => (
-                                                <button key={table.id} onClick={() => selectTable(table.id)} className={`relative aspect-square rounded-3xl flex flex-col items-center justify-center transition-all duration-300 active:scale-95 group ${table.status === 'libre' ? 'bg-gray-50 border-2 border-transparent text-gray-400 hover:border-mandre-sage/30 hover:text-mandre-sage shadow-sm' : 'bg-mandre-orange text-white shadow-lg shadow-orange-200 scale-105'}`}>
-                                                    <div className={`w-12 h-12 rounded-full mb-2 flex items-center justify-center border-2 ${table.status === 'libre' ? 'border-gray-200 group-hover:border-mandre-sage' : 'border-white bg-white/20'}`}><span className="font-bold text-xl">{table.id}</span></div>
-                                                    <span className="text-xs font-bold uppercase tracking-widest">{table.label || `Mesa ${table.id}`}</span>
-                                                    {table.status === 'ocupada' && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm">${table.currentTotal.toLocaleString()}</span>}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        {/* CONTENEDOR DE ZONAS DESPLEGABLES - MANDRÉ OS */}
+<div className="w-full max-w-4xl space-y-4 mb-6 px-1">
+    
+    {/* SECCIÓN 1: TERRAZA EXTERIOR */}
+    <div className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm transition-all">
+        <button 
+            onClick={() => setShowTerraza(!showTerraza)} 
+            className={`w-full p-6 flex items-center justify-between transition-all ${showTerraza ? 'bg-mandre-coffee text-white' : 'bg-white text-mandre-coffee hover:bg-gray-50'}`}
+        >
+            <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${showTerraza ? 'bg-white/20' : 'bg-mandre-sage/10 text-mandre-sage'}`}>
+                    <Layers size={22}/>
+                </div>
+                <div className="text-left">
+                    <span className="font-black uppercase tracking-widest text-sm block">Terraza </span>
+                    <span className="text-[9px] font-bold opacity-60 uppercase">6 Mesas disponibles</span>
+                </div>
+            </div>
+            <span className="text-[10px] font-black tracking-[0.2em]">{showTerraza ? 'CERRAR ↑' : 'ABRIR ↓'}</span>
+        </button>
+        {showTerraza && (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 p-5 bg-gray-50/50 animate-slideUp">
+                {renderTerraza.map(table => renderMesaButton(table))}
+            </div>
+        )}
+    </div>
 
-                                        {/* CAFETERIA Y DOMICILIO - ANIMADOS */}
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {renderEspeciales.map(table => (
-                                                <button key={table.id} onClick={() => selectTable(table.id)} className={`relative p-5 rounded-3xl flex items-center justify-between transition-all duration-300 active:scale-95 group ${table.status === 'libre' ? 'bg-mandre-sage/10 border-2 border-mandre-sage/30 text-mandre-sage hover:bg-mandre-sage/20 shadow-[0_0_15px_rgba(143,188,143,0.3)] animate-pulse-slow' : 'bg-mandre-orange text-white shadow-lg shadow-orange-200 scale-105'}`}>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${table.status === 'libre' ? 'border-mandre-sage/50 bg-white text-mandre-sage animate-bounce-slight' : 'border-white bg-white/20 text-white'}`}>
-                                                            {table.id === 'Cafetería' || table.icon === 'coffee' ? <Coffee size={20}/> : <Bike size={20}/>}
-                                                        </div>
-                                                        <div className="text-left">
-                                                            <span className="text-sm font-bold uppercase tracking-widest block">{table.label || table.id}</span>
-                                                            <span className="text-[10px] uppercase font-bold opacity-70">{table.status}</span>
-                                                        </div>
-                                                    </div>
-                                                    {table.status === 'ocupada' && <span className="bg-red-500 text-white text-[10px] px-3 py-1 rounded-full shadow-sm font-bold">${table.currentTotal.toLocaleString()}</span>}
-                                                    {table.status === 'libre' && <span className="opacity-50 font-bold tracking-widest text-xs">ABRIR →</span>}
-                                                </button>
-                                            ))}
-                                        </div>
+    {/* SECCIÓN 2: INTERIOR */}
+    <div className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm transition-all">
+        <button 
+            onClick={() => setShowInterior(!showInterior)} 
+            className={`w-full p-6 flex items-center justify-between transition-all ${showInterior ? 'bg-mandre-coffee text-white' : 'bg-white text-mandre-coffee hover:bg-gray-50'}`}
+        >
+            <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${showInterior ? 'bg-white/20' : 'bg-mandre-sage/10 text-mandre-sage'}`}>
+                    <LayoutDashboard size={22}/>
+                </div>
+                <div className="text-left">
+                    <span className="font-black uppercase tracking-widest text-sm block">Interior</span>
+                    <span className="text-[9px] font-bold opacity-60 uppercase">3 Mesas disponibles</span>
+                </div>
+            </div>
+            <span className="text-[10px] font-black tracking-[0.2em]">{showInterior ? 'CERRAR ↑' : 'ABRIR ↓'}</span>
+        </button>
+        {showInterior && (
+            <div className="grid grid-cols-3 gap-3 p-5 bg-gray-50/50 animate-slideUp">
+                {renderInterior.map(table => renderMesaButton(table))}
+            </div>
+        )}
+    </div>
+
+    {/* SECCIÓN 3: BARRA (YA CONFIGURADA) */}
+    <div className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm transition-all">
+        <button 
+            onClick={() => setShowBarra(!showBarra)} 
+            className={`w-full p-6 flex items-center justify-between transition-all ${showBarra ? 'bg-mandre-coffee text-white' : 'bg-white text-mandre-coffee hover:bg-gray-50'}`}
+        >
+            <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${showBarra ? 'bg-white/20' : 'bg-mandre-sage/10 text-mandre-sage'}`}>
+                    <Coffee size={22}/>
+                </div>
+                <div className="text-left">
+                    <span className="font-black uppercase tracking-widest text-sm block">Barra</span>
+                    <span className="text-[9px] font-bold opacity-60 uppercase">4 Espacios de atención</span>
+                </div>
+            </div>
+            <span className="text-[10px] font-black tracking-[0.2em]">{showBarra ? 'CERRAR ↑' : 'ABRIR ↓'}</span>
+        </button>
+        {showBarra && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 bg-gray-50/50 animate-slideUp">
+                {renderBarra.map(table => renderMesaButton(table))}
+            </div>
+        )}
+    </div>
+
+    {/* SECCIÓN ESPECIAL: DOMICILIO (SIEMPRE VISIBLE) */}
+    {renderEspeciales.map(table => (
+        <button 
+            key={table.id} 
+            onClick={() => selectTable(table.id)} 
+            className={`w-full p-6 rounded-[2.5rem] flex items-center justify-between mt-6 transition-all shadow-sm active:scale-95 ${table.status === 'libre' ? 'bg-mandre-sage/10 border-2 border-mandre-sage/30 text-mandre-sage' : 'bg-mandre-orange text-white shadow-lg shadow-orange-200 animate-pulse-slow'}`}
+        >
+            <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-2xl ${table.status === 'libre' ? 'bg-white text-mandre-sage shadow-sm' : 'bg-white/20 text-white'}`}>
+                    <Bike size={24}/>
+                </div>
+                <div className="text-left">
+                    <span className="font-black uppercase tracking-widest text-sm block">Servicio a Domicilio</span>
+                    <span className="text-[9px] font-bold uppercase opacity-70">{table.status === 'libre' ? 'Disponible para envío' : 'Pedido en camino'}</span>
+                </div>
+            </div>
+            {table.status === 'ocupada' && (
+                <span className="font-black text-xs bg-red-500 text-white px-4 py-1.5 rounded-full shadow-lg border border-white/20">
+                    ${table.currentTotal.toLocaleString()}
+                </span>
+            )}
+        </button>
+    ))}
+</div>
 
                                     </div>
     {/* ACCESOS RÁPIDOS: AMBIENTE Y CRÉDITOS (PANTALLA PRINCIPAL) */}
@@ -2105,7 +2225,12 @@ return (
                                             <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4 font-sans">Specialty Coffee</p>
                                             <div className="bg-gray-50 py-3 rounded-xl border border-gray-200">
                                                 <h2 className="font-bold tracking-widest text-[10px] text-gray-500 font-sans mb-1">CUENTA ACTIVA</h2>
-                                                <p className="text-xl font-bold uppercase text-mandre-dark font-sans">{['1','2','3','4'].includes(activeTableId?.toString()) ? `MESA ${activeTableId}` : activeTableId || 'SIN MESA'}</p>
+                                               <p className="text-xl font-bold uppercase text-mandre-dark font-sans">
+    {activeTableId?.startsWith('T') ? `TERRAZA ${activeTableId.replace('T', '')}` : 
+     activeTableId?.startsWith('I') ? `INTERIOR ${activeTableId.replace('I', '')}` : 
+     activeTableId?.startsWith('B') ? `BARRA ${activeTableId.replace('B', '')}` : 
+     activeTableId || 'SIN MESA'}
+</p>
                                             </div>
                                         </div>
 
@@ -2747,29 +2872,37 @@ return (
             <span className="w-2 h-2 rounded-full bg-mandre-orange animate-pulse"></span> Ocupada
         </div>
     </div>
-    
-    {tables.filter(t => t.status === 'ocupada').length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-            {tables.filter(t => t.status === 'ocupada').map(t => (
-                <button key={t.id} onClick={() => setAdminViewTableOrder(t.id)} className="p-3 rounded-xl border-2 border-mandre-orange bg-orange-50 hover:bg-orange-100 scale-100 hover:scale-105 shadow-sm cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-mandre-orange"></div>
-                    <span className="text-xs font-bold uppercase text-center block mb-1 truncate w-full text-mandre-dark">{t.label || t.id}</span>
-                    <span className="text-sm font-bold text-mandre-orange">${t.currentTotal.toLocaleString()}</span>
-                </button>
-            ))}
-        </div>
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3">
+    {tables.filter(t => t.status === 'ocupada').map(t => (
+        <button key={t.id} onClick={() => setAdminViewTableOrder(t.id)} className="p-2 md:p-3 rounded-xl border-2 border-mandre-orange bg-orange-50 hover:bg-orange-100 scale-100 hover:scale-105 shadow-sm cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1 bg-mandre-orange"></div>
+            <span className="text-[10px] md:text-xs font-bold uppercase text-center block mb-1 truncate w-full text-mandre-dark">
+    {t.id?.startsWith('T') ? `TERRAZA ${t.id.replace('T', '')}` : 
+     t.id?.startsWith('I') ? `INTERIOR ${t.id.replace('I', '')}` : 
+     t.id?.startsWith('B') ? `BARRA ${t.id.replace('B', '')}` : 
+     t.label || t.id}
+</span>
+            <span className="text-xs md:text-sm font-bold text-mandre-orange">${t.currentTotal.toLocaleString()}</span>
+        </button>
+    ))}
+</div>
     ) : (
         <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
             <p className="text-sm text-gray-400 font-bold">No hay cuentas abiertas en este momento ✨</p>
         </div>
-    )}
+    
 </div>
                                         {/* MODAL VISUAL DE MESA EN ADMIN */}
                                         {adminViewTableOrder && activeOrders[adminViewTableOrder] && (
                                             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                                                 <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl relative animate-slideUp">
                                                     <button onClick={() => setAdminViewTableOrder(null)} className="absolute top-4 right-4 bg-gray-100 p-2 rounded-full text-gray-500 hover:bg-gray-200"><X size={16}/></button>
-                                                    <h3 className="font-bold text-lg text-mandre-coffee mb-1 uppercase">Mesa: {tables.find(t=>t.id?.toString()===adminViewTableOrder.toString())?.label || adminViewTableOrder}</h3>
+                                                    <h3 className="font-bold text-lg text-mandre-coffee mb-1 uppercase">
+    {adminViewTableOrder?.startsWith('T') ? `TERRAZA ${adminViewTableOrder.replace('T', '')}` : 
+     adminViewTableOrder?.startsWith('I') ? `INTERIOR ${adminViewTableOrder.replace('I', '')}` : 
+     adminViewTableOrder?.startsWith('B') ? `BARRA ${adminViewTableOrder.replace('B', '')}` : 
+     `MESA: ${adminViewTableOrder}`}
+</h3>
                                                     <p className="text-xs text-gray-400 mb-4 font-bold uppercase tracking-wide">Cliente: <span className="text-mandre-dark">{activeOrders[adminViewTableOrder].customer}</span></p>
                                                     <div className="max-h-64 overflow-y-auto space-y-2 mb-4 border-t border-b border-gray-100 py-4">
                                                         {activeOrders[adminViewTableOrder].items.map(item => (
@@ -4975,6 +5108,20 @@ return (
         </div>
     </div>
 )}
+{/* SISTEMA DE NOTIFICACIONES PERSONALIZADO MANDRÉ */}
+                    {toast.show && (
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-slideUp px-4 w-full max-w-sm">
+                            <div className={`px-6 py-4 rounded-[2rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
+                                    {toast.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50 leading-none mb-1">Notificación</p>
+                                    <p className="text-xs font-bold uppercase tracking-tight leading-tight">{toast.message}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
