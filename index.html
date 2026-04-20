@@ -35,6 +35,7 @@
     <!-- Firebase SDK Compat -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -112,6 +113,7 @@
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.firestore();
+        const storage = firebase.storage();
        
 
 
@@ -745,8 +747,8 @@ const adminModules = [
             
             // Edición & Formularios
             const [editItem, setEditItem] = useState(null); 
-            const [newCombo, setNewCombo] = useState({ name: '', price: '', items: [] });
-            const [newProductForm, setNewProductForm] = useState({ name: '', price: '', category: 'Calientes', icon: '☕' });
+            const [newCombo, setNewCombo] = useState({ name: '', price: '', items: [], description: '', imageFile: null });
+            const [newProductForm, setNewProductForm] = useState({ name: '', price: '', category: 'Calientes', icon: '☕', description: '', imageFile: null });
             const [newUserForm, setNewUserForm] = useState({ name: '', surname: '', emailPrefix: '', username: '', password: '', role: 'staff' });;
 const [currentUserRole, setCurrentUserRole] = useState(null);
             // POS
@@ -1511,63 +1513,196 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
 
             // --- GESTION PRODUCTOS ADMIN ---
             const createNewProduct = async () => {
-                if(!newProductForm.name || !newProductForm.price) return alert("Complete nombre y precio");
-                const newItem = {
-                    id: Date.now(),
-                    name: newProductForm.name,
-                    price: parseFloat(newProductForm.price),
-                    category: newProductForm.category,
-                    stock: 999, 
-                    icon: newProductForm.icon
-                };
-                await db.collection('inventory').doc(newItem.id.toString()).set(newItem);
-                setNewProductForm({ name: '', price: '', category: 'Calientes', icon: '☕' });
-                showNotify("Producto creado en el menú");
+                if(!newProductForm.name || !newProductForm.price) return alert("⚠️ Complete nombre y precio");
+                
+                try {
+                    showNotify("Procesando imagen y guardando...", "success");
+                    let imageUrl = null;
+
+                    // Si subiste una foto, la comprimimos y la convertimos a texto (Base64)
+                    if (newProductForm.imageFile) {
+                        imageUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(newProductForm.imageFile);
+                            
+                            reader.onload = (event) => {
+                                const img = new Image();
+                                img.src = event.target.result;
+                                
+                                img.onload = () => {
+                                    // Creamos un lienzo invisible para achicar la foto
+                                    const canvas = document.createElement('canvas');
+                                    const MAX_WIDTH = 500; // Tamaño ideal para catálogos (no pesa nada)
+                                    const scaleSize = MAX_WIDTH / img.width;
+                                    canvas.width = MAX_WIDTH;
+                                    canvas.height = img.height * scaleSize;
+
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    
+                                    // Convertimos la imagen a calidad media-alta (JPEG 70%)
+                                    const base64Str = canvas.toDataURL('image/jpeg', 0.7);
+                                    resolve(base64Str); // Devolvemos el código de la imagen
+                                };
+                                img.onerror = (err) => reject(err);
+                            };
+                            reader.onerror = (err) => reject(err);
+                        });
+                    }
+
+                    // Guardamos todo en la base de datos (Firestore) que ya funciona perfecto
+                    const newItem = {
+                        id: Date.now(),
+                        name: newProductForm.name,
+                        price: parseFloat(newProductForm.price),
+                        category: newProductForm.category,
+                        stock: 999, 
+                        icon: newProductForm.icon,
+                        description: newProductForm.description || '', 
+                        imageUrl: imageUrl // Aquí va la imagen en formato texto
+                    };
+
+                    await db.collection('inventory').doc(newItem.id.toString()).set(newItem);
+                    
+                    // Limpiamos el formulario
+                    setNewProductForm({ name: '', price: '', category: 'Calientes', icon: '☕', description: '', imageFile: null });
+                    const fileInput = document.getElementById('file-upload-input');
+                    if(fileInput) fileInput.value = '';
+                    
+                    showNotify("✅ ¡Producto guardado y visible en el menú!");
+
+                } catch (error) {
+                    console.error("Error al guardar:", error);
+                    alert(`❌ Hubo un problema al guardar: ${error.message || error}`);
+                }
+            };
+// --- FUNCIONES DE EDICIÓN Y ELIMINACIÓN ---
+            const startEditingItem = (type, item) => {
+                setEditItem({ type, data: { ...item } });
             };
 
             const deleteInventoryItem = async (type, id) => {
-                if(!confirm("¿Seguro que desea eliminar este ítem de Firebase?")) return;
-                const col = 'inventory';
-                await db.collection(col).doc(id.toString()).delete();
-            };
-
-            const startEditingItem = (type, item) => {
-                setEditItem({ type, data: {...item} });
+                if(confirm("¿Seguro que deseas eliminar este producto permanentemente?")) {
+                    await db.collection('inventory').doc(id.toString()).delete();
+                    showNotify("Producto eliminado");
+                }
             };
 
             const saveEditedItem = async () => {
                 if(!editItem) return;
-                const { type, data } = editItem;
-                const col = 'inventory';
                 
-                await db.collection(col).doc(data.id.toString()).update(data);
-                setEditItem(null);
-            };
+                try {
+                    showNotify("Guardando cambios...", "success");
+                    let dataToUpdate = { ...editItem.data };
+                    
+                    // Si el usuario seleccionó una NUEVA foto al editar
+                    if (editItem.newImageFile) {
+                        const base64Str = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(editItem.newImageFile);
+                            reader.onload = (event) => {
+                                const img = new Image();
+                                img.src = event.target.result;
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    const MAX_WIDTH = 500;
+                                    const scaleSize = MAX_WIDTH / img.width;
+                                    canvas.width = MAX_WIDTH;
+                                    canvas.height = img.height * scaleSize;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                                };
+                                img.onerror = (err) => reject(err);
+                            };
+                            reader.onerror = (err) => reject(err);
+                        });
+                        dataToUpdate.imageUrl = base64Str;
+                        delete dataToUpdate.newImageFile; // Limpiamos el archivo temporal
+                    }
 
-            // LOGICA COMBOS
+                    const col = editItem.type === 'combo' ? 'combos' : 'inventory';
+                    await db.collection(col).doc(dataToUpdate.id.toString()).update(dataToUpdate);
+                    setEditItem(null);
+                    showNotify("✅ Cambios guardados correctamente");
+                    
+                } catch (error) {
+                    console.error("Error editando:", error);
+                    alert("❌ Error al guardar los cambios: " + error.message);
+                }
+            };
+            // --- LOGICA DE COMBOS (CREAR Y ELIMINAR) ---
             const handleCreateCombo = async () => {
-                if (!newCombo.name || !newCombo.price || newCombo.items.length === 0) return alert("Faltan datos");
-                const combo = {
-                    id: Date.now(),
-                    name: newCombo.name,
-                    price: parseFloat(newCombo.price),
-                    category: 'Combos',
-                    stock: 999, 
-                    items: newCombo.items
-                };
-                await db.collection('combos').doc(combo.id.toString()).set(combo);
-                setNewCombo({ name: '', price: '', items: [] });
-                alert("Combo Guardado");
-            };
+                if(!newCombo.name || !newCombo.price || newCombo.items.length === 0) {
+                    return alert("⚠️ Complete nombre, precio y seleccione al menos un producto.");
+                }
+                
+                try {
+                    showNotify("Guardando combo...", "success");
+                    let imageUrl = null;
 
-            const toggleItemInCombo = (id) => {
-                if (newCombo.items.includes(id)) {
-                    setNewCombo({...newCombo, items: newCombo.items.filter(i => i !== id)});
-                } else {
-                    setNewCombo({...newCombo, items: [...newCombo.items, id]});
+                    if (newCombo.imageFile) {
+                        imageUrl = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(newCombo.imageFile);
+                            reader.onload = (event) => {
+                                const img = new Image();
+                                img.src = event.target.result;
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    const MAX_WIDTH = 500;
+                                    const scaleSize = MAX_WIDTH / img.width;
+                                    canvas.width = MAX_WIDTH;
+                                    canvas.height = img.height * scaleSize;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                                };
+                                img.onerror = (err) => reject(err);
+                            };
+                            reader.onerror = (err) => reject(err);
+                        });
+                    }
+
+                    const newItem = {
+                        id: Date.now(),
+                        name: newCombo.name,
+                        price: parseFloat(newCombo.price),
+                        category: 'Combos',
+                        stock: 999, 
+                        icon: '🛍️',
+                        items: newCombo.items,
+                        description: newCombo.description || '', 
+                        imageUrl: imageUrl // Guardamos la foto
+                    };
+
+                    await db.collection('combos').doc(newItem.id.toString()).set(newItem);
+                    
+                    // Limpiamos
+                    setNewCombo({ name: '', price: '', items: [], description: '', imageFile: null });
+                    const fileInput = document.getElementById('combo-image-upload');
+                    if(fileInput) fileInput.value = '';
+                    showNotify("✅ ¡Combo guardado y visible en el menú!");
+                } catch (error) {
+                    alert(`❌ Hubo un problema: ${error.message}`);
                 }
             };
 
+            const toggleItemInCombo = (productId) => {
+                setNewCombo(prev => {
+                    const items = prev.items.includes(productId) 
+                        ? prev.items.filter(id => id !== productId)
+                        : [...prev.items, productId];
+                    return { ...prev, items };
+                });
+            };
+
+            const deleteComboItem = async (id) => {
+                if(confirm("¿Seguro que deseas eliminar este combo permanentemente?")) {
+                    await db.collection('combos').doc(id.toString()).delete();
+                    showNotify("Combo eliminado");
+                }
+            };
             // --- FUNCIONES POS ---
             const selectTable = (rawId) => {
                 const id = rawId?.toString();
@@ -3514,59 +3649,87 @@ return (
     </div>
 )}
                                 {adminTab === 'products' && (
-                                    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
-                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-mandre-coffee mb-4">Agregar Nuevo Producto</h3>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end">
-                                                <div className="sm:col-span-2 md:col-span-2">
-                                                    <label className="text-xs font-bold text-gray-400">Nombre</label>
-                                                    <input className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none focus:border-mandre-sage transition" placeholder="Ej: Late Helado" value={newProductForm.name} onChange={e => setNewProductForm({...newProductForm, name: e.target.value})}/>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400">Precio</label>
-                                                    <input type="number" className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none focus:border-mandre-sage transition" placeholder="$$$" value={newProductForm.price} onChange={e => setNewProductForm({...newProductForm, price: e.target.value})}/>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400">Categoría</label>
-                                                    <select className="w-full p-3 border rounded-xl bg-gray-50 outline-none" value={newProductForm.category} onChange={e => setNewProductForm({...newProductForm, category: e.target.value})}>
-                                                        {categories.filter(c=>c!=='Combos').map(c => <option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-gray-400">Icono</label>
-                                                    <select className="w-full p-3 border rounded-xl bg-gray-50 outline-none text-center" value={newProductForm.icon} onChange={e => setNewProductForm({...newProductForm, icon: e.target.value})}>
-                                                        {['☕','🍵','🥪','🍰','🥗','🍹','🥤','🥐'].map(i => <option key={i} value={i}>{i}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <button onClick={createNewProduct} className="mt-4 w-full md:w-auto px-8 py-3 bg-mandre-coffee text-white font-bold rounded-xl shadow-lg active:scale-95 transition">Crear Producto en la Nube</button>
-                                        </div>
+    <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
+        
+        {/* NUEVO FORMULARIO CON SUBIDA DE FOTO */}
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-mandre-coffee mb-4">Agregar Nuevo Producto al Catálogo Digital</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-start">
+                <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-gray-400">Nombre</label>
+                    <input className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none focus:border-mandre-sage transition" placeholder="Ej: Latte Helado" value={newProductForm.name} onChange={e => setNewProductForm({...newProductForm, name: e.target.value})}/>
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-400">Precio</label>
+                    <input type="number" className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none focus:border-mandre-sage transition" placeholder="$$$" value={newProductForm.price} onChange={e => setNewProductForm({...newProductForm, price: e.target.value})}/>
+                </div>
+                <div>
+                    <label className="text-xs font-bold text-gray-400">Categoría</label>
+                    <select className="w-full p-3 border rounded-xl bg-gray-50 outline-none" value={newProductForm.category} onChange={e => setNewProductForm({...newProductForm, category: e.target.value})}>
+                        {categories.filter(c=>c!=='Combos').map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
 
-                                        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                                            <h3 className="font-bold text-mandre-coffee mb-4">Catálogo Actual en Firebase</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                {inventory.map(prod => (
-                                                    <div key={prod.id} className="flex justify-between items-center p-4 border rounded-xl group hover:border-mandre-sage transition bg-gray-50 hover:bg-white">
-                                                        <div className="flex items-center gap-3">
-                                                            <span className="text-2xl">{prod.icon || '☕'}</span>
-                                                            <div>
-                                                                <p className="font-bold text-sm">{prod.name}</p>
-                                                                <p className="text-xs text-gray-400">{prod.category}</p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="font-bold text-mandre-sage">${prod.price.toLocaleString()}</p>
-                                                            <div className="flex gap-2 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition mt-1">
-                                                                <button onClick={() => startEditingItem('product', prod)} className="text-blue-500 bg-blue-50 p-1.5 rounded hover:bg-blue-100"><Edit3 size={14}/></button>
-                                                                <button onClick={() => deleteInventoryItem('product', prod.id)} className="text-red-500 bg-red-50 p-1.5 rounded hover:bg-red-100"><Trash2 size={14}/></button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-gray-400">Descripción / Ingredientes (Visible para Clientes)</label>
+                    <textarea 
+                        className="w-full p-3 border rounded-xl bg-gray-50 focus:bg-white outline-none focus:border-mandre-sage transition resize-none h-14 text-sm" 
+                        placeholder="Ej: Espresso doble con leche texturizada..." 
+                        value={newProductForm.description} 
+                        onChange={e => setNewProductForm({...newProductForm, description: e.target.value})}
+                    ></textarea>
+                </div>
+
+                {/* BOTÓN PARA SUBIR FOTO FÁCIL */}
+                <div className="sm:col-span-2">
+                    <label className="text-xs font-bold text-gray-400">Fotografía del Producto</label>
+                    <input 
+                        id="file-upload-input"
+                        type="file" 
+                        accept="image/*" 
+                        className="w-full p-2 border border-dashed border-gray-300 rounded-xl bg-gray-50 outline-none text-sm text-gray-500 cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-mandre-sage/10 file:text-mandre-sage hover:file:bg-mandre-sage/20 transition" 
+                        onChange={e => setNewProductForm({...newProductForm, imageFile: e.target.files[0]})}
+                    />
+                </div>
+            </div>
+            <button onClick={createNewProduct} className="mt-6 w-full md:w-auto px-8 py-3 bg-mandre-coffee text-white font-bold rounded-xl shadow-lg active:scale-95 transition">Guardar y Enviar al Menú Digital</button>
+        </div>
+
+        {/* CATÁLOGO ACTUAL */}
+        <div className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-mandre-coffee mb-4">Catálogo Actual en Firebase</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {inventory.map(prod => (
+                    <div key={prod.id} className="flex justify-between items-center p-4 border rounded-xl group hover:border-mandre-sage transition bg-gray-50 hover:bg-white relative overflow-hidden">
+                        
+                        {/* Agregamos pointer-events-none para que la foto no bloquee el clic de los botones */}
+                        {prod.imageUrl && (
+                            <img src={prod.imageUrl} className="absolute left-0 top-0 bottom-0 w-16 object-cover opacity-20 pointer-events-none" alt="bg"/>
+                        )}
+
+                        <div className="flex items-center gap-3 relative z-10 pl-2 pointer-events-none">
+                            <span className="text-2xl">{prod.icon || '☕'}</span>
+                            <div>
+                                <p className="font-bold text-sm">{prod.name}</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{prod.category}</p>
+                            </div>
+                        </div>
+                        
+                        {/* Elevamos el z-index para que el mouse sí detecte los botones */}
+                        <div className="text-right relative z-[50]">
+                            <p className="font-bold text-mandre-sage">${prod.price.toLocaleString()}</p>
+                            <div className="flex gap-2 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition mt-1 relative z-[50]">
+                                <button onClick={() => startEditingItem('product', prod)} className="text-blue-500 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 cursor-pointer"><Edit3 size={14}/></button>
+                                <button onClick={() => deleteInventoryItem('product', prod.id)} className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100 cursor-pointer"><Trash2 size={14}/></button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+)}
 
                                 {adminTab === 'users' && (
                                     <div className="max-w-5xl mx-auto space-y-8 animate-fadeIn">
@@ -3644,50 +3807,86 @@ return (
                                 )}
 
                                 {adminTab === 'combos' && (
-                                    <div className="bg-white rounded-2xl shadow-sm p-4 md:p-8 max-w-4xl mx-auto border border-gray-100">
-                                        <h3 className="font-bold text-xl text-mandre-coffee mb-6 border-b pb-4">Gestor de Combos</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="bg-gray-50 p-6 rounded-2xl">
+                                    <div className="bg-white rounded-[2rem] shadow-sm p-4 md:p-8 max-w-5xl mx-auto border border-gray-100 animate-fadeIn">
+                                        <h3 className="font-bold text-xl text-mandre-coffee mb-6 border-b pb-4 flex items-center gap-2">
+                                            <Layers size={24}/> Gestor de Combos (Catálogo Digital)
+                                        </h3>
+                                        
+                                        {/* FORMULARIO DE CREACIÓN */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
                                                 <h4 className="text-sm font-bold text-gray-600 mb-4">Crear Nuevo Combo</h4>
-                                                <div className="space-y-3 mb-6">
+                                                <div className="space-y-4 mb-6">
                                                     <div>
                                                         <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Nombre Comercial</label>
-                                                        <input placeholder="Ej: Combo Desayuno" className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage" value={newCombo.name} onChange={e => setNewCombo({...newCombo, name: e.target.value})}/>
+                                                        <input placeholder="Ej: Combo Desayuno" className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage font-bold" value={newCombo.name} onChange={e => setNewCombo({...newCombo, name: e.target.value})}/>
                                                     </div>
                                                     <div>
                                                         <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Precio Final</label>
-                                                        <input type="number" placeholder="$$$" className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage" value={newCombo.price} onChange={e => setNewCombo({...newCombo, price: e.target.value})}/>
+                                                        <input type="number" placeholder="$$$" className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage font-bold" value={newCombo.price} onChange={e => setNewCombo({...newCombo, price: e.target.value})}/>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Descripción para Catálogo (Opcional)</label>
+                                                        <textarea placeholder="Ej: Incluye torta y café..." className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage h-16 resize-none text-sm font-medium" value={newCombo.description} onChange={e => setNewCombo({...newCombo, description: e.target.value})}></textarea>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Foto del Combo</label>
+                                                        <input 
+                                                            id="combo-image-upload"
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            className="w-full p-2 border border-dashed border-gray-300 rounded-xl bg-white outline-none text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-mandre-sage/10 file:text-mandre-sage hover:file:bg-mandre-sage/20 transition cursor-pointer" 
+                                                            onChange={e => setNewCombo({...newCombo, imageFile: e.target.files[0]})}
+                                                        />
                                                     </div>
                                                 </div>
-                                                <button onClick={handleCreateCombo} className="w-full bg-mandre-coffee text-white py-3 rounded-xl font-bold active:scale-95 transition shadow-md">GUARDAR COMBO</button>
+                                                <button onClick={handleCreateCombo} className="w-full bg-mandre-coffee text-white py-4 rounded-xl font-bold active:scale-95 transition shadow-lg tracking-widest text-[10px] uppercase">GUARDAR COMBO Y ENVIAR AL CATÁLOGO</button>
                                             </div>
                                             
-                                            <div className="border border-gray-200 rounded-2xl p-4 flex flex-col bg-white">
-                                                <p className="text-xs font-bold text-gray-500 mb-3 bg-gray-100 p-2 rounded text-center">Selecciona los productos que lo conforman:</p>
-                                                <div className="flex-1 overflow-y-auto max-h-64 pr-2 space-y-1">
+                                            {/* SELECTOR DE PRODUCTOS PARA EL COMBO */}
+                                            <div className="border border-gray-200 rounded-2xl p-4 flex flex-col bg-white shadow-inner">
+                                                <p className="text-xs font-bold text-gray-500 mb-3 bg-gray-100 p-3 rounded-xl text-center">Selecciona los productos que lo conforman:</p>
+                                                <div className="flex-1 overflow-y-auto max-h-80 pr-2 space-y-1">
                                                     {inventory.map(p => (
-                                                        <label key={p.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition border ${newCombo.items.includes(p.id) ? 'bg-mandre-sage/10 border-mandre-sage text-mandre-sage font-bold' : 'hover:bg-gray-50 border-transparent text-gray-600'}`}>
+                                                        <label key={p.id} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition border ${newCombo.items.includes(p.id) ? 'bg-mandre-sage/10 border-mandre-sage text-mandre-sage font-bold shadow-sm' : 'hover:bg-gray-50 border-transparent text-gray-600'}`}>
                                                             <input type="checkbox" checked={newCombo.items.includes(p.id)} onChange={() => toggleItemInCombo(p.id)} className="accent-mandre-sage w-5 h-5"/>
-                                                            <span className="text-sm">{p.name}</span>
+                                                            <span className="text-sm font-bold">{p.name}</span>
+                                                            <span className="ml-auto text-xs text-gray-400 font-bold bg-white px-2 py-1 rounded shadow-sm">${p.price.toLocaleString()}</span>
                                                         </label>
                                                     ))}
                                                 </div>
                                             </div>
                                         </div>
                                         
-                                        <div className="mt-8 border-t pt-6">
-                                            <h4 className="font-bold text-mandre-coffee mb-4">Combos Activos en Firebase</h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {/* LISTA DE COMBOS (ESTILO CATÁLOGO) */}
+                                        <div className="mt-8 border-t border-dashed border-gray-200 pt-8">
+                                            <h4 className="font-bold text-mandre-coffee mb-4 text-sm tracking-widest uppercase ml-1">Combos Activos en Firebase</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {combos.map(c => (
-                                                    <div key={c.id} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl bg-gray-50">
-                                                        <div>
-                                                            <span className="font-bold block text-sm">{c.name}</span>
-                                                            <span className="text-[10px] text-gray-400">{c.items.length} items incluidos</span>
+                                                    <div key={c.id} className="flex justify-between items-center p-4 border border-gray-100 rounded-[1.5rem] group hover:border-mandre-sage transition bg-gray-50 hover:bg-white relative overflow-hidden shadow-sm">
+                                                        
+                                                        {c.imageUrl && (
+                                                            <img src={c.imageUrl} className="absolute left-0 top-0 bottom-0 w-16 object-cover opacity-20 pointer-events-none" alt="bg"/>
+                                                        )}
+                                                        
+                                                        <div className="flex items-center gap-3 relative z-10 pl-2 pointer-events-none">
+                                                            <span className="text-2xl">🛍️</span>
+                                                            <div>
+                                                                <p className="font-bold text-sm text-mandre-dark leading-tight">{c.name}</p>
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{c.items.length} items</p>
+                                                            </div>
                                                         </div>
-                                                        <span className="font-bold text-mandre-sage bg-white px-3 py-1 rounded-lg border shadow-sm">${c.price.toLocaleString()}</span>
+
+                                                        <div className="text-right relative z-[50]">
+                                                            <p className="font-bold text-mandre-sage">${c.price.toLocaleString()}</p>
+                                                            <div className="flex gap-2 justify-end opacity-100 md:opacity-0 md:group-hover:opacity-100 transition mt-1 relative z-[50]">
+                                                                <button onClick={() => startEditingItem('combo', c)} className="text-blue-500 bg-blue-50 p-2 rounded-lg hover:bg-blue-100 cursor-pointer shadow-sm"><Edit3 size={14}/></button>
+                                                                <button onClick={() => deleteComboItem(c.id)} className="text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-100 cursor-pointer shadow-sm"><Trash2 size={14}/></button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ))}
-                                                {combos.length === 0 && <p className="text-gray-400 text-sm italic col-span-full">No hay combos creados.</p>}
+                                                {combos.length === 0 && <p className="text-gray-400 text-sm italic col-span-full">No hay combos creados en la base de datos.</p>}
                                             </div>
                                         </div>
                                     </div>
@@ -4006,21 +4205,34 @@ return (
 
                     {/* MODAL EDICION INVENTARIO RAPIDA */}
                     {editItem && (
-                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
                             <div className="bg-white p-6 rounded-3xl w-full max-w-sm animate-slideUp shadow-2xl">
-                                <h3 className="font-bold text-mandre-coffee mb-6 text-lg border-b pb-2">Editar Producto</h3>
-                                <div className="space-y-4 mb-8">
+                                <h3 className="font-bold text-mandre-coffee mb-4 text-lg border-b pb-2">Editar Producto</h3>
+                                
+                                <div className="space-y-4 mb-6 overflow-y-auto max-h-[60vh] pr-2">
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Nombre</label>
                                         <input className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage" value={editItem.data.name} onChange={e => setEditItem({...editItem, data: {...editItem.data, name: e.target.value}})} placeholder="Nombre"/>
                                     </div>
-                                    <div className="flex gap-3">
-                                        <div className="flex-1">
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Precio</label>
-                                            <input type="number" className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage" value={editItem.data.price} onChange={e => setEditItem({...editItem, data: {...editItem.data, price: parseFloat(e.target.value)}})} placeholder="Precio"/>
-                                        </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Precio</label>
+                                        <input type="number" className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage" value={editItem.data.price} onChange={e => setEditItem({...editItem, data: {...editItem.data, price: parseFloat(e.target.value)}})} placeholder="Precio"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Descripción para Catálogo</label>
+                                        <textarea className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage h-16 resize-none text-sm" value={editItem.data.description || ''} onChange={e => setEditItem({...editItem, data: {...editItem.data, description: e.target.value}})} placeholder="Ingredientes..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Cambiar Foto (Opcional)</label>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            className="w-full p-2 border border-dashed border-gray-300 rounded-xl bg-gray-50 text-xs" 
+                                            onChange={e => setEditItem({...editItem, newImageFile: e.target.files[0]})}
+                                        />
                                     </div>
                                 </div>
+
                                 <div className="flex gap-3">
                                     <button onClick={() => setEditItem(null)} className="flex-1 py-3 text-gray-500 font-bold bg-gray-100 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
                                     <button onClick={saveEditedItem} className="flex-1 py-3 bg-mandre-coffee text-white font-bold rounded-xl shadow-lg active:scale-95 transition">Guardar</button>
