@@ -458,7 +458,8 @@ const [nowPlaying, setNowPlaying] = React.useState(null);
                 setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
             };
             const [inventory, setInventory] = useState([]);
-            const [showPosCreditPanel, setShowPosCreditPanel] = useState(false);
+const [registeredCustomers, setRegisteredCustomers] = useState([]); 
+const [showPosCreditPanel, setShowPosCreditPanel] = useState(false);
 const [posCreditSearch, setPosCreditSearch] = useState('');
 // Estados para modales estéticos de Cartera
             const [customPrompt, setCustomPrompt] = useState({ isOpen: false });
@@ -487,6 +488,7 @@ const [showNotifications, setShowNotifications] = useState(false);
 const [showStaffSystemModal, setShowStaffSystemModal] = useState(false);
 const [isStaffSyncing, setIsStaffSyncing] = useState(false);
 const [insumoSearch, setInsumoSearch] = useState('');
+
 // --- LÓGICA MAESTRA SPOTIFY ---
 
 // 1. Iniciar Sesión con PKCE (Bloque Completo Corregido)
@@ -727,7 +729,7 @@ const adminModules = [
     { id: 'insumos', label: 'Insumos', icon: <Box />, color: 'bg-orange-500' },
     { id: 'dashboard', label: 'Métricas', icon: <Activity />, color: 'bg-red-500' },
     { id: 'status', label: 'Sistema', icon: <RefreshCw />, color: 'bg-blue-500' },
-    { id: 'payroll', label: 'Nómina', icon: <User />, color: 'bg-mandre-sage' },
+    { id: 'customers', label: 'Club Clientes', icon: <Users />, color: 'bg-indigo-500' },
     { id: 'credits', label: 'Créditos', icon: <Shield />, color: 'bg-purple-600' },
     { id: 'transfers', label: 'Transferencias', icon: <CreditCard />, color: 'bg-purple-700' },
     { id: 'expenses', label: 'Egresos', icon: <Banknote />, color: 'bg-red-600' },
@@ -887,6 +889,12 @@ useEffect(() => {
 
                 const unsubInv = syncCollection('inventory', INITIAL_INVENTORY, setInventory);
                 const unsubComb = syncCollection('combos', INITIAL_COMBOS, setCombos);
+                const unsubCustomers = db.collection('customers').orderBy('createdAt', 'desc').onSnapshot(snap => {
+    setRegisteredCustomers(snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    })));
+});
                 // --- CONEXIÓN DE SEGURIDAD PARA USUARIOS ---
 const unsubUsers = db.collection('users').onSnapshot(snap => {
     if (snap.empty) {
@@ -977,7 +985,7 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                     window.removeEventListener('offline', handleOffline);
                     clearInterval(checkMidnightClosure);
                     unsubConnection();
-                    unsubInv(); unsubComb(); unsubUsers(); unsubTables();
+                    unsubInv(); unsubComb(); unsubCustomers(); unsubUsers(); unsubTables();
                     unsubOrders(); unsubShifts(); unsubActiveOrders(); unsubExpenses(); unsubManualItems();
                     unsubCredits(); unsubAbonos(); unsubAdjustments(); unsubSystemStatus();unsubInsumos();
                 };
@@ -3101,88 +3109,82 @@ return (
                                     </div>
                                 )}
 
-                                {adminTab === 'payroll' && (
-                                    <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn">
-                                        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-xl border-4 border-mandre-sage/20">
-                                            <h2 className="text-2xl font-bold text-mandre-coffee mb-2">Generar Pago (Nómina Semanal)</h2>
-                                            <p className="text-sm text-gray-500 mb-6 border-b pb-4">Calcule el pago por horas trabajadas diariamente y envíe el comprobante.</p>
-                                            
-                                            <div className="space-y-6 mb-8">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Empleado a Pagar</label>
-                                                        <select className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage font-medium shadow-sm" value={payrollForm.employee} onChange={e => setPayrollForm({...payrollForm, employee: e.target.value})}>
-                                                            <option value="">Seleccionar Empleado...</option>
-                                                            {users.map(u => <option key={u.id} value={`${u.name} ${u.surname}`}>{u.name} {u.surname}</option>)}
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Valor por Hora ($)</label>
-                                                        <input type="number" className="w-full border p-3 rounded-xl bg-white outline-none focus:border-mandre-sage font-bold shadow-sm" placeholder="Ej: 5000" value={payrollForm.hourlyRate} onChange={e => setPayrollForm({...payrollForm, hourlyRate: e.target.value})}/>
-                                                    </div>
-                                                </div>
+                                {adminTab === 'customers' && (
+    <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn pb-24 text-left">
+        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-xl border-4 border-indigo-50">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <h2 className="text-2xl font-black text-indigo-900 uppercase tracking-tighter">Club de Clientes</h2>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Base de datos para marketing y promociones</p>
+                </div>
+                
+                <button 
+                    onClick={() => {
+                        const list = registeredCustomers.map(c => `${c.name};${c.phone}`).join('\n');
+                        navigator.clipboard.writeText(list);
+                        showNotify("¡Lista copiada (Nombre;Teléfono)!");
+                    }}
+                    className="w-full md:w-auto bg-indigo-600 text-white px-6 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                >
+                    <Download size={18}/> Copiar Base de Datos
+                </button>
+            </div>
 
-                                                <div>
-                                                    <h4 className="text-xs font-bold text-mandre-coffee uppercase mb-3 ml-1 tracking-widest">Horas trabajadas por día:</h4>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                                                        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map(day => (
-                                                            <div key={day} className="bg-white p-3 rounded-xl border border-gray-200 focus-within:border-mandre-sage transition">
-                                                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block text-center">{day}</label>
-                                                                <input type="number" className="w-full bg-gray-50 p-2 rounded-lg text-center outline-none focus:bg-white font-bold" placeholder="0" value={payrollForm.hours[day]} onChange={e => setPayrollForm({...payrollForm, hours: {...payrollForm.hours, [day]: e.target.value}})}/>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button onClick={handleGeneratePayroll} className="w-full py-4 bg-mandre-sage text-white font-bold text-lg rounded-xl shadow-lg active:scale-95 transition hover:brightness-105">CALCULAR Y GENERAR COMPROBANTE</button>
+            <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-indigo-50/50">
+                                <th className="p-5 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Fecha Registro</th>
+                                <th className="p-5 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Nombre Completo</th>
+                                <th className="p-5 text-[10px] font-black text-indigo-400 uppercase tracking-widest">Teléfono / WhatsApp</th>
+                                <th className="p-5 text-[10px] font-black text-indigo-400 uppercase tracking-widest text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {registeredCustomers.map((customer) => (
+                                <tr key={customer.id} className="hover:bg-white transition-colors group">
+                                    <td className="p-5">
+                                        <p className="text-xs font-bold text-gray-400">
+                                            {customer.createdAt?.toDate ? customer.createdAt.toDate().toLocaleDateString() : 'Reciente'}
+                                        </p>
+                                    </td>
+                                    <td className="p-5">
+                                        <p className="font-bold text-sm text-mandre-dark uppercase">{customer.name}</p>
+                                    </td>
+                                    <td className="p-5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                                <Phone size={14}/>
+                                            </span>
+                                            <p className="font-black text-sm text-indigo-900">{customer.phone}</p>
                                         </div>
-
-                                        {showPayrollReceipt && payrollData && (
-                                            <div className="bg-white rounded-3xl w-full max-w-md mx-auto shadow-2xl animate-slideUp overflow-hidden flex flex-col border border-gray-200 mt-8 relative">
-                                                <button onClick={() => setShowPayrollReceipt(false)} className="absolute top-4 right-4 text-gray-400 bg-gray-100 p-2 rounded-full hover:bg-gray-200"><X size={16}/></button>
-                                                <div ref={payrollReceiptRef} className="bg-white p-8 text-center">
-                                                    <div className="w-16 h-16 bg-mandre-sage text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"><CheckCircle size={32}/></div>
-                                                    <h2 className="text-xl font-bold text-mandre-coffee mb-1 tracking-widest">MANDRÉ</h2>
-                                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] mb-6">Comprobante de Pago</p>
-                                                    
-                                                    <div className="bg-gray-50 p-4 rounded-xl text-left border border-gray-100 mb-6">
-                                                        <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">Colaborador</p>
-                                                        <p className="font-bold text-lg text-mandre-dark">{payrollData.employee}</p>
-                                                    </div>
-
-                                                    <div className="text-left mb-6 bg-white border border-gray-200 p-4 rounded-xl shadow-sm">
-                                                        <p className="text-xs font-bold text-gray-500 uppercase border-b pb-2 mb-2">Desglose Semanal</p>
-                                                        <div className="grid grid-cols-2 gap-y-1 text-xs text-gray-600 mb-3">
-                                                            {Object.entries(payrollData.hoursBreakdown).filter(([d, h]) => h && parseFloat(h)>0).map(([day, hrs]) => (
-                                                                <React.Fragment key={day}>
-                                                                    <span className="font-medium">{day}:</span>
-                                                                    <span className="text-right font-bold">{hrs} hrs</span>
-                                                                </React.Fragment>
-                                                            ))}
-                                                        </div>
-                                                        <div className="flex justify-between border-t pt-2 font-bold text-sm text-mandre-coffee">
-                                                            <span>Total Horas:</span>
-                                                            <span>{payrollData.totalHours} hrs</span>
-                                                        </div>
-                                                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                                            <span>Valor x Hora:</span>
-                                                            <span>${payrollData.rate.toLocaleString()}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="bg-green-50 p-4 rounded-xl flex justify-between items-center border border-green-200 text-green-800">
-                                                        <span className="font-bold uppercase text-xs">Total Pagado</span>
-                                                        <span className="font-bold text-2xl">${payrollData.totalPayment.toLocaleString()}</span>
-                                                    </div>
-                                                    <p className="text-[10px] text-gray-400 mt-6 font-bold uppercase tracking-widest">Emitido el {payrollData.date}</p>
-                                                </div>
-                                                <div className="p-4 bg-gray-50 border-t">
-                                                    <button onClick={sharePayrollReceipt} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition"><Share size={20}/> COMPARTIR WHATSAPP</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                    </td>
+                                    <td className="p-5 text-center">
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(customer.phone);
+                                                showNotify(`Teléfono de ${customer.name} copiado`);
+                                            }}
+                                            className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
+                                        >
+                                            <Share size={16}/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {registeredCustomers.length === 0 && (
+                    <div className="text-center py-20">
+                        <p className="text-sm text-gray-400 font-bold uppercase tracking-widest italic">Aún no hay clientes registrados ✨</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    </div>
+)}
 
    {adminTab === 'credits' && (
     <div className="max-w-5xl mx-auto space-y-6 animate-fadeIn relative">
