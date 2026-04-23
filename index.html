@@ -232,11 +232,20 @@ const History = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.7
     }
 ];
 
-        // --- FUNCIÓN SINCRONIZADA LIMPIA (SIN AUTO-CARGA) ---
-const syncCollection = (collectionName, stateSetter) => {
+        // --- MODIFICACIÓN PASO 1: ESCUCHA ULTRA-SENSIBLE (Línea 210) ---
+const syncCollection = (collectionName, initialData, stateSetter) => {
+    // Agregamos includeMetadataChanges para forzar la actualización inmediata
     return db.collection(collectionName).onSnapshot({ includeMetadataChanges: true }, snap => {
-        // Simplemente actualiza el estado con lo que haya en la nube (aunque sea nada)
-        stateSetter(snap.docs.map(doc => doc.data()));
+        if (snap.empty && initialData) {
+            const batch = db.batch();
+            initialData.forEach(item => {
+                const ref = db.collection(collectionName).doc(item.id.toString());
+                batch.set(ref, item);
+            });
+            batch.commit();
+        } else {
+            stateSetter(snap.docs.map(doc => doc.data()));
+        }
     });
 };
 
@@ -875,9 +884,21 @@ useEffect(() => {
                     setIsFirebaseConnected(!snap.metadata.fromCache);
                 });
 
-                const unsubInv = syncCollection('inventory', setInventory);
-const unsubComb = syncCollection('combos', setCombos);
-                const unsubUsers = syncCollection('users', INITIAL_USERS, setUsers);
+                const unsubInv = syncCollection('inventory', INITIAL_INVENTORY, setInventory);
+                const unsubComb = syncCollection('combos', INITIAL_COMBOS, setCombos);
+                // --- CONEXIÓN DE SEGURIDAD PARA USUARIOS ---
+const unsubUsers = db.collection('users').onSnapshot(snap => {
+    if (snap.empty) {
+        // Si no hay nadie en la nube, usamos el Admin de emergencia del código
+        setUsers(INITIAL_USERS);
+        
+        // Opcional: Subir el admin automáticamente a la nube si está vacío
+        const admin = INITIAL_USERS[0];
+        db.collection('users').doc(admin.id.toString()).set(admin);
+    } else {
+        setUsers(snap.docs.map(doc => doc.data()));
+    }
+});
                 
                 // Lógica Robusta y Respaldo para Tablas (Asegura que siempre existan las requeridas)
                 const unsubTables = db.collection('tables').onSnapshot({ includeMetadataChanges: true }, snap => {
@@ -2508,47 +2529,92 @@ return (
           {adminTab === 'license' && (
     <div className="max-w-3xl mx-auto space-y-12 animate-fadeIn pb-32 text-center md:text-left">
         
-        {/* HEADER DEL SISTEMA */}
+        {/* HEADER MEJORADO */}
         <div className="relative overflow-hidden bg-slate-950 p-14 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-slate-800/60 group">
-            <div className="absolute -top-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px]"></div>
+            <div className="absolute -top-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] group-hover:bg-indigo-600/30 transition-all duration-700"></div>
+            <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px]"></div>
+            
             <div className="relative z-10 flex flex-col items-center md:items-start">
+                {/* Logo mucho más grande (w-48 a w-72) */}
                 <LogoTanAlza className="w-72 mb-8 drop-shadow-[0_0_25px_rgba(255,255,255,0.15)]" />
+                
                 <h2 className="text-5xl font-black text-white tracking-tighter mb-3">
                     MANDRÉ <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400">CORE OS</span>
                 </h2>
+                
                 <div className="flex items-center gap-3 mt-2 bg-slate-900/50 px-5 py-2.5 rounded-full border border-slate-800 backdrop-blur-sm">
                     <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em]">Version</p>
                     <p className="text-xl font-mono font-bold text-white tracking-tighter">{appVersion}</p>
+                    <div className="relative flex h-2.5 w-2.5 ml-1">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        {/* CONTENEDOR DE LICENCIA Y ACTUALIZACIÓN */}
-        <div className="grid grid-cols-1 gap-8">
+        {/* SECCIÓN ÚNICA DE LICENCIA Y ACTUALIZACIÓN */}
+        <div className="space-y-8">
             
-            {/* CAJA 1: LICENCIA */}
-            <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-slate-200/60 text-left">
-                <div className="flex items-center gap-3 mb-6">
-                    <Shield className="text-indigo-600" size={24} />
-                    <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Certificado TanAlza Cloud</p>
+            {/* CAJA DE LICENCIA */}
+            <div className="bg-gradient-to-br from-white to-slate-50 p-10 rounded-[2.5rem] shadow-xl border border-slate-200/60 relative overflow-hidden text-left">
+                <div className="absolute -top-10 -right-10 p-4 opacity-[0.03] transform rotate-12">
+                    <Shield className="text-indigo-900" size={180} />
                 </div>
-                <div className="bg-slate-950 p-6 rounded-2xl border-l-4 border-indigo-500">
-                    <p className="font-mono text-sm text-indigo-300 tracking-[0.25em] uppercase">
-                        TA-CLOUD-CORE-MN-2026-X8Q2
-                    </p>
+                <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Shield className="text-indigo-600" size={24} />
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Certificado de Autenticidad TanAlza Cloud</p>
+                    </div>
+                    
+                    <div className="bg-slate-950 p-6 rounded-2xl border-l-4 border-indigo-500 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-indigo-500/10 to-transparent"></div>
+                        {/* Números eliminados, reemplazados por un formato de clave limpio */}
+                        <p className="font-mono text-sm md:text-base text-indigo-300 tracking-[0.25em] break-all leading-relaxed uppercase relative z-10">
+                            TA-CLOUD-CORE-MN-2026-X8Q2
+                        </p>
+                    </div>
+                    
+                    <div className="mt-8 flex items-center gap-3 text-emerald-700 bg-emerald-100/80 px-5 py-3 rounded-xl inline-flex border border-emerald-200/50 shadow-sm">
+                        <CheckCircle size={18} className="text-emerald-600"/>
+                        <p className="text-[11px] font-bold uppercase tracking-wide">Licencia activa y verificada por TanAlza Cloud</p>
+                    </div>
                 </div>
             </div>
 
-            {/* CAJA 2: ACTUALIZACIÓN / SYNC */}
-            <div className="bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl border border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div className="text-left flex-1">
+            {/* CAJA DE ACTUALIZACIÓN */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 rounded-[2.5rem] shadow-2xl border border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left relative overflow-hidden">
+                {/* Patrón de fondo sutil */}
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')] opacity-30"></div>
+                
+                <div className="relative z-10 space-y-3 flex-1">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 mb-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                        <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Sistema Conectado</span>
+                    </div>
                     <h4 className="text-white font-black text-2xl tracking-tight">TanAlza Cloud Sync</h4>
-                    <p className="text-xs text-slate-400 font-medium uppercase tracking-widest leading-relaxed mt-2">
-                        Instalar parches de seguridad y actualizar base de datos.
+                    <p className="text-xs text-slate-400 font-medium uppercase tracking-widest leading-relaxed max-w-sm">
+                        Descargar e instalar parches de seguridad y actualizaciones completas del sistema
                     </p>
                 </div>
-
-                <div className="relative min-w-[200px]">
+                {/* BOTÓN DE REINICIO MAESTRO PARA NUEVO NEGOCIO */}
+            <div className="mt-12 bg-red-50 p-8 rounded-[2.5rem] border-2 border-red-200 border-dashed text-center">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 size={24}/>
+                </div>
+                <h4 className="text-red-900 font-black text-lg uppercase tracking-tighter mb-2">Zona de Peligro: Reinicio Maestro</h4>
+                <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest leading-relaxed max-w-xs mx-auto mb-6">
+                    Use este botón solo si desea borrar todos los productos, ventas y configuraciones antiguas para iniciar un nuevo negocio de cero.
+                </p>
+                <button 
+                    onClick={performHardReset}
+                    className="px-8 py-3 bg-red-600 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg hover:bg-red-700 transition-all active:scale-95"
+                >
+                    BORRAR TODO E INICIAR DE CERO
+                </button>
+            </div>
+                <div className="relative min-w-[200px] flex justify-center z-10 w-full md:w-auto">
+                    {/* LÓGICA DE ACTUALIZACIÓN INTACTA */}
                     <button 
                         id="sync-btn"
                         onClick={() => {
@@ -2559,7 +2625,7 @@ return (
                             let p = 0;
                             const bar = document.getElementById('sync-bar');
                             const int = setInterval(() => {
-                                p += 5;
+                                p += 3;
                                 bar.style.width = p + '%';
                                 if(p >= 100) {
                                     clearInterval(int);
@@ -2569,42 +2635,29 @@ return (
                                 }
                             }, 50);
                         }}
-                        className="w-full px-8 py-4 bg-indigo-600 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all"
+                        className="w-full md:w-auto px-8 py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(99,102,241,0.4)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] hover:-translate-y-0.5 transition-all duration-300 active:scale-95 border border-indigo-400/50"
                     >
-                        Sincronizar Sistema
+                        Sincronizar
                     </button>
                     
-                    <div id="sync-loader" className="hidden w-full text-center">
-                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden mb-3">
-                            <div id="sync-bar" className="h-full bg-emerald-500 transition-all duration-300" style={{width: '0%'}}></div>
+                    {/* Loader mejorado visualmente */}
+                    <div id="sync-loader" className="hidden w-full text-center bg-slate-950/60 p-5 rounded-2xl border border-slate-700/50 backdrop-blur-md">
+                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700 mb-3">
+                            <div id="sync-bar" className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-300 relative" style={{width: '0%'}}>
+                                {/* Rayas animadas en la barra de progreso (requiere extender en tailwind, o simplemente se verá liso si no lo tienes configurado) */}
+                            </div>
                         </div>
-                        <p className="text-[9px] text-emerald-400 font-bold uppercase animate-pulse">Actualizando...</p>
+                        <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest animate-pulse">Conectando a TanAlza Cloud...</p>
                     </div>
                 </div>
             </div>
-
-            {/* CAJA 3: REINICIO MAESTRO (ZONA DE PELIGRO) */}
-            <div className="bg-red-50 p-10 rounded-[2.5rem] border-2 border-red-200 border-dashed text-center">
-                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Trash2 size={24}/>
-                </div>
-                <h4 className="text-red-900 font-black text-lg uppercase tracking-tighter mb-2">Zona de Peligro: Reinicio Maestro</h4>
-                <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest leading-relaxed max-w-xs mx-auto mb-6">
-                    Esta acción borrará permanentemente todos los productos, ventas y cierres. Solo úselo para resetear el negocio.
-                </p>
-                <button 
-                    onClick={performHardReset}
-                    className="px-10 py-4 bg-red-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-red-700 transition-all active:scale-95"
-                >
-                    BORRAR TODO E INICIAR DE CERO
-                </button>
-            </div>
-
         </div>
 
-        {/* FIRMA FINAL */}
-        <div className="flex flex-col items-center pt-16 border-t border-dashed border-gray-200">
-            <LogoTanAlza className="w-56 opacity-40 grayscale hover:grayscale-0 transition-all" />
+        {/* FIRMA FINAL CON LOGO CORPORATIVO MÁS GRANDE Y SIN NÚMEROS */}
+        <div className="flex flex-col items-center pt-16 border-t border-dashed border-gray-200 mt-12">
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.4em] mb-6">Licenciado y Operado por</p>
+            {/* Logo más grande: w-32 a w-56 */}
+            <LogoTanAlza className="w-56 opacity-50 hover:opacity-100 transition-opacity duration-500 grayscale hover:grayscale-0" />
         </div>
     </div>
 )}
@@ -5286,19 +5339,19 @@ return (
     </div>
 )}
 {/* SISTEMA DE NOTIFICACIONES PERSONALIZADO MANDRÉ */}
-{toast.show && (
-    <div className="fixed bottom-20 left-0 right-0 px-4 z-[300] animate-slideUp flex justify-center pointer-events-none">
-        <div className={`w-full max-w-[340px] pointer-events-auto px-5 py-3.5 rounded-[2rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
-                {toast.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
-            </div>
-            <div className="text-left overflow-hidden">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50 leading-none mb-1">Notificación</p>
-                <p className="text-xs font-bold uppercase tracking-tight leading-tight truncate">{toast.message}</p>
-            </div>
-        </div>
-    </div>
-)}
+                    {toast.show && (
+                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-slideUp px-4 w-full max-w-sm">
+                            <div className={`px-6 py-4 rounded-[2rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
+                                    {toast.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50 leading-none mb-1">Notificación</p>
+                                    <p className="text-xs font-bold uppercase tracking-tight leading-tight">{toast.message}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
