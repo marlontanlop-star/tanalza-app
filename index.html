@@ -1452,42 +1452,52 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
             };
 
             // --- ADMIN: HARD RESET ---
-            const deleteCollection = async (collectionPath) => {
-                const query = await db.collection(collectionPath).get();
-                const batch = db.batch();
-                query.docs.forEach((doc) => {
-                    batch.delete(doc.ref);
-                });
-                await batch.commit();
-            };
-
             const performHardReset = async () => {
-                const word = prompt("¡ADVERTENCIA! Esto borrará todas las ventas, egresos, cierres, créditos, abonos, items manuales y mesas activas.\n\nEscriba 'BORRAR' en mayúsculas para confirmar:");
-                if (word === 'BORRAR') {
+                const password = prompt("⚠️ ¡ADVERTENCIA CRÍTICA! ⚠️\nEsta acción eliminará ABSOLUTAMENTE TODA la información (Ventas, Créditos, Inventario, Usuarios, etc.) para iniciar el negocio desde cero.\n\nIngrese la contraseña de seguridad para proceder:");
+                
+                if (password === '117156361') {
                     try {
-                        await Promise.all([
-                            deleteCollection('orders'),
-                            deleteCollection('shifts'),
-                            deleteCollection('expenses'),
-                            deleteCollection('manualItems'),
-                            deleteCollection('activeOrders'),
-                            deleteCollection('creditos'),
-                            deleteCollection('abonos'),
-                            deleteCollection('cashAdjustments')
-                        ]);
+                        showNotify("Iniciando borrado total...", "error");
                         
+                        // Lista de todas las colecciones a limpiar para un inicio desde cero
+                        const collections = [
+                            'orders', 'shifts', 'expenses', 'manualItems', 
+                            'activeOrders', 'creditos', 'abonos', 'cashAdjustments',
+                            'inventory', 'combos', 'inventoryGroups', 'music_playlists',
+                            'users', 'users_biometrics', 'system_status'
+                        ];
+
+                        // Borramos cada colección
+                        await Promise.all(collections.map(c => deleteCollection(c)));
+                        
+                        // Resetear estado físico de las mesas
                         const batch = db.batch();
                         tables.forEach(t => {
                             batch.update(db.collection('tables').doc(t.id.toString()), { status: 'libre', currentTotal: 0 });
                         });
+
+                        // IMPORTANTE: Creamos un usuario admin por defecto para poder volver a entrar
+                        const defaultAdmin = { 
+                            id: Date.now(), 
+                            name: 'Admin', 
+                            surname: 'Principal', 
+                            username: 'admin', 
+                            password: '123', 
+                            email: 'admin@mandre.com', 
+                            role: 'admin' 
+                        };
+                        batch.set(db.collection('users').doc(defaultAdmin.id.toString()), defaultAdmin);
+
                         await batch.commit();
                         
-                        alert("Sistema Reiniciado a 0. Listo para Producción.");
+                        alert("✅ SISTEMA REINICIADO EXITOSAMENTE.\n\nTodos los datos viejos han sido borrados. Se ha creado el usuario temporal 'admin' con clave '123' para que configures el nuevo negocio.");
+                        window.location.reload();
                     } catch(e) {
-                        alert("Hubo un error borrando. Verifique conexión.");
+                        console.error(e);
+                        alert("Hubo un error borrando. Verifique su conexión.");
                     }
-                } else if (word !== null) {
-                    alert("Palabra incorrecta. Operación cancelada.");
+                } else if (password !== null) {
+                    alert("Contraseña incorrecta. Operación cancelada.");
                 }
             };
 
@@ -2596,7 +2606,22 @@ return (
                         Descargar e instalar parches de seguridad y actualizaciones completas del sistema
                     </p>
                 </div>
-                
+                {/* BOTÓN DE REINICIO MAESTRO PARA NUEVO NEGOCIO */}
+            <div className="mt-12 bg-red-50 p-8 rounded-[2.5rem] border-2 border-red-200 border-dashed text-center">
+                <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 size={24}/>
+                </div>
+                <h4 className="text-red-900 font-black text-lg uppercase tracking-tighter mb-2">Zona de Peligro: Reinicio Maestro</h4>
+                <p className="text-[10px] text-red-600 font-bold uppercase tracking-widest leading-relaxed max-w-xs mx-auto mb-6">
+                    Use este botón solo si desea borrar todos los productos, ventas y configuraciones antiguas para iniciar un nuevo negocio de cero.
+                </p>
+                <button 
+                    onClick={performHardReset}
+                    className="px-8 py-3 bg-red-600 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg hover:bg-red-700 transition-all active:scale-95"
+                >
+                    BORRAR TODO E INICIAR DE CERO
+                </button>
+            </div>
                 <div className="relative min-w-[200px] flex justify-center z-10 w-full md:w-auto">
                     {/* LÓGICA DE ACTUALIZACIÓN INTACTA */}
                     <button 
