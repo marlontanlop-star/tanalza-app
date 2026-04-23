@@ -232,20 +232,11 @@ const History = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.7
     }
 ];
 
-        // --- MODIFICACIÓN PASO 1: ESCUCHA ULTRA-SENSIBLE (Línea 210) ---
-const syncCollection = (collectionName, initialData, stateSetter) => {
-    // Agregamos includeMetadataChanges para forzar la actualización inmediata
+        // --- FUNCIÓN SINCRONIZADA LIMPIA (SIN AUTO-CARGA) ---
+const syncCollection = (collectionName, stateSetter) => {
     return db.collection(collectionName).onSnapshot({ includeMetadataChanges: true }, snap => {
-        if (snap.empty && initialData) {
-            const batch = db.batch();
-            initialData.forEach(item => {
-                const ref = db.collection(collectionName).doc(item.id.toString());
-                batch.set(ref, item);
-            });
-            batch.commit();
-        } else {
-            stateSetter(snap.docs.map(doc => doc.data()));
-        }
+        // Simplemente actualiza el estado con lo que haya en la nube (aunque sea nada)
+        stateSetter(snap.docs.map(doc => doc.data()));
     });
 };
 
@@ -884,8 +875,8 @@ useEffect(() => {
                     setIsFirebaseConnected(!snap.metadata.fromCache);
                 });
 
-                const unsubInv = syncCollection('inventory', INITIAL_INVENTORY, setInventory);
-                const unsubComb = syncCollection('combos', INITIAL_COMBOS, setCombos);
+                const unsubInv = syncCollection('inventory', setInventory);
+const unsubComb = syncCollection('combos', setCombos);
                 const unsubUsers = syncCollection('users', INITIAL_USERS, setUsers);
                 
                 // Lógica Robusta y Respaldo para Tablas (Asegura que siempre existan las requeridas)
@@ -5295,19 +5286,19 @@ return (
     </div>
 )}
 {/* SISTEMA DE NOTIFICACIONES PERSONALIZADO MANDRÉ */}
-                    {toast.show && (
-                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-slideUp px-4 w-full max-w-sm">
-                            <div className={`px-6 py-4 rounded-[2rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
-                                    {toast.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50 leading-none mb-1">Notificación</p>
-                                    <p className="text-xs font-bold uppercase tracking-tight leading-tight">{toast.message}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+{toast.show && (
+    <div className="fixed bottom-20 left-0 right-0 px-4 z-[300] animate-slideUp flex justify-center pointer-events-none">
+        <div className={`w-full max-w-[340px] pointer-events-auto px-5 py-3.5 rounded-[2rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
+                {toast.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
+            </div>
+            <div className="text-left overflow-hidden">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50 leading-none mb-1">Notificación</p>
+                <p className="text-xs font-bold uppercase tracking-tight leading-tight truncate">{toast.message}</p>
+            </div>
+        </div>
+    </div>
+)}
                 </div>
             );
         };
