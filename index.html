@@ -211,13 +211,13 @@ const History = (props) => <IconBase {...props}><path d="M3 12a9 9 0 1 0 9-9 9.7
         ];
 
         const INITIAL_INVENTORY = [
-            { id: 1, name: "Espresso Doble", price: 6000, category: "Calientes", stock: 500 },
-            { id: 2, name: "Cappuccino", price: 8500, category: "Calientes", stock: 200 },
-            { id: 18, name: "Café Mandré 340g", price: 35000, category: "Retail", stock: 50 },
-        ];
+    { id: 1, name: "Espresso Doble", price: 6000, category: "CAFE", stock: 500 },
+    { id: 2, name: "Cappuccino", price: 8500, category: "CAFE", stock: 200 },
+    { id: 18, name: "Café Mandré 340g", price: 35000, category: "PARA COMER", stock: 50 },
+];
 
         const INITIAL_COMBOS = [
-            { id: 100, name: "Combo Mañana", price: 16000, category: "Combos", stock: 999, items: [2, 12] } 
+            { id: 100, name: "Combo Mañana", price: 16000, category: "COMBOS", stock: 999, items: [2, 12] } 
         ];
 
       const INITIAL_USERS = [
@@ -748,7 +748,7 @@ const adminModules = [
             // Edición & Formularios
             const [editItem, setEditItem] = useState(null); 
             const [newCombo, setNewCombo] = useState({ name: '', price: '', items: [], description: '', imageFile: null });
-            const [newProductForm, setNewProductForm] = useState({ name: '', price: '', category: 'Calientes', icon: '☕', description: '', imageFile: null });
+            const [newProductForm, setNewProductForm] = useState({ name: '', price: '', category: 'CAFE', icon: '☕', description: '', imageFile: null });
             const [newUserForm, setNewUserForm] = useState({ name: '', surname: '', emailPrefix: '', username: '', password: '', role: 'staff' });;
 const [currentUserRole, setCurrentUserRole] = useState(null);
             // POS
@@ -759,7 +759,7 @@ const [currentUserRole, setCurrentUserRole] = useState(null);
 const [showInterior, setShowInterior] = useState(false);
             const [showBarra, setShowBarra] = useState(false);
             const [cart, setCart] = useState([]);
-            const [selectedCategory, setSelectedCategory] = useState('Calientes');
+            const [selectedCategory, setSelectedCategory] = useState('CAFE');
             const [searchQuery, setSearchQuery] = useState(''); 
             const [customerName, setCustomerName] = useState('');
             const [showMobileCart, setShowMobileCart] = useState(false); 
@@ -991,7 +991,7 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
             }, [currentShiftEmployee, isOnline]);
 
             // --- COMPUTADOS ---
-            const categories = ["Calientes", "Frías", "Fit-Pastry", "Bowls", "Combos", "Retail"];
+            const categories = ["CAFE", "BEBIDAS ALCOHOLICAS", "PARA COMER", "COMBOS"];
             
             const displayInventory = useMemo(() => {
                 return [...inventory, ...combos];
@@ -1565,7 +1565,7 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
                     await db.collection('inventory').doc(newItem.id.toString()).set(newItem);
                     
                     // Limpiamos el formulario
-                    setNewProductForm({ name: '', price: '', category: 'Calientes', icon: '☕', description: '', imageFile: null });
+                    setNewProductForm({ name: '', price: '', category: 'CAFE', icon: '☕', description: '', imageFile: null });
                     const fileInput = document.getElementById('file-upload-input');
                     if(fileInput) fileInput.value = '';
                     
