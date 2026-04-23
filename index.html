@@ -1453,53 +1453,53 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
 
             // --- ADMIN: HARD RESET ---
             const performHardReset = async () => {
-                const password = prompt("⚠️ ¡ADVERTENCIA CRÍTICA! ⚠️\nEsta acción eliminará ABSOLUTAMENTE TODA la información (Ventas, Créditos, Inventario, Usuarios, etc.) para iniciar el negocio desde cero.\n\nIngrese la contraseña de seguridad para proceder:");
-                
-                if (password === '117156361') {
-                    try {
-                        showNotify("Iniciando borrado total...", "error");
-                        
-                        // Lista de todas las colecciones a limpiar para un inicio desde cero
-                        const collections = [
-                            'orders', 'shifts', 'expenses', 'manualItems', 
-                            'activeOrders', 'creditos', 'abonos', 'cashAdjustments',
-                            'inventory', 'combos', 'inventoryGroups', 'music_playlists',
-                            'users', 'users_biometrics', 'system_status'
-                        ];
+    const password = prompt("⚠️ ¡ADVERTENCIA DE SEGURIDAD! ⚠️\nEsta acción eliminará TODO el historial y el catálogo para iniciar de cero.\n\nIngrese la contraseña Maestra:");
+    
+    if (password === '117156361') {
+        try {
+            showNotify("Iniciando limpieza profunda...", "error");
+            
+            // Colecciones a eliminar para empezar de cero
+            const collections = [
+                'orders', 'shifts', 'expenses', 'manualItems', 
+                'activeOrders', 'creditos', 'abonos', 'cashAdjustments',
+                'inventory', 'combos', 'inventoryGroups', 'music_playlists',
+                'users', 'users_biometrics', 'system_status'
+            ];
 
-                        // Borramos cada colección
-                        await Promise.all(collections.map(c => deleteCollection(c)));
-                        
-                        // Resetear estado físico de las mesas
-                        const batch = db.batch();
-                        tables.forEach(t => {
-                            batch.update(db.collection('tables').doc(t.id.toString()), { status: 'libre', currentTotal: 0 });
-                        });
+            // Ejecutar borrado en la nube
+            await Promise.all(collections.map(c => deleteCollection(c)));
+            
+            const batch = db.batch();
+            // Resetear mesas físicas a estado libre
+            tables.forEach(t => {
+                batch.update(db.collection('tables').doc(t.id.toString()), { status: 'libre', currentTotal: 0 });
+            });
 
-                        // IMPORTANTE: Creamos un usuario admin por defecto para poder volver a entrar
-                        const defaultAdmin = { 
-                            id: Date.now(), 
-                            name: 'Admin', 
-                            surname: 'Principal', 
-                            username: 'admin', 
-                            password: '123', 
-                            email: 'admin@mandre.com', 
-                            role: 'admin' 
-                        };
-                        batch.set(db.collection('users').doc(defaultAdmin.id.toString()), defaultAdmin);
-
-                        await batch.commit();
-                        
-                        alert("✅ SISTEMA REINICIADO EXITOSAMENTE.\n\nTodos los datos viejos han sido borrados. Se ha creado el usuario temporal 'admin' con clave '123' para que configures el nuevo negocio.");
-                        window.location.reload();
-                    } catch(e) {
-                        console.error(e);
-                        alert("Hubo un error borrando. Verifique su conexión.");
-                    }
-                } else if (password !== null) {
-                    alert("Contraseña incorrecta. Operación cancelada.");
-                }
+            // Creamos el usuario administrador inicial (admin / 123)
+            const defaultAdmin = { 
+                id: Date.now(), 
+                name: 'Admin', 
+                surname: 'Principal', 
+                username: 'admin', 
+                password: '123', 
+                email: 'admin@mandre.com', 
+                role: 'admin' 
             };
+            batch.set(db.collection('users').doc(defaultAdmin.id.toString()), defaultAdmin);
+
+            await batch.commit();
+            
+            alert("✅ REINICIO COMPLETADO.\n\nUsa el usuario 'admin' y clave '123' para configurar tu nuevo negocio.");
+            window.location.reload();
+        } catch(e) {
+            console.error(e);
+            alert("Error de conexión. Verifique su internet.");
+        }
+    } else if (password !== null) {
+        alert("Contraseña incorrecta.");
+    }
+};
 
             // --- GESTION USUARIOS ADMIN ---
             const createNewUser = async () => {
@@ -3032,25 +3032,27 @@ return (
             <span className="w-2 h-2 rounded-full bg-mandre-orange animate-pulse"></span> Ocupada
         </div>
     </div>
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3">
-    {tables.filter(t => t.status === 'ocupada').map(t => (
-        <button key={t.id} onClick={() => setAdminViewTableOrder(t.id)} className="p-2 md:p-3 rounded-xl border-2 border-mandre-orange bg-orange-50 hover:bg-orange-100 scale-100 hover:scale-105 shadow-sm cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-mandre-orange"></div>
-            <span className="text-[10px] md:text-xs font-bold uppercase text-center block mb-1 truncate w-full text-mandre-dark">
-    {t.id?.startsWith('T') ? `TERRAZA ${t.id.replace('T', '')}` : 
-     t.id?.startsWith('I') ? `INTERIOR ${t.id.replace('I', '')}` : 
-     t.id?.startsWith('B') ? `BARRA ${t.id.replace('B', '')}` : 
-     t.label || t.id}
-</span>
-            <span className="text-xs md:text-sm font-bold text-mandre-orange">${t.currentTotal.toLocaleString()}</span>
-        </button>
-    ))}
-</div>
+    
+    {tables.filter(t => t.status === 'ocupada').length > 0 ? (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3">
+            {tables.filter(t => t.status === 'ocupada').map(t => (
+                <button key={t.id} onClick={() => setAdminViewTableOrder(t.id)} className="p-2 md:p-3 rounded-xl border-2 border-mandre-orange bg-orange-50 hover:bg-orange-100 scale-100 hover:scale-105 shadow-sm cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-mandre-orange"></div>
+                    <span className="text-[10px] md:text-xs font-bold uppercase text-center block mb-1 truncate w-full text-mandre-dark">
+                        {t.id?.startsWith('T') ? `TERRAZA ${t.id.replace('T', '')}` : 
+                         t.id?.startsWith('I') ? `INTERIOR ${t.id.replace('I', '')}` : 
+                         t.id?.startsWith('B') ? `BARRA ${t.id.replace('B', '')}` : 
+                         t.label || t.id}
+                    </span>
+                    <span className="text-xs md:text-sm font-bold text-mandre-orange">${t.currentTotal.toLocaleString()}</span>
+                </button>
+            ))}
+        </div>
     ) : (
         <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
             <p className="text-sm text-gray-400 font-bold">No hay cuentas abiertas en este momento ✨</p>
         </div>
-    
+    )}
 </div>
                                         {/* MODAL VISUAL DE MESA EN ADMIN */}
                                         {adminViewTableOrder && activeOrders[adminViewTableOrder] && (
