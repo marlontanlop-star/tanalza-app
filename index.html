@@ -5266,18 +5266,18 @@ return (
 )}
 {/* SISTEMA DE NOTIFICACIONES PERSONALIZADO MANDRÉ */}
                     {toast.show && (
-                        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-slideUp px-4 w-full max-w-sm">
-                            <div className={`px-6 py-4 rounded-[2rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
-                                    {toast.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-50 leading-none mb-1">Notificación</p>
-                                    <p className="text-xs font-bold uppercase tracking-tight leading-tight">{toast.message}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+    <div className="fixed bottom-28 inset-x-0 z-[1000] flex justify-center px-8 pointer-events-none animate-slideUp">
+        <div className={`w-full max-w-[300px] pointer-events-auto px-6 py-3.5 rounded-[2.5rem] shadow-2xl border-2 flex items-center gap-4 ${toast.type === 'success' ? 'bg-white border-mandre-sage text-mandre-coffee' : 'bg-red-50 border-red-200 text-red-600'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-mandre-sage text-white' : 'bg-red-500 text-white'}`}>
+                {toast.type === 'success' ? <CheckCircle size={16}/> : <AlertTriangle size={16}/>}
+            </div>
+            <div className="text-left overflow-hidden">
+                <p className="text-[7px] font-black uppercase tracking-[0.3em] opacity-30 leading-none mb-1">Mandré</p>
+                <p className="text-[10px] font-bold uppercase tracking-tight leading-tight truncate">{toast.message}</p>
+            </div>
+        </div>
+    </div>
+)}
                 </div>
             );
         };
