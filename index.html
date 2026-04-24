@@ -731,6 +731,7 @@ React.useEffect(() => {
 // --- CONFIGURACIÓN DE ICONOS DEL MENÚ ADMIN (RESTAURADO) ---
 // --- CONFIGURACIÓN DE ICONOS ADMIN (TODAS LAS PUERTAS ACTIVAS) ---
 const adminModules = [
+    { id: 'ads', label: 'Publicidad TV', icon: <Play />, color: 'bg-green-500' }, // <-- NUEVO MÓDULO
     { id: 'insumos', label: 'Insumos', icon: <Box />, color: 'bg-orange-500' },
     { id: 'dashboard', label: 'Métricas', icon: <Activity />, color: 'bg-red-500' },
     { id: 'status', label: 'Sistema', icon: <RefreshCw />, color: 'bg-blue-500' },
@@ -768,7 +769,8 @@ const [showInterior, setShowInterior] = useState(false);
             const [showBarra, setShowBarra] = useState(false);
             const [cart, setCart] = useState([]);
             const [selectedCategory, setSelectedCategory] = useState('CAFE');
-            const [searchQuery, setSearchQuery] = useState(''); 
+            const [searchQuery, setSearchQuery] = useState('');
+            const [adsSearch, setAdsSearch] = useState('');
             const [customerName, setCustomerName] = useState('');
             const [showMobileCart, setShowMobileCart] = useState(false); 
             const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -3047,7 +3049,104 @@ return (
         </div>
     </div>
 )}
+{/* --- SECCIÓN OPTIMIZADA: ADMINISTRADOR DE PUBLICIDAD TV --- */}
+{adminTab === 'ads' && (
+    <div className="max-w-6xl mx-auto space-y-6 animate-fadeIn pb-32 text-left px-2">
+        
+        {/* CABECERA CON BUSCADOR Y ESTADO */}
+        <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-xl border-b-8 border-green-500 relative overflow-hidden">
+            <div className="relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                    <div>
+                        <h3 className="font-black text-2xl md:text-3xl text-mandre-coffee uppercase tracking-tighter leading-none">Control de Pantalla</h3>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Gestión de pauta en tiempo real</p>
+                    </div>
+                    
+                    {/* BUSCADOR INTEGRADO */}
+                    <div className="relative w-full md:w-72">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+                        <input 
+                            type="text" 
+                            placeholder="Buscar producto..." 
+                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-green-400 rounded-2xl outline-none font-bold text-sm transition-all"
+                            value={adsSearch || ''}
+                            onChange={(e) => setAdsSearch(e.target.value)}
+                        />
+                    </div>
+                </div>
 
+                {/* GRILLA DE PRODUCTOS (ORDENADA: ACTIVOS PRIMERO) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {inventory
+                        .filter(p => p.name.toLowerCase().includes((adsSearch || "").toLowerCase()))
+                        .sort((a, b) => (a.isPromoted === b.isPromoted ? 0 : a.isPromoted ? -1 : 1)) // ACTIVOS ARRIBA
+                        .map(prod => (
+                            <div 
+                                key={prod.id} 
+                                className={`p-4 md:p-5 rounded-[2.2rem] border-2 transition-all flex items-center justify-between gap-3 ${
+                                    prod.isPromoted 
+                                    ? 'border-green-500 bg-green-50/30 shadow-md scale-[1.02]' 
+                                    : 'border-gray-100 bg-white opacity-90'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-2xl md:text-3xl shadow-sm shrink-0 ${prod.isPromoted ? 'bg-white' : 'bg-gray-50'}`}>
+                                        {prod.icon || '☕'}
+                                    </div>
+                                    <div className="truncate">
+                                        <h4 className="font-black text-xs md:text-sm text-mandre-dark uppercase truncate leading-tight">
+                                            {prod.name}
+                                        </h4>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            <span className={`w-1.5 h-1.5 rounded-full ${prod.isPromoted ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
+                                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">
+                                                {prod.isPromoted ? 'Transmitiendo' : 'En espera'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={async () => {
+                                        if (navigator.vibrate) navigator.vibrate(50);
+                                        await db.collection('inventory').doc(prod.id.toString()).update({
+                                            isPromoted: !prod.isPromoted
+                                        });
+                                    }}
+                                    className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase transition-all active:scale-90 shadow-sm ${
+                                        prod.isPromoted 
+                                        ? 'bg-green-600 text-white' 
+                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {prod.isPromoted ? 'Quitar' : 'Poner'}
+                                </button>
+                            </div>
+                        ))}
+                </div>
+
+                {/* ESTADO VACÍO */}
+                {inventory.length === 0 && (
+                    <div className="text-center py-20 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Cargando catálogo...</p>
+                    </div>
+                )}
+            </div>
+        </div>
+
+        {/* INDICADOR DE CAPACIDAD */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-xl flex items-center justify-center">
+                    <Activity size={20}/>
+                </div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-relaxed">
+                    Productos activos en pauta ahora: <span className="text-green-600 text-sm ml-1">{inventory.filter(p => p.isPromoted).length}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+)}
                                 {adminTab === 'dashboard' && (
                                     <div className="max-w-5xl mx-auto space-y-6">
                                         
