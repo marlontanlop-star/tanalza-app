@@ -480,6 +480,10 @@ const [creditViewMode, setCreditViewMode] = useState('pendientes');
 const [selectedCreditTicket, setSelectedCreditTicket] = useState(null);
             const [activeOrders, setActiveOrders] = useState({}); 
             const [users, setUsers] = useState([]);
+            // --- ESTADOS CLUB DE CLIENTES VIP ---
+const [activeCustomerProfile, setActiveCustomerProfile] = useState(null);
+const [posLinkedCustomer, setPosLinkedCustomer] = useState(null);
+const [posPhoneSearch, setPosPhoneSearch] = useState('');
             // Nuevo estado para el control de stock manual y agrupado
 const [inventoryGroups, setInventoryGroups] = useState([]);
 // Estados para editar grupos, mostrar la campana y buscar productos
@@ -1023,7 +1027,48 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
             };
 
             const subtotal = useMemo(() => cart.reduce((acc, item) => acc + calculateItemTotal(item), 0), [cart]);
-            const total = useMemo(() => subtotal, [subtotal]);
+
+// MOTOR DE DESCUENTOS POR FIDELIZACIÓN
+const discountDetails = useMemo(() => {
+    if (!posLinkedCustomer || !posLinkedCustomer.promosList) return { totalDiscount: 0, lines: [], appliedPromoIds: [] };
+
+    let totalDiscount = 0;
+    let lines = [];
+    let appliedPromoIds = [];
+
+    // Clonamos el carrito para no hacer doble descuento
+    let cartClone = JSON.parse(JSON.stringify(cart));
+    let currentSubtotal = cartClone.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+    const availablePromos = posLinkedCustomer.promosList.filter(p => !p.used);
+
+    availablePromos.forEach(promo => {
+        if (promo.type === 'product') {
+            const cartItemIndex = cartClone.findIndex(i => i.id.toString() === promo.value.toString() && i.quantity > 0);
+            if (cartItemIndex !== -1) {
+                const item = cartClone[cartItemIndex];
+                totalDiscount += item.price;
+                lines.push(`${item.name} gratis por fidelización`);
+                appliedPromoIds.push(promo.id);
+                cartClone[cartItemIndex].quantity -= 1; 
+                currentSubtotal -= item.price;
+            }
+        } else if (promo.type === 'discount') {
+            const pct = parseFloat(promo.value) / 100;
+            const discountAmt = currentSubtotal * pct;
+            if (discountAmt > 0) {
+                totalDiscount += discountAmt;
+                lines.push(`Descuento por fidelización (${promo.value}%)`);
+                appliedPromoIds.push(promo.id);
+                currentSubtotal -= discountAmt;
+            }
+        }
+    });
+
+    return { totalDiscount, lines, appliedPromoIds };
+}, [cart, posLinkedCustomer]);
+
+const total = useMemo(() => subtotal - discountDetails.totalDiscount, [subtotal, discountDetails]);
             
             const changeDue = useMemo(() => {
                 const given = parseFloat(cashGiven) || 0;
@@ -1352,9 +1397,12 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
     });
 
     const result = {
-        id: Date.now(), date: new Date().toLocaleString(), employee: finalEmployeeName,
-        totalVentas: (rawExpectedCash - abonosEfectivo) + (nequiTotal - abonosNequi - adjNequi),
-        expectedCash: expectedCash, countedCash: countedCash, nequiTotal: nequiTotal,
+    id: Date.now(), date: new Date().toLocaleString(), employee: finalEmployeeName,
+    totalVentas: (rawExpectedCash - abonosEfectivo) + (nequiTotal - abonosNequi - adjNequi),
+    // --- ESTA ES LA LÍNEA NUEVA ---
+    totalFidelizacion: currentShiftOrders.reduce((acc, o) => acc + (o.loyaltyDiscount || 0), 0),
+    // ------------------------------
+    expectedCash: expectedCash, countedCash: countedCash, nequiTotal: nequiTotal,
         abonosEfectivo: abonosEfectivo, abonosNequi: abonosNequi,
         adjEfectivo: adjEfectivo, adjNequi: adjNequi, // Guardar el tracking de ajustes en el ticket
         diff: diff, ordersCount: currentShiftOrders.length, manualItems: manualItems,
@@ -1933,16 +1981,19 @@ cart.forEach(item => {
 
                     // Registrar Orden Histórica
                     const newOrder = { 
-                        id: Date.now(), 
-                        date: currentDate.toLocaleTimeString(), 
-                        fullDate: currentDate.toLocaleDateString(),
-                        isoDate: currentDate.toLocaleDateString('en-CA'), 
-                        customer: finalCustomerName, 
-                        items: cart, 
-                        method: method, 
-                        total: cart.reduce((acc, item) => acc + (item.price * item.quantity), 0), 
-                        employee: currentShiftEmployee 
-                    };
+    id: Date.now(), 
+    date: currentDate.toLocaleTimeString(), 
+    fullDate: currentDate.toLocaleDateString(),
+    isoDate: currentDate.toLocaleDateString('en-CA'), 
+    customer: finalCustomerName, 
+    items: cart, 
+    method: method, 
+    // Ahora el total será lo que el cliente REALMENTE pagó
+    total: total, 
+    // Guardamos el descuento por aparte para tus métricas de marketing
+    loyaltyDiscount: discountDetails.totalDiscount,
+    employee: currentShiftEmployee 
+};
                     batch.set(db.collection('orders').doc(newOrder.id.toString()), newOrder);
                     
                     // Limpiar Mesas y Activas
@@ -1951,7 +2002,15 @@ cart.forEach(item => {
                         batch.update(db.collection('tables').doc(tableIdStr), { status: 'libre', currentTotal: 0 });
                         batch.delete(db.collection('activeOrders').doc(tableIdStr));
                     }
-
+// QUEMAR LAS PROMOCIONES VIP UTILIZADAS EN ESTA COMPRA
+if (posLinkedCustomer && discountDetails.appliedPromoIds.length > 0) {
+    const updatedPromos = posLinkedCustomer.promosList.map(p =>
+        discountDetails.appliedPromoIds.includes(p.id) 
+            ? { ...p, used: true, usedDate: currentDate.toLocaleString() } 
+            : p
+    );
+    batch.update(db.collection('customers').doc(posLinkedCustomer.id), { promosList: updatedPromos });
+}
                     // Confirmar transacción
                     await batch.commit();
                     
@@ -2313,6 +2372,43 @@ return (
                             </p>
                         </div>
                     </div>
+                    {/* VINCULACIÓN CLUB DE CLIENTES (POR NÚMERO) */}
+<div className="px-6 py-4 bg-indigo-50/50 border-y border-dashed border-indigo-100 font-sans">
+    {!posLinkedCustomer ? (
+        <div className="flex gap-2">
+            <input
+                type="tel"
+                placeholder="Teléfono del cliente..."
+                className="w-full p-3 bg-white border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 outline-none shadow-sm focus:border-indigo-500"
+                value={posPhoneSearch}
+                onChange={e => setPosPhoneSearch(e.target.value)}
+            />
+            <button
+                onClick={() => {
+                    const cust = registeredCustomers.find(c => c.phone && c.phone.trim() === posPhoneSearch.trim());
+                    if (cust) {
+                        setPosLinkedCustomer(cust);
+                        setCustomerName(cust.name); 
+                        setPosPhoneSearch('');
+                    } else {
+                        alert("⚠️ Cliente no encontrado. Debe estar registrado en el Club.");
+                    }
+                }}
+                className="bg-indigo-600 text-white px-4 rounded-xl font-bold text-xs active:scale-95 transition-transform shadow-sm"
+            >
+                Buscar
+            </button>
+        </div>
+    ) : (
+        <div className="flex justify-between items-center bg-indigo-600 text-white p-3 rounded-xl shadow-md">
+            <div>
+                <span className="text-[10px] uppercase tracking-widest opacity-80 block">Socio Activo:</span>
+                <span className="text-xs font-black uppercase flex items-center gap-1">🌟 {posLinkedCustomer.name}</span>
+            </div>
+            <button onClick={() => {setPosLinkedCustomer(null); setCustomerName('');}} className="bg-white/20 p-2 rounded-full hover:bg-white/40"><X size={14}/></button>
+        </div>
+    )}
+</div>
                     <div className="flex-1 p-6 overflow-y-auto space-y-4 font-sans">
                         {cart.map(item => (
                             <div key={item.cartId} className="flex justify-between items-center border-b border-dashed border-gray-200 pb-3">
@@ -2328,6 +2424,11 @@ return (
                         ))}
                     </div>
                     <div className="p-6 bg-white border-t border-dashed border-gray-300">
+                    {discountDetails.lines.map((line, idx) => (
+    <div key={idx} className="flex justify-between items-center text-[10px] font-black text-green-600 mb-2 bg-green-50 p-3 rounded-xl border border-green-200 font-sans">
+        <span className="uppercase">🎁 {line}</span>
+    </div>
+))}
                         <div className="flex justify-between items-center text-lg font-bold mb-6 font-sans">
                             <span className="text-gray-500 text-sm">TOTAL</span>
                             <span className="text-2xl">${total.toLocaleString()}</span>
@@ -3153,24 +3254,27 @@ return (
                                         <p className="font-bold text-sm text-mandre-dark uppercase">{customer.name}</p>
                                     </td>
                                     <td className="p-5">
-                                        <div className="flex items-center gap-2">
-                                            <span className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
-                                                <Phone size={14}/>
-                                            </span>
-                                            <p className="font-black text-sm text-indigo-900">{customer.phone}</p>
-                                        </div>
-                                    </td>
-                                    <td className="p-5 text-center">
-                                        <button 
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(customer.phone);
-                                                showNotify(`Teléfono de ${customer.name} copiado`);
-                                            }}
-                                            className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm active:scale-95"
-                                        >
-                                            <Share size={16}/>
-                                        </button>
-                                    </td>
+    <div className="flex items-center gap-2">
+        <span className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+            <Phone size={14}/>
+        </span>
+        <p className="font-black text-sm text-indigo-900">{customer.phone}</p>
+    </div>
+<td className="p-5 text-center flex justify-center gap-2">
+    <button 
+        onClick={() => setActiveCustomerProfile(customer)}
+        className="px-4 py-2 bg-indigo-100 text-indigo-700 font-bold text-[10px] uppercase rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-1"
+    >
+        <User size={14}/> Ver Perfil
+    </button>
+</td>
+    <button 
+        onClick={() => setActiveCustomerProfile(customer)}
+        className="px-4 py-2 bg-indigo-100 text-indigo-700 font-bold text-[10px] uppercase rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm active:scale-95 flex items-center gap-1"
+    >
+        <User size={14}/> Ver Perfil
+    </button>
+</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -4292,10 +4396,12 @@ return (
                                             {/* BALANCE GENERAL */}
                                             <div className="mb-6">
                                                 <h4 className="text-left text-xs font-bold text-mandre-coffee uppercase border-b pb-2 mb-4">Totalización del Turno</h4>
-                                                <div className="flex justify-between items-center mb-2 bg-mandre-sage/10 p-3 rounded-lg border border-mandre-sage/30">
-                                                    <span className="font-bold text-mandre-coffee">TOTAL VENTAS GENERAL</span>
-                                                    <span className="font-bold text-xl text-mandre-coffee">${closureResult.totalVentas.toLocaleString()}</span>
-                                                </div>
+                                                {closureResult.totalFidelizacion > 0 && (
+    <div className="flex justify-between items-center mb-2 px-3 text-indigo-600">
+        <span className="text-[10px] font-bold uppercase tracking-widest">🎁 Fidelización Club VIP</span>
+        <span className="font-bold text-sm">-${closureResult.totalFidelizacion.toLocaleString()}</span>
+    </div>
+)}
                                                 <div className="flex justify-between items-center mb-2 px-3">
                                                     <span className="text-gray-500 text-sm">Ventas Efectivo (+Abonos)</span>
                                                     <span className="font-bold text-sm">${(closureResult.expectedCash - closureResult.totalAdjustments + closureResult.totalExpensesAmount).toLocaleString()}</span>
@@ -5262,6 +5368,103 @@ return (
             
             <div className="bg-gray-50 py-4 flex justify-center border-t border-gray-100">
                 <LogoTanAlza className="w-24 opacity-40" />
+            </div>
+        </div>
+    </div>
+)}
+{/* MODAL: PERFIL VIP Y GESTOR DE PROMOCIONES */}
+{activeCustomerProfile && (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[300] flex items-center justify-center p-4 animate-fadeIn text-left">
+        <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-slideUp flex flex-col max-h-[90vh] border-4 border-indigo-50">
+            
+            <div className="bg-indigo-600 p-6 flex justify-between items-center text-white shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center font-black text-xl">{activeCustomerProfile.name[0]}</div>
+                    <div>
+                        <h3 className="font-black text-xl uppercase tracking-tight leading-none">{activeCustomerProfile.name}</h3>
+                        <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest mt-1">Socio: {activeCustomerProfile.phone}</p>
+                    </div>
+                </div>
+                <button onClick={() => setActiveCustomerProfile(null)} className="text-white/60 hover:text-white bg-white/10 p-2 rounded-full transition"><X size={20}/></button>
+            </div>
+
+            <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50/50">
+                
+                {/* COLUMNA IZQ: HISTORIAL */}
+                <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                    <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><History size={16}/> Compras de este cliente</h4>
+                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                        {orders.filter(o => o.customer.toLowerCase() === activeCustomerProfile.name.toLowerCase()).map(o => (
+                            <div key={o.id} className="border-b border-dashed border-gray-200 pb-3 last:border-0">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-bold text-gray-400">{o.fullDate || o.date}</span>
+                                    <span className="font-bold text-mandre-sage">${o.total.toLocaleString()}</span>
+                                </div>
+                                <p className="text-[10px] text-gray-500 leading-tight font-medium uppercase">{o.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* COLUMNA DER: CREADOR DE PROMOCIONES */}
+                <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm">
+                    <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2"><Tag size={16}/> Otorgar Beneficio VIP</h4>
+                    
+                    <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 mb-4">
+                        <label className="text-[9px] font-bold text-indigo-400 uppercase mb-2 block">Tipo de Premio</label>
+                        <select id="promo-type" className="w-full p-3 border border-indigo-200 rounded-xl text-xs font-bold text-indigo-700 outline-none mb-3 bg-white" onChange={(e) => {
+                            document.getElementById('promo-val-prod').classList.toggle('hidden', e.target.value !== 'product');
+                            document.getElementById('promo-val-desc').classList.toggle('hidden', e.target.value !== 'discount');
+                        }}>
+                            <option value="product">Regalar un Producto Físico</option>
+                            <option value="discount">Dar Descuento General (%)</option>
+                        </select>
+
+                        <select id="promo-val-prod" className="w-full p-3 border border-indigo-200 rounded-xl text-xs outline-none bg-white font-bold">
+                            {inventory.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+
+                        <input id="promo-val-desc" type="number" placeholder="Porcentaje (Ej: 15)" className="hidden w-full p-3 border border-indigo-200 rounded-xl text-xs outline-none bg-white font-bold" />
+
+                        <button 
+                            onClick={async () => {
+                                const type = document.getElementById('promo-type').value;
+                                let val = type === 'product' ? document.getElementById('promo-val-prod').value : document.getElementById('promo-val-desc').value;
+                                let name = type === 'product' ? inventory.find(p => p.id.toString() === val)?.name : `${val}%`;
+
+                                if(!val) return alert("Completa el valor del descuento.");
+
+                                const newPromo = { id: Date.now(), type, value: val, name, used: false, assignedDate: new Date().toLocaleDateString() };
+                                const updatedPromos = [...(activeCustomerProfile.promosList || []), newPromo];
+
+                                await db.collection('customers').doc(activeCustomerProfile.id).update({ promosList: updatedPromos });
+                                setActiveCustomerProfile({...activeCustomerProfile, promosList: updatedPromos});
+                                alert("¡Premio cargado al número del cliente!");
+                            }}
+                            className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-md transition-all active:scale-95"
+                        >
+                            Asignar a la cuenta
+                        </button>
+                    </div>
+
+                    {/* Promos Activas */}
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Premios sin usar:</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {(activeCustomerProfile.promosList || []).filter(p => !p.used).map(p => (
+                            <div key={p.id} className="flex justify-between items-center bg-green-50 p-3 rounded-xl border border-green-200">
+                                <div>
+                                    <span className="font-bold text-xs text-green-800 block leading-none mb-1">{p.type === 'product' ? `🎁 ${p.name} Gratis` : `📉 ${p.name} de Descuento`}</span>
+                                    <span className="text-[8px] text-green-600 uppercase font-bold">Otorgado: {p.assignedDate}</span>
+                                </div>
+                                <button onClick={async () => {
+                                    const updated = activeCustomerProfile.promosList.filter(x => x.id !== p.id);
+                                    await db.collection('customers').doc(activeCustomerProfile.id).update({ promosList: updated });
+                                    setActiveCustomerProfile({...activeCustomerProfile, promosList: updated});
+                                }} className="text-red-400 hover:text-red-600 p-1"><Trash2 size={14}/></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
