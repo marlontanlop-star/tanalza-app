@@ -1018,8 +1018,18 @@ const unsubActiveOrders = db.collection('activeOrders').onSnapshot({ includeMeta
                 return () => clearInterval(interval);
             }, [currentShiftEmployee, isOnline]);
 
-            // --- COMPUTADOS ---
-            const categories = ["CAFE", "BEBIDAS ALCOHOLICAS", "PARA COMER", "COMBOS"];
+           // --- NUEVAS CATEGORÍAS ACTUALIZADAS ---
+const categories = [
+    "CAFE", 
+    "INFUSIONES", 
+    "REFRESCANTES", 
+    "CACAO Y LACTEOS", 
+    "PARA COMER", 
+    "COCKTAILS", 
+    "CERVEZAS", 
+    "PARA BRINDAR", 
+    "COMBOS" // Mantenemos COMBOS para la lógica del sistema
+];
             
             const displayInventory = useMemo(() => {
                 return [...inventory, ...combos];
@@ -4407,7 +4417,27 @@ return (
                                         <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Precio</label>
                                         <input type="number" className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage" value={editItem.data.price} onChange={e => setEditItem({...editItem, data: {...editItem.data, price: parseFloat(e.target.value)}})} placeholder="Precio"/>
                                     </div>
+                                    
+<div>
+    <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Precio</label>
+    <input type="number" className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage" value={editItem.data.price} onChange={e => setEditItem({...editItem, data: {...editItem.data, price: parseFloat(e.target.value)}})} placeholder="Precio"/>
+</div>
+
+{/* NUEVO CAMPO DE CATEGORÍA EN EDICIÓN */}
+<div>
+    <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Categoría</label>
+    <select 
+        className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage font-bold" 
+        value={editItem.data.category} 
+        onChange={e => setEditItem({...editItem, data: {...editItem.data, category: e.target.value}})}
+    >
+        {categories.filter(c => c !== 'COMBOS').map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+        ))}
+    </select>
+</div>
                                     <div>
+                                    
                                         <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Descripción para Catálogo</label>
                                         <textarea className="w-full border p-3 rounded-xl bg-gray-50 outline-none focus:bg-white focus:border-mandre-sage h-16 resize-none text-sm" value={editItem.data.description || ''} onChange={e => setEditItem({...editItem, data: {...editItem.data, description: e.target.value}})} placeholder="Ingredientes..."></textarea>
                                     </div>
