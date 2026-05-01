@@ -771,6 +771,13 @@ const [showInterior, setShowInterior] = useState(false);
             const [selectedCategory, setSelectedCategory] = useState('CAFE');
             const [searchQuery, setSearchQuery] = useState('');
             const [adsSearch, setAdsSearch] = useState('');
+            // --- NUEVOS ESTADOS PARA CONFIGURACIÓN TV ---
+const [tvConfigText, setTvConfigText] = useState('');
+const [tvCoffeeData, setTvCoffeeData] = useState({
+    vereda: '', municipio: '', altura: '', notas: '', procesador: '', diaTueste: ''
+});
+const [tvLogoFile, setTvLogoFile] = useState(null);
+const [isSavingTv, setIsSavingTv] = useState(false);
             const [customerName, setCustomerName] = useState('');
             const [showMobileCart, setShowMobileCart] = useState(false); 
             const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -1801,6 +1808,42 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
                     showNotify("Combo eliminado");
                 }
             };
+            // --- FUNCIÓN PARA GUARDAR CONFIGURACIÓN DE TV ---
+const guardarConfiguracionTV = async () => {
+    if (!tvConfigText || !tvCoffeeData.vereda) return alert("Completa al menos el texto y la vereda.");
+    setIsSavingTv(true);
+    showNotify("Guardando configuración para TV...", "success");
+
+    try {
+        let logoUrlFinal = '';
+
+        if (tvLogoFile) {
+            // Sube el archivo original usando el storage de Firebase que ya tienes
+            const fileRef = storage.ref(`logosTV/logo_${Date.now()}_${tvLogoFile.name}`);
+            await fileRef.put(tvLogoFile);
+            logoUrlFinal = await fileRef.getDownloadURL();
+        }
+
+        const docRef = db.collection('configuracionTV').doc('actual');
+        
+        await docRef.set({
+            publicidadRecurrente: { textoConfigurable: tvConfigText },
+            cafePromocion: {
+                ...tvCoffeeData,
+                ...(logoUrlFinal && { logoUrl: logoUrlFinal })
+            },
+            ultimaActualizacion: new Date().toLocaleString()
+        }, { merge: true });
+
+        showNotify("¡Configuración de TV actualizada exitosamente!");
+        setTvLogoFile(null); // Limpiar el archivo después de subirlo
+    } catch (error) {
+        console.error("Error al guardar en TV:", error);
+        alert("Hubo un error al guardar la configuración.");
+    } finally {
+        setIsSavingTv(false);
+    }
+};
             // --- FUNCIONES POS ---
             const selectTable = (rawId) => {
                 const id = rawId?.toString();
@@ -3093,24 +3136,70 @@ return (
         {/* CABECERA CON BUSCADOR Y ESTADO */}
         <div className="bg-white p-6 md:p-10 rounded-[2.5rem] shadow-xl border-b-8 border-green-500 relative overflow-hidden">
             <div className="relative z-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                    <div>
-                        <h3 className="font-black text-2xl md:text-3xl text-mandre-coffee uppercase tracking-tighter leading-none">Control de Pantalla</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Gestión de pauta en tiempo real</p>
-                    </div>
-                    
-                    {/* BUSCADOR INTEGRADO */}
-                    <div className="relative w-full md:w-72">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-                        <input 
-                            type="text" 
-                            placeholder="Buscar producto..." 
-                            className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-green-400 rounded-2xl outline-none font-bold text-sm transition-all"
-                            value={adsSearch || ''}
-                            onChange={(e) => setAdsSearch(e.target.value)}
-                        />
-                    </div>
-                </div>
+    <div className="flex flex-col md:flex-row justify-between gap-6 mb-8 items-start">
+        <div>
+            <h3 className="font-black text-2xl md:text-3xl text-mandre-coffee uppercase tracking-tighter leading-none">Control de Pantalla</h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Gestión de pauta en tiempo real</p>
+        </div>
+        
+        {/* BUSCADOR INTEGRADO EXISTENTE */}
+        <div className="relative w-full md:w-72">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
+            <input 
+                type="text" 
+                placeholder="Buscar producto..." 
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-transparent focus:border-green-400 rounded-2xl outline-none font-bold text-sm transition-all"
+                value={adsSearch || ''}
+                onChange={(e) => setAdsSearch(e.target.value)}
+            />
+        </div>
+    </div>
+
+    {/* --- NUEVO: FORMULARIO DE TRAZABILIDAD Y PROMOCIÓN --- */}
+    <div className="bg-green-50/50 border-2 border-green-200 rounded-[2rem] p-6 mb-8 flex flex-col lg:flex-row gap-6">
+        {/* Lado Izquierdo: Textos recurrentes y Logo */}
+        <div className="flex-1 space-y-4">
+            <h4 className="font-black text-sm text-green-800 uppercase tracking-widest">Publicidad (Cada 4 posts)</h4>
+            <input 
+                className="w-full p-4 bg-white border border-green-200 rounded-xl outline-none focus:border-green-500 font-bold text-sm" 
+                placeholder="Ej: ¡Pregunta por el combo del día!" 
+                value={tvConfigText} 
+                onChange={e => setTvConfigText(e.target.value)}
+            />
+            
+            <h4 className="font-black text-sm text-green-800 uppercase tracking-widest mt-4">Logo Alta Resolución</h4>
+            <input 
+                type="file" 
+                accept="image/*" 
+                className="w-full p-2 border border-dashed border-green-300 rounded-xl bg-white text-xs font-bold text-green-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-green-600 file:text-white cursor-pointer" 
+                onChange={e => setTvLogoFile(e.target.files[0])}
+            />
+        </div>
+
+        {/* Lado Derecho: Datos del Café */}
+        <div className="flex-[2] space-y-3">
+            <h4 className="font-black text-sm text-green-800 uppercase tracking-widest mb-2">Trazabilidad del Café</h4>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <input className="p-3 rounded-xl bg-white border border-green-200 font-bold text-xs outline-none" placeholder="Vereda" value={tvCoffeeData.vereda} onChange={e => setTvCoffeeData({...tvCoffeeData, vereda: e.target.value})}/>
+                <input className="p-3 rounded-xl bg-white border border-green-200 font-bold text-xs outline-none" placeholder="Municipio" value={tvCoffeeData.municipio} onChange={e => setTvCoffeeData({...tvCoffeeData, municipio: e.target.value})}/>
+                <input className="p-3 rounded-xl bg-white border border-green-200 font-bold text-xs outline-none" placeholder="Altura (m.s.n.m)" value={tvCoffeeData.altura} onChange={e => setTvCoffeeData({...tvCoffeeData, altura: e.target.value})}/>
+                <input className="p-3 rounded-xl bg-white border border-green-200 font-bold text-xs outline-none md:col-span-2" placeholder="Notas de Cata (Ej: Chocolate, Panela)" value={tvCoffeeData.notas} onChange={e => setTvCoffeeData({...tvCoffeeData, notas: e.target.value})}/>
+                <input className="p-3 rounded-xl bg-white border border-green-200 font-bold text-xs outline-none" placeholder="Quién procesa" value={tvCoffeeData.procesador} onChange={e => setTvCoffeeData({...tvCoffeeData, procesador: e.target.value})}/>
+                <input type="date" className="p-3 rounded-xl bg-white border border-green-200 font-bold text-xs outline-none md:col-span-3" value={tvCoffeeData.diaTueste} onChange={e => setTvCoffeeData({...tvCoffeeData, diaTueste: e.target.value})}/>
+            </div>
+            
+            <button 
+                onClick={guardarConfiguracionTV} 
+                disabled={isSavingTv}
+                className="w-full mt-2 py-4 bg-green-600 hover:bg-green-700 text-white font-black text-[11px] uppercase tracking-widest rounded-xl shadow-lg active:scale-95 transition-all disabled:opacity-50"
+            >
+                {isSavingTv ? 'Guardando...' : 'Actualizar Pantalla TV'}
+            </button>
+        </div>
+    </div>
+    
+    {/* GRILLA DE PRODUCTOS EXISTENTE */}
+    {/* (AQUÍ SIGUE TU CÓDIGO <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"> ...) */}
 
                 {/* GRILLA DE PRODUCTOS (ORDENADA: ACTIVOS PRIMERO) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
