@@ -1637,12 +1637,13 @@ const performClosure = async (isAuto = false, targetEmployee = null) => {
 
                     // Guardamos todo en la base de datos (Firestore) que ya funciona perfecto
                     const newItem = {
-                        id: Date.now(),
-                        name: newProductForm.name,
-                        price: parseFloat(newProductForm.price),
-                        category: newProductForm.category,
-                        stock: 999, 
-                        icon: newProductForm.icon,
+    id: Date.now(),
+    name: newProductForm.name,
+    price: parseFloat(newProductForm.price),
+    category: newProductForm.category,
+    isPromoted: false, // <-- AGREGA ESTA LÍNEA AQUÍ
+    stock: 999, 
+    icon: newProductForm.icon,
                         description: newProductForm.description || '', 
                         imageUrl: imageUrl // Aquí va la imagen en formato texto
                     };
