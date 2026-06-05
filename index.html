@@ -2114,6 +2114,14 @@ cart.forEach(item => {
     employee: currentShiftEmployee 
 };
                     batch.set(db.collection('orders').doc(newOrder.id.toString()), newOrder);
+                    // NUEVO: Enviar comanda al espejo de cocina en el mismo lote (batch)
+batch.set(db.collection('kitchen_orders').doc(newOrder.id.toString()), {
+    orderId: newOrder.id,
+    tableNumber: activeTableId ? activeTableId.toString() : "Para llevar / Barra",
+    items: cart,
+    timestamp: new Date(), 
+    status: 'pendiente'
+});
                     
                     // Limpiar Mesas y Activas
                     if(activeTableId) {
